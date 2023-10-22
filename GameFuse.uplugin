@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "GameFuse",
+	"Description": "GameFuse is a web service for game developers. Add authentication, user data, leaderboards, in-game-store and more, all without setting up servers or managing API calls. Just use our easy to use libraries. Dont see your language supported? Look in the docs page for our Api Docs",
+	"Category": "Other",
+	"CreatedBy": "GameFuse",
+	"CreatedByURL": "https://gamefuse.co/",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "GameFuse",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
