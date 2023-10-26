@@ -281,7 +281,7 @@ void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FUserCallback C
 }
 
 void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore,
-                                        TMap<FString, FString>& ExtraAttributes, FUserCallback CompletionCallback)
+                                        TMap<FString, FString> ExtraAttributes, FUserCallback CompletionCallback)
 {
     const FString ApiEndpoint = FString::Printf(
         TEXT("%s/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s&extra_attributes=%s")

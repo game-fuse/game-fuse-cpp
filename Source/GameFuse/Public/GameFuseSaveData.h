@@ -9,26 +9,26 @@
 /**
  * 
  */
-UCLASS(Blueprintable)
+UCLASS(Blueprintable, Category = "GameFuse")
 class GAMEFUSE_API UGameFuseSaveData : public USaveGame
 {
 	GENERATED_BODY()
 
 public:
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|SaveData")
         int32 NumberOfLogins = 0;
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "GameFuse|SaveData")
         FString LastLogin;
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "GameFuse|SaveData")
         FString AuthenticationToken;
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "GameFuse|SaveData")
         FString Username;
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "GameFuse|SaveData")
         int32 Score = 0;
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "GameFuse|SaveData")
         int32 Credits = 0;
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "GameFuse|SaveData")
         int32 Id = 0;
 
 };

@@ -107,7 +107,7 @@ public:
         void AddLeaderboardEntry(const FString& LeaderboardName,const int OurScore, FUserCallback CompletionCallback);
 
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
-        void AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, TMap<FString, FString>& ExtraAttributes, FUserCallback
+        void AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, TMap<FString, FString> ExtraAttributes, FUserCallback
                                  CompletionCallback);
 
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")

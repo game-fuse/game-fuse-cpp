@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS(Blueprintable)
+UCLASS(Blueprintable, Category = "GameFuse")
 class GAMEFUSE_API UGameFuseLeaderboardEntry : public UObject
 {
 	GENERATED_BODY()
@@ -30,19 +30,19 @@ public:
 	
 	UGameFuseLeaderboardEntry();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse|StoreItem")
+	UFUNCTION(BlueprintPure, Category = "GameFuse|LeaderboardItem")
 	FString GetUsername();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse|StoreItem")
+	UFUNCTION(BlueprintPure, Category = "GameFuse|LeaderboardItem")
 	int32 GetScore();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse|StoreItem")
+	UFUNCTION(BlueprintPure, Category = "GameFuse|LeaderboardItem")
 	FString GetLeaderboardName();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse|StoreItem")
+	UFUNCTION(BlueprintPure, Category = "GameFuse|LeaderboardItem")
 	FString GetExtraAttributes();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse|StoreItem")
+	UFUNCTION(BlueprintPure, Category = "GameFuse|LeaderboardItem")
 	FString GetTimestamp();
 
 };
