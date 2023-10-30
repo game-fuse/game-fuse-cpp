@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 #include "GameFuseLeaderboardEntry.h"
 #include "GameFuseStoreItem.h"
 #include "UObject/NoExportTypes.h"
@@ -10,11 +11,14 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Containers/UnrealString.h"
-#include "Dom/JsonObject.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/WeakObjectPtr.h"
-
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
+#include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
 #include "GameFuseUser.generated.h"
 
 

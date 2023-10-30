@@ -8,12 +8,14 @@
 #include "GameFuseUser.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Containers/UnrealString.h"
-#include "Dom/JsonObject.h"
-
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Kismet/KismetStringLibrary.h"
-
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
+#include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
 #include "GameFuseManager.generated.h"
 
 /**

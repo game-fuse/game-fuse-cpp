@@ -3,6 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
+#include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
 
 /**
  * 
