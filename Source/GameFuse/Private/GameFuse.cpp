@@ -1,5 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+/**
+ *  Copyright (c) 2023-11-06 GameFuse
+ *  All rights reserved.
+ *
+ *  https://GameFuse.co/
+ *  https://github.com/game-fuse/game-fuse-cpp
+ */
+
 #include "GameFuse.h"
 
 #define LOCTEXT_NAMESPACE "FGameFuseModule"

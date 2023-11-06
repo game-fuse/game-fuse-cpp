@@ -7,8 +7,13 @@
 #include "GameFuseStoreItem.generated.h"
 
 /**
- * 
+ *  Copyright (c) 2023-11-06 GameFuse
+ *  All rights reserved.
+ *
+ *  https://GameFuse.co/
+ *  https://github.com/game-fuse/game-fuse-cpp
  */
+
 UCLASS(Blueprintable)
 class GAMEFUSE_API UGameFuseStoreItem : public UObject
 {

@@ -2,6 +2,14 @@
 
 using UnrealBuildTool;
 
+/**
+ *  Copyright (c) 2023-11-06 GameFuse
+ *  All rights reserved.
+ *
+ *  https://GameFuse.co/
+ *  https://github.com/game-fuse/game-fuse-cpp
+ */
+
 public class GameFuse : ModuleRules
 {
 	public GameFuse(ReadOnlyTargetRules Target) : base(Target)
