@@ -8,7 +8,6 @@
 
 #include "GameFuseManager.h"
 
-
 inline static TSharedRef<IHttpRequest> RequestManager = FHttpModule::Get().CreateRequest();;
 const FString BaseURL = "https://gamefuse.co/api/v1";
 

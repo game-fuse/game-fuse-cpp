@@ -8,7 +8,6 @@
 
 #include "GameFuseStoreItem.h"
 
-
 FString UGameFuseStoreItem::GetName()
 {
 	return Name;

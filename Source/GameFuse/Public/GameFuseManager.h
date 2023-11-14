@@ -5,6 +5,7 @@
  *  https://GameFuse.co/
  *  https://github.com/game-fuse/game-fuse-cpp
  */
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -23,10 +24,7 @@
 #include "Dom/JsonValue.h"
 #include "GameFuseManager.generated.h"
 
-
-
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FManagerCallback, bool, bSuccess, const FString&, Response);
-
 
 UCLASS()
 class GAMEFUSE_API UGameFuseManager : public UObject

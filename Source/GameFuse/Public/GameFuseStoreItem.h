@@ -5,6 +5,7 @@
  *  https://GameFuse.co/
  *  https://github.com/game-fuse/game-fuse-cpp
  */
+
 #pragma once
 
 #include "CoreMinimal.h"
