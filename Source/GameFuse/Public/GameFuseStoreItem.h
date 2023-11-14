@@ -1,11 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
-
-#include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
-#include "GameFuseStoreItem.generated.h"
-
 /**
  *  Copyright (c) 2023-11-06 GameFuse
  *  All rights reserved.
@@ -13,6 +5,11 @@
  *  https://GameFuse.co/
  *  https://github.com/game-fuse/game-fuse-cpp
  */
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
+#include "GameFuseStoreItem.generated.h"
 
 UCLASS(Blueprintable)
 class GAMEFUSE_API UGameFuseStoreItem : public UObject

@@ -1,7 +1,4 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
-
-using UnrealBuildTool;
-
 /**
  *  Copyright (c) 2023-11-06 GameFuse
  *  All rights reserved.
@@ -9,6 +6,8 @@ using UnrealBuildTool;
  *  https://GameFuse.co/
  *  https://github.com/game-fuse/game-fuse-cpp
  */
+ 
+using UnrealBuildTool;
 
 public class GameFuse : ModuleRules
 {

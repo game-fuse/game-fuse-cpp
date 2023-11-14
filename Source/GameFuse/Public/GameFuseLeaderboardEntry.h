@@ -1,9 +1,3 @@
-#pragma once
-
-#include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
-#include "GameFuseLeaderboardEntry.generated.h"
-
 /**
  *  Copyright (c) 2023-11-06 GameFuse
  *  All rights reserved.
@@ -11,6 +5,12 @@
  *  https://GameFuse.co/
  *  https://github.com/game-fuse/game-fuse-cpp
  */
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
+#include "GameFuseLeaderboardEntry.generated.h"
 
 UCLASS(Blueprintable, Category = "GameFuse")
 class GAMEFUSE_API UGameFuseLeaderboardEntry : public UObject

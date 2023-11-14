@@ -1,5 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+/**
+ *  Copyright (c) 2023-11-06 GameFuse
+ *  All rights reserved.
+ *
+ *  https://GameFuse.co/
+ *  https://github.com/game-fuse/game-fuse-cpp
+ */
 #pragma once
 
 #include "CoreMinimal.h"
@@ -18,13 +23,7 @@
 #include "Dom/JsonValue.h"
 #include "GameFuseManager.generated.h"
 
-/**
- *  Copyright (c) 2023-11-06 GameFuse
- *  All rights reserved.
- *
- *  https://GameFuse.co/
- *  https://github.com/game-fuse/game-fuse-cpp
- */
+
 
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FManagerCallback, bool, bSuccess, const FString&, Response);
 
