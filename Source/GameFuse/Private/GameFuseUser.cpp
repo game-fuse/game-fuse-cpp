@@ -11,6 +11,7 @@
 #include "GameFuseManager.h"
 #include "GameFuseSaveData.h"
 #include "GameFuseUtilities.h"
+#include "Unix/UnixPlatformHttp.h"
 
 
 // > Region Game Fuse User Initialization and Deinitialization
@@ -288,12 +289,14 @@ void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FUserCallback C
 void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore,
                                         TMap<FString, FString> ExtraAttributes, FUserCallback CompletionCallback)
 {
+    const FString ExtraAttributes_Encoded = FPlatformHttp::UrlEncode(GameFuseUtilities::ConvertMapToJsonStr(ExtraAttributes));
+    
     const FString ApiEndpoint = FString::Printf(
         TEXT("%s/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s&extra_attributes=%s")
-    , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, OurScore, *LeaderboardName, *GameFuseUtilities::ConvertMapToJsonStr(ExtraAttributes));
+    , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, OurScore, *LeaderboardName, *ExtraAttributes_Encoded);
 
     UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Adding Leaderboard : %s : %d"), *LeaderboardName, OurScore);
-    
+
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
 
