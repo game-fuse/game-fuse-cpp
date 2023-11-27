@@ -161,16 +161,17 @@ void UGameFuseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request, co
         return;
     }
 
+    const FString ResponseStr = Response->GetContentAsString();
+
     if (const int32 ResponseCode = Response->GetResponseCode(); ResponseCode == 200)
     {
-        const FString ResponseStr = Response->GetContentAsString();
         const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseStr);
         TSharedPtr<FJsonObject> JsonObject;
         
         if (!FJsonSerializer::Deserialize(Reader, JsonObject))
         {
             UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Failed To Parse JSON Response From API"));
-            if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, "Game Fuse Failed To Parse JSON Response From API");
+            if (CompletionCallback.IsBound()) CompletionCallback.Execute(bWasSuccessful, "Game Fuse Failed To Parse JSON Response From API");
             return;
         }
 
@@ -197,9 +198,9 @@ void UGameFuseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request, co
     }
     else
     {
-        const FString Message = FString::Printf(TEXT("HTTP Request Returned Status Code %d"), ResponseCode);
-        if (CompletionCallback.IsBound()) CompletionCallback.Execute(bWasSuccessful, Message);
+        if (CompletionCallback.IsBound()) CompletionCallback.Execute(bWasSuccessful, ResponseStr);
         UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Request Returned Status Code %d"), ResponseCode);
+        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Response : %s"), *ResponseStr);
     }
 }
 
