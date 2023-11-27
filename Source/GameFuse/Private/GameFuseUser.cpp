@@ -34,7 +34,7 @@ void UGameFuseUser::Initialize(FSubsystemCollectionBase& Collection)
         this->Credits = (LoadedSaveGame->Credits);
         this->Id = (LoadedSaveGame->Id);
         
-        UE_LOG(LogTemp, Error, TEXT("GameFuse ====> Game Loaded"));
+        UE_LOG(LogTemp, Display, TEXT("LogGameFuse : Game Fuse Subsystem Loaded"));
     }
     
 }
@@ -119,7 +119,7 @@ void UGameFuseUser::SignUp(const FString& Email, const FString& Password, const 
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users?email=%s&password=%s&password_confirmation=%s&username=%s&game_id=%d&game_token=%s")
     , *UGameFuseManager::GetBaseURL(), *Email, *Password, *PasswordConfirmation, *OurUsername, UGameFuseManager::GetGameId(), *UGameFuseManager::GetGameToken());
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Sign In: %s : %s"), *Email, *OurUsername);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Signing In: %s : %s"), *Email, *OurUsername);
 
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -133,7 +133,7 @@ void UGameFuseUser::SignIn(const FString& Email, const FString& Password, FUserC
     const FString ApiEndpoint = FString::Printf(TEXT("%s/sessions?email=%s&password=%s&game_id=%d&game_token=%s")
     , *UGameFuseManager::GetBaseURL(), *Email, *Password, UGameFuseManager::GetGameId(), *UGameFuseManager::GetGameToken());
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Sign In: %s"), *Email);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Signing In: %s"), *Email);
 
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -150,7 +150,7 @@ void UGameFuseUser::AddCredits(const int AddCredits, FUserCallback CompletionCal
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_credits?authentication_token=%s&credits=%d")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, AddCredits);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Add Credits: %d"), AddCredits);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Adding Credits: %d"), AddCredits);
 
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -164,7 +164,7 @@ void UGameFuseUser::SetCredits(const int SetCredits, FUserCallback CompletionCal
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/set_credits?authentication_token=%s&credits=%d")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, SetCredits);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Set Credits: %d"), SetCredits);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Setting Credits: %d"), SetCredits);
 
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -178,7 +178,7 @@ void UGameFuseUser::AddScore(const int AddScore, FUserCallback CompletionCallbac
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_score?authentication_token=%s&score=%d")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, AddScore);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Add Score: %d"), AddScore);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Adding Scores: %d"), AddScore);
 
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -192,7 +192,7 @@ void UGameFuseUser::SetScore(const int SetScore, FUserCallback CompletionCallbac
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/set_score?authentication_token=%s&score=%d")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, SetScore);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Set Score: %d"), SetScore);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Setting Scores: %d"), SetScore);
 
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -206,7 +206,7 @@ void UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue,
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_game_user_attribute?authentication_token=%s&key=%s&value=%s")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, *SetKey, *SetValue);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Set Attribute: %s : %s"), *SetKey, *SetValue);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Setting Attribute: %s : %s"), *SetKey, *SetValue);
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -220,7 +220,7 @@ void UGameFuseUser::RemoveAttribute(const FString& SetKey, FUserCallback Complet
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/remove_game_user_attributes?authentication_token=%s&key=%s")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, *SetKey);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Remove Attribute: %s"), *SetKey);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Removing Attribute: %s"), *SetKey);
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("GET");
@@ -234,7 +234,7 @@ void UGameFuseUser::PurchaseStoreItem(const UGameFuseStoreItem* StoreItem, FUser
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, StoreItem->Id);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Purchase Store Item : %s"), *StoreItem->Name);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Purchasing Store Item : %s"), *StoreItem->Name);
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -248,7 +248,7 @@ void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FUserCallback
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, StoreItemId);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Purchase Store Item: %d"), StoreItemId);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Purchasing Store Item: %d"), StoreItemId);
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -262,7 +262,7 @@ void UGameFuseUser::RemoveStoreItem(const UGameFuseStoreItem* StoreItem, FUserCa
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, StoreItem->Id);
  
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Remove Store Item: %d"), *StoreItem->Name);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Removing Store Item: %d"), *StoreItem->Name);
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("GET");
@@ -276,7 +276,7 @@ void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FUserCallback C
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, StoreItemId);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Remove Store Item: %d"), StoreItemId);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Removing Store Item: %d"), StoreItemId);
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("GET");
@@ -292,7 +292,7 @@ void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& Leaderboard
         TEXT("%s/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s&extra_attributes=%s")
     , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, OurScore, *LeaderboardName, *GameFuseUtilities::ConvertMapToJsonStr(ExtraAttributes));
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse User Adding Leaderboard Entry: %s : %d"), *LeaderboardName, OurScore);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Adding Leaderboard : %s : %d"), *LeaderboardName, OurScore);
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -307,7 +307,7 @@ void UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const in
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s")
     , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, OurScore, *LeaderboardName);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse User Adding Leaderboard Entry: %s : %d"), *LeaderboardName, OurScore);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Adding Leaderboard : %s : %d"), *LeaderboardName, OurScore);
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -323,7 +323,7 @@ void UGameFuseUser::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser,
         TEXT("%s/users/%d/leaderboard_entries?authentication_token=%s&limit=%d&one_per_user=%s")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, Limit, *OnePerUserStr);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Fetch My Leaderboard Entries: %d : %s"), Limit, *OnePerUserStr);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Fetching My Leaderboard : %d : %s"), Limit, *OnePerUserStr);
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("GET");
@@ -337,7 +337,7 @@ void UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FUserC
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/clear_my_leaderboard_entries?authentication_token=%s&leaderboard_name=%s")
     , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, *LeaderboardName);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse User Clearing Leaderboard Entry: %s"), *LeaderboardName);
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Clearing Leaderboard : %s"), *LeaderboardName);
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
@@ -352,7 +352,7 @@ void UGameFuseUser::FetchAttributes(bool bChainedFromLogin, FUserCallback Comple
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/game_user_attributes?authentication_token=%s")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse User Downloading Attributes"));
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Fetching Attributes"));
 
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("GET");
@@ -366,7 +366,7 @@ void UGameFuseUser::FetchPurchaseStoreItems(bool bChainedFromLogin, FUserCallbac
     const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/game_user_store_items?authentication_token=%s")
         , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse User Downloading Purchase Store Items"));
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Fetching Purchased Store Items"));
 
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("GET");
@@ -384,8 +384,8 @@ void UGameFuseUser::OnHttpResponseReceivedManager(FHttpRequestPtr Request, const
 {
     if (!bWasSuccessful || !Response.IsValid())
     {
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse HTTP Request failed."));
-        if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, "Game Fuse HTTP Request failed.");
+        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Request Failed"));
+        if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, "Game Fuse HTTP Request Failed");
         return;
     }
 
@@ -397,8 +397,8 @@ void UGameFuseUser::OnHttpResponseReceivedManager(FHttpRequestPtr Request, const
         
         if (!FJsonSerializer::Deserialize(Reader, JsonObject))
         {
-            UE_LOG(LogTemp, Error, TEXT("Game Fuse Failed to parse JSON response from API."));
-            if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, "Game Fuse Failed to parse JSON response from API.");
+            UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Failed To Parse JSON Response From API"));
+            if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, "Game Fuse Failed To Parse JSON Response From API");
             return;
         }
         
@@ -424,16 +424,16 @@ void UGameFuseUser::OnHttpResponseReceivedManager(FHttpRequestPtr Request, const
             SetScoresInternal(JsonObject);
         }else                                                              // the request is for : nothings !
         {
-            UE_LOG(LogTemp, Error, TEXT("Game Fuse Unknown Json"));
+            UE_LOG(LogTemp, Warning, TEXT("LogGameFuse :  Unknown Json"));
         }
         
         if (CompletionCallback.IsBound()) CompletionCallback.Execute(true, ResponseStr);
     }
     else
     {
-        const FString Message = FString::Printf(TEXT("Game Fuse HTTP Request returned status code %d"), ResponseCode);
+        const FString Message = FString::Printf(TEXT("HTTP Request Returned Status Code %d"), ResponseCode);
         if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, Message);
-        UE_LOG(LogTemp, Warning, TEXT("Game Fuse HTTP Request returned status code %d"), ResponseCode);
+        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Request Returned Status Code %d"), ResponseCode);
     }
 }
 
@@ -462,11 +462,11 @@ void UGameFuseUser::SetSignInInternal(const TSharedPtr<FJsonObject>& JsonObject)
         SaveGameInstance->Id = this->Id;
     
         UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
+        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse User Failed To Save SignIn Information !"));
+        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Save SignIn Information !"));
     }
 }
 
@@ -479,11 +479,11 @@ void UGameFuseUser::SetCreditsInternal(const TSharedPtr<FJsonObject>& JsonObject
         this->Credits = NewCredits;
         SaveGameInstance->Credits = NewCredits;
         UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse Updated The Credits Into SlotName:GameFuseSaveSlot UserIndex:0"));
+        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Updated The Credits Into SlotName:GameFuseSaveSlot UserIndex:0"));
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse User Failed To Update Credits !"));
+        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Update Credits !"));
     }
 }
 
@@ -496,11 +496,11 @@ void UGameFuseUser::SetScoresInternal(const TSharedPtr<FJsonObject>& JsonObject)
         this->Score = NewScores;
         SaveGameInstance->Score = NewScores;
         UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse Updated The Scores Into SlotName:GameFuseSaveSlot UserIndex:0"));
+        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Updated The Scores Into SlotName:GameFuseSaveSlot UserIndex:0"));
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse User Failed To Update Scores !"));
+        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Update Scores !"));
     }
 }
 
@@ -525,18 +525,18 @@ void UGameFuseUser::SetAttributesInternal(const TSharedPtr<FJsonObject>& JsonObj
 
                 // Add to the attribute map
                 Attributes.Add(Key, Value);
-                UE_LOG(LogTemp, Error, TEXT("Game Fuse User SetAttributes : %s : %s"), *Key, *Value);
+                UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User SetAttributes : %s : %s"), *Key, *Value);
             }else
             {
-                UE_LOG(LogTemp, Error, TEXT("Game Fuse User Failed to parse JSON"));
+                UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed to parse JSON"));
                 return;
             }
         }
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse User Attributes Updated"), Attributes.Num());
+        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Attributes Updated"), Attributes.Num());
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse User Failed to parse JSON"));
+        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Parse JSON"));
     }
 }
 
@@ -568,18 +568,18 @@ void UGameFuseUser::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
                         
                 // Add to the attribute map
                 PurchasedStoreItems.Add(NewItem);
-                UE_LOG(LogTemp, Error, TEXT("Game Fuse User StoreItems %s, %s"), *NewItem->Name, *NewItem->Category);
+                UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Store Item : %s, %s"), *NewItem->Name, *NewItem->Category);
             }else
             {
-                UE_LOG(LogTemp, Error, TEXT("Game Fuse User Failed to parse JSON"));
+                UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Parse JSON"));
                 return;
             }
         }
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse User Store Items Updated"), Attributes.Num());
+        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Store Items Updated"), Attributes.Num());
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Game Fuse User Failed to parse JSON"));
+        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Parse JSON"));
     }
 }
 
@@ -612,14 +612,13 @@ void UGameFuseUser::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
                 LeaderboardEntries.Add(NewItem);
             }else
             {
-                UE_LOG(LogTemp, Error, TEXT("GameFuse has failed to parse JSON Store Items"));
+                UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Fetching My Leaderboard Failed to parse JSON Items"));
                 return;
             }
         }
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("GameFuse Downloading Store Items Failed"));
+        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Fetching My Leaderboard Failed to parse JSON"));
     }
 }
-
