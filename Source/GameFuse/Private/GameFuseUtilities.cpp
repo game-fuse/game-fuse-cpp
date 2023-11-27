@@ -45,8 +45,6 @@ FString GameFuseUtilities::ConvertMapToJsonStr(const TMap<FString, FString>& Our
     const TSharedRef<TJsonWriter<>> JsonWriter = TJsonWriterFactory<>::Create(&JsonString);
     FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
 
-    UE_LOG(LogTemp, Error, TEXT("GameFuse Utilities Converted Map To Json Str : %s"), *JsonString);
-    
     return JsonString;
 }
 
