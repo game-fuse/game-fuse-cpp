@@ -9,7 +9,7 @@
 #include "GameFuseManager.h"
 
 inline static TSharedRef<IHttpRequest> RequestManager = FHttpModule::Get().CreateRequest();;
-const FString BaseURL = "https://gamefuse.co/api/v1";
+const FString BaseURL = "https://gamefuse.co/api/v2";
 
 int32 UGameFuseManager::GameId        = 0;
 FString UGameFuseManager::Token       = "";
@@ -68,7 +68,7 @@ const TArray<UGameFuseLeaderboardEntry*>& UGameFuseManager::GetLeaderboard()
 
 void UGameFuseManager::SetUpGame(const FString& InGameId, const FString& InToken, const bool bSeedStore, FManagerCallback CompletionCallback)
 {
-    FString ApiEndpoint = FString::Printf(TEXT("%s/games/verify.json?game_id=%s&game_token=%s")
+    FString ApiEndpoint = FString::Printf(TEXT("%s/games/verify?client_from_library=cpp&game_id=%s&game_token=%s")
         , *BaseURL, *InGameId, *InToken);
     if (bSeedStore) ApiEndpoint.Append("&seed_store=true");
     
