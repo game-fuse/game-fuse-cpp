@@ -48,3 +48,33 @@ FString GameFuseUtilities::ConvertMapToJsonStr(const TMap<FString, FString>& Our
     return JsonString;
 }
 
+FString GameFuseUtilities::MakeStrRequestBody(const FString AuthenticationToken, const FString MapBody,
+    const TMap<FString, FString>& OurMap)
+{
+    TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+
+    // Add the authentication token
+    JsonObject->SetStringField(TEXT("authentication_token"), AuthenticationToken);
+
+    // Create an array for attributes
+    TArray<TSharedPtr<FJsonValue>> AttributesArray;
+
+    // Populate the array with attributes
+    for (const auto& Attribute : OurMap)
+    {
+        TSharedPtr<FJsonObject> AttrObject = MakeShareable(new FJsonObject());
+        AttrObject->SetStringField(TEXT("key"), Attribute.Key);
+        AttrObject->SetStringField(TEXT("value"), Attribute.Value);
+        AttributesArray.Add(MakeShareable(new FJsonValueObject(AttrObject)));
+    }
+
+    // Add the attributes array to the main JSON object
+    JsonObject->SetArrayField(MapBody, AttributesArray);
+
+    FString OutputString;
+    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+    FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+    
+    return OutputString;
+}
+

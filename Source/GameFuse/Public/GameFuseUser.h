@@ -62,7 +62,11 @@ public:
 
     UFUNCTION(BlueprintPure, Category = "GameFuse|User")
         TArray<FString> GetAttributesKeys() const;
-        
+
+    
+    UFUNCTION(BlueprintPure, Category = "GameFuse|User")
+        TMap<FString, FString>& GetDirtyAttributes();
+    
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         FString GetAttributeValue(const FString Key) const;
 
@@ -97,7 +101,10 @@ public:
     
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void SetAttribute(const FString& SetKey,const FString& SetValue, FUserCallback CompletionCallback);
-        
+     
+    UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
+        void SetAttributeLocal(const FString& SetKey,const FString& SetValue, FUserCallback CompletionCallback);
+               
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void RemoveAttribute(const FString& SetKey, FUserCallback CompletionCallback);
     
@@ -130,6 +137,9 @@ public:
         void FetchAttributes(bool bChainedFromLogin, FUserCallback CompletionCallback);
 
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
+        void SyncLocalAttributes(FUserCallback CompletionCallback);
+
+    UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void FetchPurchaseStoreItems(bool bChainedFromLogin, FUserCallback CompletionCallback);
 
     FString GetAuthenticationToken() const;
@@ -145,6 +155,7 @@ private:
     int32 Credits = 0;
     int32 Id = 0;
     TMap<FString, FString> Attributes;
+    TMap<FString, FString> DirtyAttributes;
     TArray<UGameFuseStoreItem*> PurchasedStoreItems;
     TArray<UGameFuseLeaderboardEntry*> LeaderboardEntries;
     TSharedRef<IHttpRequest> RequestManager = FHttpModule::Get().CreateRequest();

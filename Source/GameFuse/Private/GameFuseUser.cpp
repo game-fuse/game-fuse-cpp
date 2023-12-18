@@ -92,6 +92,11 @@ TArray<FString> UGameFuseUser::GetAttributesKeys() const
     return KeysArray;
 }
 
+TMap<FString, FString>& UGameFuseUser::GetDirtyAttributes()
+{
+    return DirtyAttributes;
+}
+
 FString UGameFuseUser::GetAttributeValue(const FString Key) const
 {
     return Attributes.FindRef(Key);
@@ -211,6 +216,35 @@ void UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue,
     
     RequestManager->SetURL(ApiEndpoint);
     RequestManager->SetVerb("POST");
+
+    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
+    RequestManager->ProcessRequest();
+}
+
+void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetValue, FUserCallback CompletionCallback)
+{
+    DirtyAttributes.Add(SetKey, SetValue);
+
+    const FString Set_Dirty_Attribute_Message = FString::Printf(TEXT("Setting Dirty Attribute (local-and-temporary) : %s : %s"), *SetKey, *SetValue);;
+
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  %s"), *Set_Dirty_Attribute_Message);
+    CompletionCallback.Execute(true, Set_Dirty_Attribute_Message);
+}
+
+void UGameFuseUser::SyncLocalAttributes(FUserCallback CompletionCallback)
+{
+    const FString Json_Dirty_Attributes = GameFuseUtilities::MakeStrRequestBody(AuthenticationToken, "attributes", DirtyAttributes);
+
+    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_game_user_attribute")
+    , *UGameFuseManager::GetBaseURL(), Id);
+
+    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Syncing All Local Dirty Attributes: %s, %s"), *Json_Dirty_Attributes, *AuthenticationToken);
+    
+    RequestManager->SetURL(ApiEndpoint);
+    RequestManager->SetVerb("POST");
+    RequestManager->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+    RequestManager->SetContentAsString(Json_Dirty_Attributes);
+    RequestManager->SetHeader(TEXT("authentication_token"), *AuthenticationToken);
 
     RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
     RequestManager->ProcessRequest();
