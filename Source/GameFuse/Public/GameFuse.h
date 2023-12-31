@@ -9,7 +9,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameFuseUser.h"
 #include "Modules/ModuleManager.h"
+#include "Objects/GameFuseLeaderboardItem.h"
+#include "Objects/GameFuseStoreItem.h"
 
 class FGameFuseModule : public IModuleInterface
 {

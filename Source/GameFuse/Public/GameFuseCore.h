@@ -9,33 +9,30 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFuseLeaderboardEntry.h"
-#include "GameFuseStoreItem.h"
 #include "GameFuseUser.h"
-#include "Interfaces/IHttpRequest.h"
-#include "Containers/UnrealString.h"
-#include "HttpModule.h"
-#include "Interfaces/IHttpResponse.h"
+
+#include "Objects/GameFuseLeaderboardItem.h"
+#include "Objects/GameFuseStoreItem.h"
+
+#include "Models/HTTPResponseManager.h"
+#include "Models/StaticAPIManager.h"
+
 #include "Kismet/KismetStringLibrary.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
-#include "GameFuseManager.generated.h"
 
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FManagerCallback, bool, bSuccess, const FString&, Response);
+#include "GameFuseCore.generated.h"
+
 
 UCLASS()
-class GAMEFUSE_API UGameFuseManager : public UObject
+class GAMEFUSE_API UGameFuseCore : public UStaticAPIManager
 {
 	GENERATED_BODY()
 	
 public:
-	
-	//> GameSetup
-    UFUNCTION(BlueprintCallable, Category = "GameFuse")
-    	static void SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore, FManagerCallback CompletionCallback);
 
 	//> Getters
     UFUNCTION(BlueprintPure, Category = "GameFuse")
@@ -60,21 +57,27 @@ public:
 		static const TArray<UGameFuseStoreItem*>& GetGameStoreItems();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-		static const TArray<UGameFuseLeaderboardEntry*>& GetLeaderboard();
-
+		static const TArray<UGameFuseLeaderboardItem*>& GetLeaderboard();
+		
+	//> GameSetup
+	UFUNCTION(BlueprintCallable, Category = "GameFuse")
+		static void SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore, FGameFuseAPIResponseCallback CompletionCallback);
+	
 	//> Action Requests
 	UFUNCTION(BlueprintCallable, Category = "GameFuse")
-		static void SendPasswordResetEmail(const FString& Email, FManagerCallback CompletionCallback);
+		static void SendPasswordResetEmail(const FString& Email, FGameFuseAPIResponseCallback CompletionCallback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse")
-		static void FetchGameVariables(FManagerCallback CompletionCallback);
+		static void FetchGameVariables(FGameFuseAPIResponseCallback CompletionCallback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse")
-		static void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FManagerCallback CompletionCallback);
+		static void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGameFuseAPIResponseCallback CompletionCallback);
 	
     UFUNCTION(BlueprintCallable, Category = "GameFuse")
-    	static void FetchStoreItems(FManagerCallback CompletionCallback);
+    	static void FetchStoreItems(FGameFuseAPIResponseCallback CompletionCallback);
 
+	UFUNCTION(BlueprintCallable, Category = "GameFuse")
+		static void InternalResponseManager(bool bWasSuccessful, const FString& ResponseStr);
 
 private:
 	
@@ -82,14 +85,14 @@ private:
     static FString Token;
     static FString Name;
     static FString Description;
+
 	static TArray<UGameFuseStoreItem*> StoreItems;
-	static TArray<UGameFuseLeaderboardEntry*> LeaderboardEntries;
+	static TArray<UGameFuseLeaderboardItem*> LeaderboardEntries;
 	static TMap<FString, FString> GameVariables;
 	
 	static void SetSetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	static void SetVariablesInternal(const FString& JsonStr);
 	static void SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	static void SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObject);
-
-	static void OnHttpResponseReceivedManager(FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful, FManagerCallback CompletionCallback);
+	
 };

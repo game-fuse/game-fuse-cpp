@@ -31,7 +31,7 @@ public class GameFuse : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
+				"Core", "HTTP",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

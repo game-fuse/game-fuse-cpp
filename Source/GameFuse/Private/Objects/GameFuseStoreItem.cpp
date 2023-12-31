@@ -6,7 +6,7 @@
  *  https://github.com/game-fuse/game-fuse-cpp
  */
 
-#include "GameFuseStoreItem.h"
+#include "Objects/GameFuseStoreItem.h"
 
 FString UGameFuseStoreItem::GetName()
 {

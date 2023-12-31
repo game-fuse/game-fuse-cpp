@@ -6,7 +6,7 @@
  *  https://github.com/game-fuse/game-fuse-cpp
  */
 
-#include "GameFuseUtilities.h"
+#include "Models/Utilities.h"
 
 TMap<FString, FString> GameFuseUtilities::ConvertJsonToMap(const FString &JsonString)
 {

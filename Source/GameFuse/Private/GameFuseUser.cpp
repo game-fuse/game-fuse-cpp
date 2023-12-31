@@ -8,9 +8,9 @@
 
 #include "GameFuseUser.h"
 
-#include "GameFuseManager.h"
-#include "GameFuseSaveData.h"
-#include "GameFuseUtilities.h"
+#include "GameFuseCore.h"
+#include "Objects/GameFuseSignData.h"
+#include "Models/Utilities.h"
 #include "Unix/UnixPlatformHttp.h"
 
 
@@ -107,7 +107,7 @@ TArray<UGameFuseStoreItem*>& UGameFuseUser::GetPurchasedStoreItems()
     return PurchasedStoreItems;
 }
 
-TArray<UGameFuseLeaderboardEntry*>& UGameFuseUser::GetLeaderboards()
+TArray<UGameFuseLeaderboardItem*>& UGameFuseUser::GetLeaderboards()
 {
     return LeaderboardEntries;
 }
@@ -120,363 +120,194 @@ FString UGameFuseUser::GetAuthenticationToken() const
 // < End Region
 // > Region Game Fuse User SignUp and SignIn
 
-void UGameFuseUser::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& OurUsername, FUserCallback CompletionCallback)
+void UGameFuseUser::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& OurUsername, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users?email=%s&password=%s&password_confirmation=%s&username=%s&game_id=%d&game_token=%s")
-    , *UGameFuseManager::GetBaseURL(), *Email, *Password, *PasswordConfirmation, *OurUsername, UGameFuseManager::GetGameId(), *UGameFuseManager::GetGameToken());
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Signing In: %s : %s"), *Email, *OurUsername);
-
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::SignUp(Email, Password, PasswordConfirmation, OurUsername, UGameFuseCore::GetGameId(), UGameFuseCore::GetGameToken(), &CompletionCallback);
 }
 
-void UGameFuseUser::SignIn(const FString& Email, const FString& Password, FUserCallback CompletionCallback)
+void UGameFuseUser::SignIn(const FString& Email, const FString& Password, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/sessions?email=%s&password=%s&game_id=%d&game_token=%s")
-    , *UGameFuseManager::GetBaseURL(), *Email, *Password, UGameFuseManager::GetGameId(), *UGameFuseManager::GetGameToken());
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Signing In: %s"), *Email);
-
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::SignIn(Email, Password, UGameFuseCore::GetGameId(), UGameFuseCore::GetGameToken(), &CompletionCallback);
 }
 
 // < End Region
 // > Region Game Fuse User Sending Requests
 
-void UGameFuseUser::AddCredits(const int AddCredits, FUserCallback CompletionCallback)
+void UGameFuseUser::AddCredits(const int AddCredits, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_credits?authentication_token=%s&credits=%d")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, AddCredits);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Adding Credits: %d"), AddCredits);
-
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
-}
-
-void UGameFuseUser::SetCredits(const int SetCredits, FUserCallback CompletionCallback) 
-{
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/set_credits?authentication_token=%s&credits=%d")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, SetCredits);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Setting Credits: %d"), SetCredits);
-
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
-}
-
-void UGameFuseUser::AddScore(const int AddScore, FUserCallback CompletionCallback)
-{
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_score?authentication_token=%s&score=%d")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, AddScore);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Adding Scores: %d"), AddScore);
-
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
-}
-
-void UGameFuseUser::SetScore(const int SetScore, FUserCallback CompletionCallback)
-{
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/set_score?authentication_token=%s&score=%d")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, SetScore);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Setting Scores: %d"), SetScore);
-
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
-}
-
-void UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue, FUserCallback CompletionCallback)
-{
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_game_user_attribute?authentication_token=%s&key=%s&value=%s")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, *SetKey, *SetValue);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Setting Attribute: %s : %s"), *SetKey, *SetValue);
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::AddCredits(AddCredits, Id, AuthenticationToken, &CompletionCallback);
 }
 
-void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetValue, FUserCallback CompletionCallback)
+void UGameFuseUser::SetCredits(const int SetCredits, FGameFuseAPIResponseCallback CompletionCallback) 
+{
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    
+    UUserAPIManager::SetCredits(SetCredits, Id, AuthenticationToken, &CompletionCallback);
+}
+
+void UGameFuseUser::AddScore(const int AddScore, FGameFuseAPIResponseCallback CompletionCallback)
+{
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    
+    UUserAPIManager::AddScore(AddScore, Id, AuthenticationToken, &CompletionCallback);
+}
+
+void UGameFuseUser::SetScore(const int SetScore, FGameFuseAPIResponseCallback CompletionCallback)
+{
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    
+    UUserAPIManager::SetScore(SetScore, Id, AuthenticationToken, &CompletionCallback);
+}
+
+void UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue, FGameFuseAPIResponseCallback CompletionCallback)
+{
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    
+    UUserAPIManager::SetAttribute(SetKey, SetValue, Id, AuthenticationToken, &CompletionCallback);
+}
+
+void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetValue, FGameFuseAPIResponseCallback CompletionCallback)
 {
     DirtyAttributes.Add(SetKey, SetValue);
 
-    const FString Set_Dirty_Attribute_Message = FString::Printf(TEXT("Setting Dirty Attribute (local-and-temporary) : %s : %s"), *SetKey, *SetValue);;
+    FString Set_Dirty_Attribute_Message = FString::Printf(TEXT("Setting Dirty Attribute (local-and-temporary) : %s : %s"), *SetKey, *SetValue);;
 
     UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  %s"), *Set_Dirty_Attribute_Message);
     CompletionCallback.Execute(true, Set_Dirty_Attribute_Message);
 }
 
-void UGameFuseUser::SyncLocalAttributes(FUserCallback CompletionCallback)
+void UGameFuseUser::SyncLocalAttributes(FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString Json_Dirty_Attributes = GameFuseUtilities::MakeStrRequestBody(AuthenticationToken, "attributes", DirtyAttributes);
-
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_game_user_attribute")
-    , *UGameFuseManager::GetBaseURL(), Id);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Syncing All Local Dirty Attributes: %s, %s"), *Json_Dirty_Attributes, *AuthenticationToken);
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-    RequestManager->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-    RequestManager->SetContentAsString(Json_Dirty_Attributes);
-    RequestManager->SetHeader(TEXT("authentication_token"), *AuthenticationToken);
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::SyncLocalAttributes(DirtyAttributes, Id, AuthenticationToken, &CompletionCallback);
 }
 
-void UGameFuseUser::RemoveAttribute(const FString& SetKey, FUserCallback CompletionCallback)
+void UGameFuseUser::RemoveAttribute(const FString& SetKey, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/remove_game_user_attributes?authentication_token=%s&key=%s")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, *SetKey);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Removing Attribute: %s"), *SetKey);
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("GET");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::RemoveAttribute(SetKey, Id, AuthenticationToken, &CompletionCallback);
 }
 
-void UGameFuseUser::PurchaseStoreItem(const UGameFuseStoreItem* StoreItem, FUserCallback CompletionCallback)
+void UGameFuseUser::PurchaseStoreItem(const UGameFuseStoreItem* StoreItem, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, StoreItem->Id);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Purchasing Store Item : %s"), *StoreItem->Name);
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::PurchaseStoreItem(StoreItem->Id, Id, AuthenticationToken, &CompletionCallback);
 }
 
-void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FUserCallback CompletionCallback)
+void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, StoreItemId);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Purchasing Store Item: %d"), StoreItemId);
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::PurchaseStoreItem(StoreItemId, Id, AuthenticationToken, &CompletionCallback);
 }
 
-void UGameFuseUser::RemoveStoreItem(const UGameFuseStoreItem* StoreItem, FUserCallback CompletionCallback)
+void UGameFuseUser::RemoveStoreItem(const UGameFuseStoreItem* StoreItem, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, StoreItem->Id);
- 
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Removing Store Item: %d"), *StoreItem->Name);
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("GET");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::RemoveStoreItem(StoreItem->Id, Id, AuthenticationToken, &CompletionCallback);
 }
 
-void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FUserCallback CompletionCallback)
+void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, StoreItemId);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Removing Store Item: %d"), StoreItemId);
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("GET");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::RemoveStoreItem(StoreItemId, Id, AuthenticationToken, &CompletionCallback);
 }
 
-void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore,
-                                        TMap<FString, FString> ExtraAttributes, FUserCallback CompletionCallback)
+void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, TMap<FString, FString> ExtraAttributes, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ExtraAttributes_Encoded = FPlatformHttp::UrlEncode(GameFuseUtilities::ConvertMapToJsonStr(ExtraAttributes));
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    const FString ApiEndpoint = FString::Printf(
-        TEXT("%s/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s&extra_attributes=%s")
-    , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, OurScore, *LeaderboardName, *ExtraAttributes_Encoded);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Adding Leaderboard : %s : %d"), *LeaderboardName, OurScore);
-
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, Id, AuthenticationToken, &CompletionCallback);
 }
 
 void UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore,
-    FUserCallback CompletionCallback)
+    FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s")
-    , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, OurScore, *LeaderboardName);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Adding Leaderboard : %s : %d"), *LeaderboardName, OurScore);
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, Id, AuthenticationToken, &CompletionCallback);
 }
 
-void UGameFuseUser::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FUserCallback CompletionCallback)
+void UGameFuseUser::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString OnePerUserStr = (bOnePerUser) ? TEXT("true") : TEXT("false");
-    const FString ApiEndpoint = FString::Printf(
-        TEXT("%s/users/%d/leaderboard_entries?authentication_token=%s&limit=%d&one_per_user=%s")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, Limit, *OnePerUserStr);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Fetching My Leaderboard : %d : %s"), Limit, *OnePerUserStr);
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("GET");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::FetchMyLeaderboardEntries(Limit, bOnePerUser, Id, AuthenticationToken, &CompletionCallback);
 }
 
-void UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FUserCallback CompletionCallback)
+void UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/clear_my_leaderboard_entries?authentication_token=%s&leaderboard_name=%s")
-    , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken, *LeaderboardName);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Clearing Leaderboard : %s"), *LeaderboardName);
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("POST");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    UUserAPIManager::ClearLeaderboardEntry(LeaderboardName, Id, AuthenticationToken, &CompletionCallback);
 }
 
 
-void UGameFuseUser::FetchAttributes(bool bChainedFromLogin, FUserCallback CompletionCallback)
+void UGameFuseUser::FetchAttributes(bool bChainedFromLogin, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/game_user_attributes?authentication_token=%s")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Fetching Attributes"));
-
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("GET");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    
+    UUserAPIManager::FetchAttributes(bChainedFromLogin, Id, AuthenticationToken, &CompletionCallback);
 }
 
-void UGameFuseUser::FetchPurchaseStoreItems(bool bChainedFromLogin, FUserCallback CompletionCallback)
+void UGameFuseUser::FetchPurchaseStoreItems(const bool bChainedFromLogin, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/game_user_store_items?authentication_token=%s")
-        , *UGameFuseManager::GetBaseURL(), Id, *AuthenticationToken);
-
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Fetching Purchased Store Items"));
-
-    RequestManager->SetURL(ApiEndpoint);
-    RequestManager->SetVerb("GET");
-
-    RequestManager->OnProcessRequestComplete().BindUObject(this, &UGameFuseUser::OnHttpResponseReceivedManager, CompletionCallback);
-    RequestManager->ProcessRequest();
+    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    
+    UUserAPIManager::FetchPurchaseStoreItems(bChainedFromLogin, Id, AuthenticationToken, &CompletionCallback);
 }
 
-
-// < End Region
-// > Region Game Fuse User Request Manager
-
-void UGameFuseUser::OnHttpResponseReceivedManager(FHttpRequestPtr Request, const FHttpResponsePtr Response,
-                                                  bool bWasSuccessful, FUserCallback CompletionCallback)
-{
-    if (!bWasSuccessful || !Response.IsValid())
-    {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Request Failed"));
-        if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, "Game Fuse HTTP Request Failed");
-        return;
-    }
-
-    const FString ResponseStr = Response->GetContentAsString();
-
-    if (const int32 ResponseCode = Response->GetResponseCode(); ResponseCode == 200)
-    {
-        const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseStr);
-        TSharedPtr<FJsonObject> JsonObject;
-        
-        if (!FJsonSerializer::Deserialize(Reader, JsonObject))
-        {
-            UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Failed To Parse JSON Response From API"));
-            if (CompletionCallback.IsBound()) CompletionCallback.Execute(bWasSuccessful, "Game Fuse Failed To Parse JSON Response From API");
-            return;
-        }
-        
-        if(JsonObject->HasField("id") && JsonObject->HasField("username")) // the request is for : SignUp or SignIn
-        {
-            SetSignInInternal(JsonObject);
-        }
-        else if (JsonObject->HasField("game_user_attributes"))             // the request is for : Attributes
-        {
-            SetAttributesInternal(JsonObject);
-        }else if (JsonObject->HasField("game_user_store_items"))           // the request is for : User Store Items
-        {
-            SetCreditsInternal(JsonObject);
-            SetStoreItemsInternal(JsonObject);
-        }else if (JsonObject->HasField("leaderboard_entries"))                    // the request is for : Leaderboards
-        {
-            SetLeaderboardsInternal(JsonObject);
-        }else if (JsonObject->HasField("credits"))                         // the request is for : Update the Credits
-        {
-            SetCreditsInternal(JsonObject);
-        }else if (JsonObject->HasField("score"))                           // the request is for : Update the Scores
-        {
-            SetScoresInternal(JsonObject);
-        }else                                                              // the request is for : nothings !
-        {
-            UE_LOG(LogTemp, Warning, TEXT("LogGameFuse :  Unknown Json"));
-        }
-        
-        if (CompletionCallback.IsBound()) CompletionCallback.Execute(bWasSuccessful, ResponseStr);
-    }
-    else
-    {
-        if (CompletionCallback.IsBound()) CompletionCallback.Execute(bWasSuccessful, ResponseStr);
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Request Returned Status Code %d"), ResponseCode);
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Response : %s"), *ResponseStr);
-    }
-}
 
 // < End Region
 // > Region Game Fuse User Setters
+
+void UGameFuseUser::InternalResponseManager(bool bWasSuccessful, const FString& ResponseStr)
+{
+    const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseStr);
+    TSharedPtr<FJsonObject> JsonObject;
+        
+    if (!FJsonSerializer::Deserialize(Reader, JsonObject))
+    {
+        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Failed To Parse JSON Response From API"));
+        return;
+    }
+        
+    if(JsonObject->HasField("id") && JsonObject->HasField("username")) // the request is for : SignUp or SignIn
+    {
+        SetSignInInternal(JsonObject);
+    }
+    else if (JsonObject->HasField("game_user_attributes"))             // the request is for : Attributes
+    {
+        SetAttributesInternal(JsonObject);
+    }else if (JsonObject->HasField("game_user_store_items"))           // the request is for : User Store Items
+    {
+        SetCreditsInternal(JsonObject);
+        SetStoreItemsInternal(JsonObject);
+    }else if (JsonObject->HasField("leaderboard_entries"))                    // the request is for : Leaderboards
+    {
+        SetLeaderboardsInternal(JsonObject);
+    }else if (JsonObject->HasField("credits"))                         // the request is for : Update the Credits
+    {
+        SetCreditsInternal(JsonObject);
+    }else if (JsonObject->HasField("score"))                           // the request is for : Update the Scores
+    {
+        SetScoresInternal(JsonObject);
+    }else                                                              // the request is for : nothings !
+    {
+        UE_LOG(LogTemp, Warning, TEXT("LogGameFuse :  Unknown Json"));
+    }
+}
 
 void UGameFuseUser::SetSignInInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
@@ -635,7 +466,7 @@ void UGameFuseUser::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
             if (AttributeValue->Type == EJson::Object)
             {
                 const TSharedPtr<FJsonObject> AttributeObject = AttributeValue->AsObject();
-                UGameFuseLeaderboardEntry* NewItem = NewObject<UGameFuseLeaderboardEntry>();
+                UGameFuseLeaderboardItem* NewItem = NewObject<UGameFuseLeaderboardItem>();
             
                 // Extract key and value from the JSON object
                 AttributeObject->TryGetStringField(TEXT("username"), NewItem->Username);

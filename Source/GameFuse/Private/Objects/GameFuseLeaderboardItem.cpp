@@ -6,9 +6,9 @@
  *  https://github.com/game-fuse/game-fuse-cpp
  */
 
-#include "GameFuseLeaderboardEntry.h"
+#include "Objects/GameFuseLeaderboardItem.h"
 
-UGameFuseLeaderboardEntry::UGameFuseLeaderboardEntry():
+UGameFuseLeaderboardItem::UGameFuseLeaderboardItem():
 	LeaderboardName(""),
 	Score(0),
 	Username(""),
@@ -18,27 +18,27 @@ UGameFuseLeaderboardEntry::UGameFuseLeaderboardEntry():
 {
 }
 
-FString UGameFuseLeaderboardEntry::GetUsername()
+FString UGameFuseLeaderboardItem::GetUsername()
 {
 	return Username;
 }
 
-int32 UGameFuseLeaderboardEntry::GetScore()
+int32 UGameFuseLeaderboardItem::GetScore()
 {
 	return Score;
 }
 
-FString UGameFuseLeaderboardEntry::GetLeaderboardName()
+FString UGameFuseLeaderboardItem::GetLeaderboardName()
 {
 	return LeaderboardName;
 }
 
-FString UGameFuseLeaderboardEntry::GetExtraAttributes()
+FString UGameFuseLeaderboardItem::GetExtraAttributes()
 {
 	return ExtraAttributes;
 }
 
-FString UGameFuseLeaderboardEntry::GetTimestamp()
+FString UGameFuseLeaderboardItem::GetTimestamp()
 {
 	return DateTime;
 }

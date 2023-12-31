@@ -10,7 +10,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
-#include "GameFuseSaveData.generated.h"
+#include "GameFuseSignData.generated.h"
 
 UCLASS(Blueprintable, Category = "GameFuse")
 class GAMEFUSE_API UGameFuseSaveData : public USaveGame

@@ -10,10 +10,10 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-#include "GameFuseLeaderboardEntry.generated.h"
+#include "GameFuseLeaderboardItem.generated.h"
 
 UCLASS(Blueprintable, Category = "GameFuse")
-class GAMEFUSE_API UGameFuseLeaderboardEntry : public UObject
+class GAMEFUSE_API UGameFuseLeaderboardItem : public UObject
 {
 	GENERATED_BODY()
 
@@ -30,8 +30,9 @@ public:
 	FString ExtraAttributes;
 	
 	FString DateTime;
+
 	
-	UGameFuseLeaderboardEntry();
+	UGameFuseLeaderboardItem();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse|LeaderboardItem")
 	FString GetUsername();
