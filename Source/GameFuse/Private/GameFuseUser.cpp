@@ -122,16 +122,16 @@ FString UGameFuseUser::GetAuthenticationToken() const
 
 void UGameFuseUser::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& OurUsername, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
-    
-    UUserAPIManager::SignUp(Email, Password, PasswordConfirmation, OurUsername, UGameFuseCore::GetGameId(), UGameFuseCore::GetGameToken(), &CompletionCallback);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+
+    UUserAPIManager::SignUp(Email, Password, PasswordConfirmation, OurUsername, UGameFuseCore::GetGameId(), UGameFuseCore::GetGameToken(), CompletionCallback);
 }
 
 void UGameFuseUser::SignIn(const FString& Email, const FString& Password, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::SignIn(Email, Password, UGameFuseCore::GetGameId(), UGameFuseCore::GetGameToken(), &CompletionCallback);
+    UUserAPIManager::SignIn(Email, Password, UGameFuseCore::GetGameId(), UGameFuseCore::GetGameToken(), CompletionCallback);
 }
 
 // < End Region
@@ -139,37 +139,37 @@ void UGameFuseUser::SignIn(const FString& Email, const FString& Password, FGameF
 
 void UGameFuseUser::AddCredits(const int AddCredits, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::AddCredits(AddCredits, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::AddCredits(AddCredits, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::SetCredits(const int SetCredits, FGameFuseAPIResponseCallback CompletionCallback) 
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::SetCredits(SetCredits, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::SetCredits(SetCredits, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::AddScore(const int AddScore, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::AddScore(AddScore, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::AddScore(AddScore, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::SetScore(const int SetScore, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::SetScore(SetScore, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::SetScore(SetScore, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::SetAttribute(SetKey, SetValue, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::SetAttribute(SetKey, SetValue, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetValue, FGameFuseAPIResponseCallback CompletionCallback)
@@ -180,93 +180,92 @@ void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetV
 
     UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  %s"), *Set_Dirty_Attribute_Message);
     
-    CompletionCallback.Execute(true, Set_Dirty_Attribute_Message);
+    UHTTPResponseManager::CompletionCallback.Execute(true, Set_Dirty_Attribute_Message);
 }
 
 void UGameFuseUser::SyncLocalAttributes(FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::SyncLocalAttributes(DirtyAttributes, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::SyncLocalAttributes(DirtyAttributes, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::RemoveAttribute(const FString& SetKey, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::RemoveAttribute(SetKey, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::RemoveAttribute(SetKey, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::PurchaseStoreItem(const UGameFuseStoreItem* StoreItem, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::PurchaseStoreItem(StoreItem->Id, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::PurchaseStoreItem(StoreItem->Id, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::PurchaseStoreItem(StoreItemId, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::PurchaseStoreItem(StoreItemId, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::RemoveStoreItem(const UGameFuseStoreItem* StoreItem, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::RemoveStoreItem(StoreItem->Id, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::RemoveStoreItem(StoreItem->Id, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::RemoveStoreItem(StoreItemId, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::RemoveStoreItem(StoreItemId, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, TMap<FString, FString> ExtraAttributes, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, Id, AuthenticationToken, CompletionCallback);
 }
 
-void UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore,
-    FGameFuseAPIResponseCallback CompletionCallback)
+void UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::FetchMyLeaderboardEntries(Limit, bOnePerUser, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::FetchMyLeaderboardEntries(Limit, bOnePerUser, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::ClearLeaderboardEntry(LeaderboardName, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::ClearLeaderboardEntry(LeaderboardName, Id, AuthenticationToken, CompletionCallback);
 }
 
 
 void UGameFuseUser::FetchAttributes(bool bChainedFromLogin, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::FetchAttributes(bChainedFromLogin, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::FetchAttributes(bChainedFromLogin, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::FetchPurchaseStoreItems(const bool bChainedFromLogin, FGameFuseAPIResponseCallback CompletionCallback)
 {
-    CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
     
-    UUserAPIManager::FetchPurchaseStoreItems(bChainedFromLogin, Id, AuthenticationToken, &CompletionCallback);
+    UUserAPIManager::FetchPurchaseStoreItems(bChainedFromLogin, Id, AuthenticationToken, CompletionCallback);
 }
 
 
@@ -275,6 +274,11 @@ void UGameFuseUser::FetchPurchaseStoreItems(const bool bChainedFromLogin, FGameF
 
 void UGameFuseUser::InternalResponseManager(bool bWasSuccessful, const FString& ResponseStr)
 {
+    if(!bWasSuccessful)
+    {
+        return;
+    }
+    
     const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseStr);
     TSharedPtr<FJsonObject> JsonObject;
         

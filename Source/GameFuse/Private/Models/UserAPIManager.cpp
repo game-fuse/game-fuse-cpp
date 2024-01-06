@@ -6,7 +6,7 @@
 #include "Models/UserAPIManager.h"
 
 
-void UUserAPIManager::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, const int InGameId, const FString& InToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, const int InGameId, const FString& InToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users?email=%s&password=%s&password_confirmation=%s&username=%s&game_id=%d&game_token=%s")
 	, *BaseURL, *Email, *Password, *PasswordConfirmation, *Username, InGameId, *InToken);
@@ -16,25 +16,37 @@ void UUserAPIManager::SignUp(const FString& Email, const FString& Password, cons
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
     
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+	
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::SignIn(const FString& Email, const FString& Password, const int InGameId, const FString& InToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::SignIn(const FString& Email, const FString& Password, const int InGameId, const FString& InToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/sessions?email=%s&password=%s&game_id=%d&game_token=%s")
    , *BaseURL, *Email, *Password, InGameId, *InToken);
 
 	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Sending Static Request - Signing In"));
-
+	
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
     
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::AddCredits(const int AddCredits, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::AddCredits(const int AddCredits, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_credits?authentication_token=%s&credits=%d")
 		, *BaseURL, Id, *AuthenticationToken, AddCredits);
@@ -44,11 +56,17 @@ void UUserAPIManager::AddCredits(const int AddCredits, const int Id, const FStri
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::SetCredits(const int SetCredits, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::SetCredits(const int SetCredits, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/set_credits?authentication_token=%s&credits=%d")
 		, *BaseURL, Id, *AuthenticationToken, SetCredits);
@@ -58,11 +76,17 @@ void UUserAPIManager::SetCredits(const int SetCredits, const int Id, const FStri
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::AddScore(const int AddScore, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::AddScore(const int AddScore, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_score?authentication_token=%s&score=%d")
 		, *BaseURL, Id, *AuthenticationToken, AddScore);
@@ -72,11 +96,17 @@ void UUserAPIManager::AddScore(const int AddScore, const int Id, const FString& 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::SetScore(const int SetScore, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::SetScore(const int SetScore, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/set_score?authentication_token=%s&score=%d")
 		, *BaseURL, Id, *AuthenticationToken, SetScore);
@@ -86,11 +116,17 @@ void UUserAPIManager::SetScore(const int SetScore, const int Id, const FString& 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::SetAttribute(const FString& SetKey, const FString& SetValue, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::SetAttribute(const FString& SetKey, const FString& SetValue, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_game_user_attribute?authentication_token=%s&key=%s&value=%s")
 		, *BaseURL, Id, *AuthenticationToken, *SetKey, *SetValue);
@@ -100,11 +136,17 @@ void UUserAPIManager::SetAttribute(const FString& SetKey, const FString& SetValu
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::SyncLocalAttributes(const TMap<FString, FString>& DirtyAttributes, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::SyncLocalAttributes(const TMap<FString, FString>& DirtyAttributes, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString Json_Dirty_Attributes = GameFuseUtilities::MakeStrRequestBody(AuthenticationToken, "attributes", DirtyAttributes);
 
@@ -119,11 +161,17 @@ void UUserAPIManager::SyncLocalAttributes(const TMap<FString, FString>& DirtyAtt
 	RequestManager->SetContentAsString(Json_Dirty_Attributes);
 	RequestManager->SetHeader(TEXT("authentication_token"), *AuthenticationToken);
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::RemoveAttribute(const FString& SetKey, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::RemoveAttribute(const FString& SetKey, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/remove_game_user_attributes?authentication_token=%s&key=%s")
 		, *BaseURL, Id, *AuthenticationToken, *SetKey);
@@ -133,11 +181,17 @@ void UUserAPIManager::RemoveAttribute(const FString& SetKey, const int Id, const
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::PurchaseStoreItem(const int StoreItemId, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::PurchaseStoreItem(const int StoreItemId, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
 			, *BaseURL, Id, *AuthenticationToken, StoreItemId);
@@ -147,11 +201,17 @@ void UUserAPIManager::PurchaseStoreItem(const int StoreItemId, const int Id, con
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::RemoveStoreItem(const int StoreItemId, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::RemoveStoreItem(const int StoreItemId, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
 		, *BaseURL, Id, *AuthenticationToken, StoreItemId);
@@ -161,11 +221,17 @@ void UUserAPIManager::RemoveStoreItem(const int StoreItemId, const int Id, const
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, TMap<FString, FString>* ExtraAttributes, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, TMap<FString, FString>* ExtraAttributes, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ExtraAttributes_Encoded = FPlatformHttp::UrlEncode(GameFuseUtilities::ConvertMapToJsonStr(*ExtraAttributes));
     
@@ -178,11 +244,17 @@ void UUserAPIManager::AddLeaderboardEntry(const FString& LeaderboardName, const 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::ClearLeaderboardEntry(const FString& LeaderboardName, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::ClearLeaderboardEntry(const FString& LeaderboardName, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/clear_my_leaderboard_entries?authentication_token=%s&leaderboard_name=%s")
 	, *BaseURL, Id, *AuthenticationToken, *LeaderboardName);
@@ -192,11 +264,17 @@ void UUserAPIManager::ClearLeaderboardEntry(const FString& LeaderboardName, cons
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString OnePerUserStr = (bOnePerUser) ? TEXT("true") : TEXT("false");
 	const FString ApiEndpoint = FString::Printf(
@@ -208,11 +286,17 @@ void UUserAPIManager::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUse
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::FetchAttributes(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::FetchAttributes(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/game_user_attributes?authentication_token=%s")
 		, *BaseURL, Id, *AuthenticationToken);
@@ -222,11 +306,17 @@ void UUserAPIManager::FetchAttributes(bool bChainedFromLogin, const int Id, cons
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }
 
-void UUserAPIManager::FetchPurchaseStoreItems(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UUserAPIManager::FetchPurchaseStoreItems(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/game_user_store_items?authentication_token=%s")
 		, *BaseURL, Id, *AuthenticationToken);
@@ -236,6 +326,12 @@ void UUserAPIManager::FetchPurchaseStoreItems(bool bChainedFromLogin, const int 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
+	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+	{
+		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
+		const FString ResponseStr = Response->GetContentAsString();
+		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+	});
+
 	RequestManager->ProcessRequest();
 }

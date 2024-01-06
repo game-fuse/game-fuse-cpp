@@ -146,6 +146,9 @@ public:
     
     FString GetAuthenticationToken() const;
 
+    UFUNCTION()
+        void InternalResponseManager(bool bWasSuccessful, const FString& ResponseStr);
+
 private:
 
     int32 NumberOfLogins = 0;
@@ -167,8 +170,6 @@ private:
 
     //> Setters
     
-    void InternalResponseManager(bool bWasSuccessful, const FString& ResponseStr);
-
     void SetSignInInternal(const TSharedPtr<FJsonObject>& JsonObject);
     void SetCreditsInternal(const TSharedPtr<FJsonObject>& JsonObject);
     void SetScoresInternal(const TSharedPtr<FJsonObject>& JsonObject);
