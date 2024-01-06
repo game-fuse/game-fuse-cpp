@@ -64,7 +64,6 @@ public:
 
     UFUNCTION(BlueprintPure, Category = "GameFuse|User")
         TArray<FString> GetAttributesKeys() const;
-
     
     UFUNCTION(BlueprintPure, Category = "GameFuse|User")
         TMap<FString, FString>& GetDirtyAttributes();
@@ -77,26 +76,26 @@ public:
         
     UFUNCTION(BlueprintPure, Category = "GameFuse|User")
         TArray<UGameFuseLeaderboardItem*>& GetLeaderboards();
+
+    UFUNCTION(BlueprintPure, Category = "GameFuse|User")
+        bool IsSignedIn() const;
     
     //> Sign
     
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
-    void SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FGameFuseAPIResponseCallback CompletionCallback);
-		
+        void SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FGameFuseAPIResponseCallback CompletionCallback);
+    
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
-    void SignIn(const FString& Email, const FString& Password, FGameFuseAPIResponseCallback CompletionCallback);
-
-    UFUNCTION(BlueprintPure, Category = "GameFuse|User")
-    bool IsSignedIn() const;
-
+        void SignIn(const FString& Email, const FString& Password, FGameFuseAPIResponseCallback CompletionCallback);
+    
     //> Action Requests
     
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void AddCredits(const int AddCredits, FGameFuseAPIResponseCallback CompletionCallback);
-
+    
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void SetCredits(const int SetCredits, FGameFuseAPIResponseCallback CompletionCallback);
-
+    
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void AddScore(const int AddScore, FGameFuseAPIResponseCallback CompletionCallback);
         
@@ -114,22 +113,22 @@ public:
     
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void PurchaseStoreItemWithId(const int StoreItemId, FGameFuseAPIResponseCallback CompletionCallback);
-
+    
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void PurchaseStoreItem(const UGameFuseStoreItem* StoreItem, FGameFuseAPIResponseCallback CompletionCallback);
         
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void RemoveStoreItemWithId(const int StoreItemId, FGameFuseAPIResponseCallback CompletionCallback);
-
+    
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void RemoveStoreItem(const UGameFuseStoreItem* StoreItem, FGameFuseAPIResponseCallback CompletionCallback);
         
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void AddLeaderboardEntry(const FString& LeaderboardName,const int OurScore, FGameFuseAPIResponseCallback CompletionCallback);
-
+    
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, TMap<FString, FString> ExtraAttributes, FGameFuseAPIResponseCallback CompletionCallback);
-
+    
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void ClearLeaderboardEntry(const FString& LeaderboardName, FGameFuseAPIResponseCallback CompletionCallback);
     
@@ -138,13 +137,13 @@ public:
     
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void FetchAttributes(bool bChainedFromLogin, FGameFuseAPIResponseCallback CompletionCallback);
-
+    
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void SyncLocalAttributes(FGameFuseAPIResponseCallback CompletionCallback);
-
+    
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void FetchPurchaseStoreItems(bool bChainedFromLogin, FGameFuseAPIResponseCallback CompletionCallback);
-
+    
     FString GetAuthenticationToken() const;
 
 private:
@@ -157,11 +156,14 @@ private:
     bool SignedIn = false;
     int32 Score = 0;
     int32 Credits = 0;
+    
     TMap<FString, FString> Attributes;
     TMap<FString, FString> DirtyAttributes;
     TArray<UGameFuseStoreItem*> PurchasedStoreItems;
     TArray<UGameFuseLeaderboardItem*> LeaderboardEntries;
     TSharedRef<IHttpRequest> RequestManager = FHttpModule::Get().CreateRequest();
+    
+    FGameFuseAPIResponseCallback* CompletionCallbackInternal;
 
     //> Setters
     

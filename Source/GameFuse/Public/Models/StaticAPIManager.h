@@ -17,20 +17,20 @@ class GAMEFUSE_API UStaticAPIManager : public UHTTPResponseManager
 {
 	GENERATED_BODY()
 
-protected:
+public:
 	
 	//> Setup Game Request
 	
-	static void SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore, const FGameFuseAPIResponseCallback* APICompletionCallback);
+	static void SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore);
 	
 	//> Action Requests
 	
-	static void SendPasswordResetEmail(const FString& Email, const int GameID, const FString Token, const FGameFuseAPIResponseCallback* APICompletionCallback);
-
-	static void FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const int GameId, const FString& UserAuthenticationToken, const FGameFuseAPIResponseCallback*);
-
-	static void FetchGameVariables(const int GameID, const FString Token, const FGameFuseAPIResponseCallback*);
+	static void SendPasswordResetEmail(const FString& Email, const int GameID, const FString Token);
 	
-	static void FetchStoreItems(const int GameID, const FString Token, const FGameFuseAPIResponseCallback*);
+	static void FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const int GameId, const FString& UserAuthenticationToken);
+	
+	static void FetchGameVariables(const int GameID, const FString Token);
+	
+	static void FetchStoreItems(const int GameID, const FString Token);
 	
 };

@@ -19,12 +19,15 @@ class GAMEFUSE_API UHTTPResponseManager : public UObject
 {
 	GENERATED_BODY()
 
+public:
+	
+	inline static FGameFuseAPIResponseCallback CompletionCallback;
+
 protected:
 
-	static void OnHttpResponseReceivedManagerStatic(FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful, const FGameFuseAPIResponseCallback* CompletionCallback);
-	static void OnHttpResponseReceivedManagerUser(FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful, const FGameFuseAPIResponseCallback CompletionCallback);
+	static void OnHttpResponseReceivedManager(FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful);
 	
 	inline static const FString BaseURL = "https://gamefuse.co/api/v2";
 	inline static TSharedRef<IHttpRequest> RequestManager = FHttpModule::Get().CreateRequest();
-	
+
 };

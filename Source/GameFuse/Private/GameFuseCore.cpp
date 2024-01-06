@@ -5,13 +5,9 @@
  *  https://GameFuse.co/
  *  https://github.com/game-fuse/game-fuse-cpp
  */
-
-#include "GameFuseCore.h"
-
 #include "GameFuseUser.h"
 
-inline static TSharedRef<IHttpRequest> RequestManager = FHttpModule::Get().CreateRequest();
-const FString BaseURL = "https://gamefuse.co/api/v2";
+#include "GameFuseCore.h"
 
 int32 UGameFuseCore::GameId        = 0;
 FString UGameFuseCore::Token       = "";
@@ -45,11 +41,6 @@ FString UGameFuseCore::GetGameToken()
     return Token;
 }
 
-FString UGameFuseCore::GetBaseURL()
-{
-    return BaseURL;
-}
-
 const TMap<FString, FString>& UGameFuseCore::GetGameVariables()
 {
     return GameVariables;
@@ -68,43 +59,103 @@ const TArray<UGameFuseLeaderboardItem*>& UGameFuseCore::GetLeaderboard()
 // < End Region
 // > Region Game Fuse Asynchronous Functions
 
-
-void UGameFuseCore::SetUpGame(const FString& InGameId, const FString& InToken, const bool bSeedStore, FGameFuseAPIResponseCallback CompletionCallback)
+UGameFuseCore* UGameFuseCore::SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore)
 {
-    UStaticAPIManager::SetUpGame(InGameId, InToken, bSeedStore, &CompletionCallback);
+    UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
+    AsyncTask->AddToRoot();
+
+    UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
+
+    UStaticAPIManager::SetUpGame(InGameId, InToken, bSeedStore);
+
+    return AsyncTask;
 }
 
-void UGameFuseCore::SendPasswordResetEmail(const FString& Email, FGameFuseAPIResponseCallback CompletionCallback)
+
+UGameFuseCore* UGameFuseCore::SendPasswordResetEmail(const FString& Email)
 {
+    UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
+    AsyncTask->AddToRoot();
+    
     if(GameId == 0)
     {
         UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Please set up your game with SetUpGame() before sending password resets"));
-        return;
+        AsyncTask->CompleteTask(false, "Please set up your game with SetUpGame() before sending password resets");
+        return AsyncTask;
     }
     
-    UStaticAPIManager::SendPasswordResetEmail(Email, GameId, GetGameToken(), &CompletionCallback);
+    UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
+
+    UStaticAPIManager::SendPasswordResetEmail(Email, GameId, Token);
+
+    return AsyncTask;
+
 }
 
-void UGameFuseCore::FetchGameVariables(FGameFuseAPIResponseCallback CompletionCallback)
+UGameFuseCore* UGameFuseCore::FetchGameVariables()
 {
-    UStaticAPIManager::FetchGameVariables(GameId, GetGameToken(), &CompletionCallback);
+    UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
+    AsyncTask->AddToRoot();
+
+    UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
+
+    UStaticAPIManager::FetchGameVariables(GameId, Token);
+
+    return AsyncTask;
 }
 
-void UGameFuseCore::FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGameFuseAPIResponseCallback CompletionCallback)
+UGameFuseCore* UGameFuseCore::FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName)
 {
-    UStaticAPIManager::FetchLeaderboardEntries(Limit,  bOnePerUser, LeaderboardName, GameId, GameFuseUser->GetAuthenticationToken(), &CompletionCallback);
+    UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
+    AsyncTask->AddToRoot();
+
+    UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
+
+    // UStaticAPIManager::FetchLeaderboardEntries(Limit,  bOnePerUser, LeaderboardName, GameId, GameFuseUser->GetAuthenticationToken());
+
+    return AsyncTask;
 }
 
-void UGameFuseCore::FetchStoreItems(FGameFuseAPIResponseCallback CompletionCallback)
+UGameFuseCore* UGameFuseCore::FetchStoreItems()
 {
-    UStaticAPIManager::FetchStoreItems(GameId, GetGameToken(), &CompletionCallback);
+    UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
+    AsyncTask->AddToRoot();
+
+    UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
+
+    UStaticAPIManager::FetchStoreItems(GameId, Token);
+
+    return AsyncTask;
 }
 
 // < End Region
+
+
+void UGameFuseCore::CompleteTask(bool bSuccess, const FString& Result)
+{
+    if (bSuccess)
+    {
+        OnSuccess.Broadcast(Result);
+    }
+    else
+    {
+        OnError.Broadcast(Result);
+    }
+    RemoveFromRoot(); // Allow garbage collection
+}
+
+
 // > Region Internal Setters
 
 void UGameFuseCore::InternalResponseManager(bool bWasSuccessful, const FString& ResponseStr)
 {
+    this->CompleteTask(bWasSuccessful , ResponseStr);
+    
+    if(!bWasSuccessful)
+    {
+        return;
+    }
+    
     const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseStr);
     TSharedPtr<FJsonObject> JsonObject;
     

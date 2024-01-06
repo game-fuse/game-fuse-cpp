@@ -4,7 +4,7 @@
 #include "Models/StaticAPIManager.h"
 
 
-void UStaticAPIManager::SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UStaticAPIManager::SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore)
 {
 	FString ApiEndpoint = FString::Printf(TEXT("%s/games/verify?client_from_library=cpp&game_id=%s&game_token=%s")
 		, *BaseURL, *InGameId, *InToken);
@@ -15,12 +15,12 @@ void UStaticAPIManager::SetUpGame(const FString& InGameId, const FString& InToke
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManagerStatic, APICompletionCallback);
+	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
 	RequestManager->ProcessRequest();
 }
 
-void UStaticAPIManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName,
-	const int GameId, const FString& UserAuthenticationToken, const FGameFuseAPIResponseCallback* APICompletionCallback)
+
+void UStaticAPIManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const int GameId, const FString& UserAuthenticationToken)
 {
 	const FString OnePerUserStr = (bOnePerUser) ? TEXT("true") : TEXT("false");
 	const FString ApiEndpoint = FString::Printf(
@@ -33,11 +33,11 @@ void UStaticAPIManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUse
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManagerStatic, APICompletionCallback);
+	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
 	RequestManager->ProcessRequest();
 }
 
-void UStaticAPIManager::SendPasswordResetEmail(const FString& Email, const int GameID, const FString Token, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UStaticAPIManager::SendPasswordResetEmail(const FString& Email, const int GameID, const FString Token)
 {
 	FString ApiEndpoint = FString::Printf(TEXT("%s/games/%d/forget_password?game_token=%s&game_id=%d&email=%s")
 	   , *BaseURL, GameID, *Token, GameID,*Email);
@@ -47,11 +47,11 @@ void UStaticAPIManager::SendPasswordResetEmail(const FString& Email, const int G
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManagerStatic, APICompletionCallback);
+	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
 	RequestManager->ProcessRequest();
 }
 
-void UStaticAPIManager::FetchGameVariables(const int GameID, const FString Token, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UStaticAPIManager::FetchGameVariables(const int GameID, const FString Token)
 {
 	const FString ApiEndpoint = FString::Printf(
 	   TEXT("%s/games/fetch_game_variables.json?game_id=%d&game_token=%s"), *BaseURL, GameID, *Token);
@@ -61,11 +61,11 @@ void UStaticAPIManager::FetchGameVariables(const int GameID, const FString Token
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManagerStatic, APICompletionCallback);
+	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
 	RequestManager->ProcessRequest();
 }
 
-void UStaticAPIManager::FetchStoreItems(const int GameID, const FString Token, const FGameFuseAPIResponseCallback* APICompletionCallback)
+void UStaticAPIManager::FetchStoreItems(const int GameID, const FString Token)
 {
 	FString ApiEndpoint = FString::Printf(TEXT("%s/games/store_items?game_id=%d&game_token=%s")
 		, *BaseURL, GameID, *Token);
@@ -75,6 +75,6 @@ void UStaticAPIManager::FetchStoreItems(const int GameID, const FString Token, c
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManagerStatic, APICompletionCallback);
+	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
 	RequestManager->ProcessRequest();
 }

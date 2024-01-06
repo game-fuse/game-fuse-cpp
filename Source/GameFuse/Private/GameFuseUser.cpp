@@ -179,6 +179,7 @@ void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetV
     FString Set_Dirty_Attribute_Message = FString::Printf(TEXT("Setting Dirty Attribute (local-and-temporary) : %s : %s"), *SetKey, *SetValue);;
 
     UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  %s"), *Set_Dirty_Attribute_Message);
+    
     CompletionCallback.Execute(true, Set_Dirty_Attribute_Message);
 }
 
