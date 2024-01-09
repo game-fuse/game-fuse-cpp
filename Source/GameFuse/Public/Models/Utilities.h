@@ -20,6 +20,7 @@ class GAMEFUSE_API GameFuseUtilities
 public:
 
 	static TMap<FString, FString> ConvertJsonToMap(const FString& JsonString);
+	
 	static FString ConvertMapToJsonStr(const TMap<FString, FString>& OurMap);
 
 	static FString MakeStrRequestBody(const FString AuthenticationToken, const FString MapBody, const TMap<FString, FString>& OurMap);

@@ -3,12 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 #include "UObject/NoExportTypes.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "HttpModule.h"
 #include "Containers/UnrealString.h"
-#include "HTTPResponseManager.generated.h"
+
+#include "APIResponseManager.generated.h"
 
 // DECLARE_DELEGATE_TwoParams(FGameFuseAPIResponseCallback, bool /* bSuccess */, FString /* ResponseString */);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FGameFuseAPIResponseCallback, bool, bSuccess, const FString&, ResponseString);

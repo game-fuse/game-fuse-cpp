@@ -5,9 +5,16 @@
  *  https://GameFuse.co/
  *  https://github.com/game-fuse/game-fuse-cpp
  */
-#include "GameFuseUser.h"
+
 
 #include "GameFuseCore.h"
+
+#include "GameFuseUser.h"
+#include "Models/CoreAPIManager.h"
+#include "Kismet/KismetStringLibrary.h"
+
+
+
 
 int32 UGameFuseCore::GameId        = 0;
 FString UGameFuseCore::Token       = "";
@@ -66,7 +73,7 @@ UGameFuseCore* UGameFuseCore::SetUpGame(const FString& InGameId, const FString& 
 
     UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-    UStaticAPIManager::SetUpGame(InGameId, InToken, bSeedStore);
+    UCoreAPIManager::SetUpGame(InGameId, InToken, bSeedStore);
 
     return AsyncTask;
 }
@@ -86,10 +93,9 @@ UGameFuseCore* UGameFuseCore::SendPasswordResetEmail(const FString& Email)
     
     UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-    UStaticAPIManager::SendPasswordResetEmail(Email, GameId, Token);
+    UCoreAPIManager::SendPasswordResetEmail(Email, GameId, Token);
 
     return AsyncTask;
-
 }
 
 UGameFuseCore* UGameFuseCore::FetchGameVariables()
@@ -99,7 +105,7 @@ UGameFuseCore* UGameFuseCore::FetchGameVariables()
 
     UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-    UStaticAPIManager::FetchGameVariables(GameId, Token);
+    UCoreAPIManager::FetchGameVariables(GameId, Token);
 
     return AsyncTask;
 }
@@ -111,7 +117,7 @@ UGameFuseCore* UGameFuseCore::FetchLeaderboardEntries(UGameFuseUser* GameFuseUse
 
     UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-    // UStaticAPIManager::FetchLeaderboardEntries(Limit,  bOnePerUser, LeaderboardName, GameId, GameFuseUser->GetAuthenticationToken());
+    UCoreAPIManager::FetchLeaderboardEntries(Limit,  bOnePerUser, LeaderboardName, GameId, GameFuseUser->GetAuthenticationToken());
 
     return AsyncTask;
 }
@@ -123,7 +129,7 @@ UGameFuseCore* UGameFuseCore::FetchStoreItems()
 
     UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-    UStaticAPIManager::FetchStoreItems(GameId, Token);
+    UCoreAPIManager::FetchStoreItems(GameId, Token);
 
     return AsyncTask;
 }
@@ -147,12 +153,11 @@ void UGameFuseCore::CompleteTask(bool bSuccess, const FString& Result)
 
 // > Region Internal Setters
 
-void UGameFuseCore::InternalResponseManager(bool bWasSuccessful, const FString& ResponseStr)
+void UGameFuseCore::InternalResponseManager(bool bSuccess, const FString& ResponseStr)
 {
-    this->CompleteTask(bWasSuccessful , ResponseStr);
-    
-    if(!bWasSuccessful)
+    if(!bSuccess)
     {
+        this->CompleteTask(bSuccess , ResponseStr);
         return;
     }
     
@@ -169,19 +174,24 @@ void UGameFuseCore::InternalResponseManager(bool bWasSuccessful, const FString& 
     {
         SetSetUpGameInternal(JsonObject);
         SetVariablesInternal(ResponseStr);
+        this->CompleteTask(bSuccess , ResponseStr);
     }
     else if (JsonObject->HasField("leaderboard_entries"))                    // the request is for : Leaderboards
     {
         SetLeaderboardsInternal(JsonObject);
+        this->CompleteTask(bSuccess , ResponseStr);
     }else if (JsonObject->HasField("store_items"))                           // the request is for : Store Items
     {
         SetStoreItemsInternal(JsonObject);
+        this->CompleteTask(bSuccess , ResponseStr);
     }else if (JsonObject->HasField("mailer_response"))                       // the request is for : forgot email
     {
         UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Forgot Password Email Sent!"));
+        this->CompleteTask(bSuccess , ResponseStr);
     }else                                                                    // the request is for : nothings !
     {
         UE_LOG(LogTemp, Warning, TEXT("LogGameFuse :  Unknown Json"));
+        this->CompleteTask(bSuccess , ResponseStr);
     }
 }
 

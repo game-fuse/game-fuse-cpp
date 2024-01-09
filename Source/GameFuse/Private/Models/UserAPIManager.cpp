@@ -1,9 +1,17 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+/**
+*  Copyright (c) 2023-11-06 GameFuse
+ *  All rights reserved.
+ *
+ *  https://GameFuse.co/
+ *  https://github.com/game-fuse/game-fuse-cpp
+ */
+
+
+#include "Models/UserAPIManager.h"
 
 #include "Models/Utilities.h"
 #include "Unix/UnixPlatformHttp.h"
 
-#include "Models/UserAPIManager.h"
 
 
 void UUserAPIManager::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, const int InGameId, const FString& InToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
@@ -20,7 +28,9 @@ void UUserAPIManager::SignUp(const FString& Email, const FString& Password, cons
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 	
 	RequestManager->ProcessRequest();
@@ -40,7 +50,9 @@ void UUserAPIManager::SignIn(const FString& Email, const FString& Password, cons
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -60,7 +72,9 @@ void UUserAPIManager::AddCredits(const int AddCredits, const int Id, const FStri
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -80,7 +94,9 @@ void UUserAPIManager::SetCredits(const int SetCredits, const int Id, const FStri
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -100,7 +116,9 @@ void UUserAPIManager::AddScore(const int AddScore, const int Id, const FString& 
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -120,7 +138,9 @@ void UUserAPIManager::SetScore(const int SetScore, const int Id, const FString& 
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -140,7 +160,9 @@ void UUserAPIManager::SetAttribute(const FString& SetKey, const FString& SetValu
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -165,7 +187,9 @@ void UUserAPIManager::SyncLocalAttributes(const TMap<FString, FString>& DirtyAtt
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -185,7 +209,9 @@ void UUserAPIManager::RemoveAttribute(const FString& SetKey, const int Id, const
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -205,7 +231,9 @@ void UUserAPIManager::PurchaseStoreItem(const int StoreItemId, const int Id, con
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -225,7 +253,9 @@ void UUserAPIManager::RemoveStoreItem(const int StoreItemId, const int Id, const
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -248,7 +278,9 @@ void UUserAPIManager::AddLeaderboardEntry(const FString& LeaderboardName, const 
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -268,7 +300,9 @@ void UUserAPIManager::ClearLeaderboardEntry(const FString& LeaderboardName, cons
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -290,7 +324,9 @@ void UUserAPIManager::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUse
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -310,7 +346,9 @@ void UUserAPIManager::FetchAttributes(bool bChainedFromLogin, const int Id, cons
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();
@@ -330,7 +368,9 @@ void UUserAPIManager::FetchPurchaseStoreItems(bool bChainedFromLogin, const int 
 	{
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
-		APICompletionCallback.Execute(bWasSuccessful, ResponseStr);
+		const int32 ResponseCode = Response->GetResponseCode();
+		const bool bSuccess = (ResponseCode == 200);
+		APICompletionCallback.Execute(bSuccess, ResponseStr);
 	});
 
 	RequestManager->ProcessRequest();

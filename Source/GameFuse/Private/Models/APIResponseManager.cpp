@@ -1,7 +1,12 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+/**
+*  Copyright (c) 2023-11-06 GameFuse
+ *  All rights reserved.
+ *
+ *  https://GameFuse.co/
+ *  https://github.com/game-fuse/game-fuse-cpp
+ */
 
-
-#include "Models/HTTPResponseManager.h"
+#include "Models/APIResponseManager.h"
 
 
 void UHTTPResponseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
@@ -12,7 +17,7 @@ void UHTTPResponseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request
     if (!bWasSuccessful || !Response.IsValid())
     {
         UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Request Failed"));
-        if (CompletionCallback.IsBound()) CompletionCallback.Execute(bWasSuccessful, "Game Fuse HTTP Request Failed");
+        if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, "Game Fuse HTTP Request Failed");
         return;
     }
     
@@ -20,11 +25,11 @@ void UHTTPResponseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request
     {
         UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  HTTP Request Succeed"));
         
-        if (CompletionCallback.IsBound()) CompletionCallback.Execute(bWasSuccessful, ResponseStr);
+        if (CompletionCallback.IsBound()) CompletionCallback.Execute(true, ResponseStr);
     }
     else
     {
-        if (CompletionCallback.IsBound()) CompletionCallback.Execute(bWasSuccessful, ResponseStr);
+        if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, ResponseStr);
         UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Request Returned Status Code %d"), ResponseCode);
         UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Response : %s"), *ResponseStr);
     }

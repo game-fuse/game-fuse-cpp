@@ -6,9 +6,12 @@
  *  https://github.com/game-fuse/game-fuse-cpp
  */
 
+
 #include "GameFuseUser.h"
 
 #include "GameFuseCore.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "Objects/GameFuseSignData.h"
 #include "Models/Utilities.h"
 #include "Unix/UnixPlatformHttp.h"
@@ -272,9 +275,9 @@ void UGameFuseUser::FetchPurchaseStoreItems(const bool bChainedFromLogin, FGameF
 // < End Region
 // > Region Game Fuse User Setters
 
-void UGameFuseUser::InternalResponseManager(bool bWasSuccessful, const FString& ResponseStr)
+void UGameFuseUser::InternalResponseManager(bool bSuccess, const FString& ResponseStr)
 {
-    if(!bWasSuccessful)
+    if(!bSuccess)
     {
         return;
     }

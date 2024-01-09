@@ -14,10 +14,6 @@
 #include "Objects/GameFuseLeaderboardItem.h"
 #include "Objects/GameFuseStoreItem.h"
 
-#include "Models/HTTPResponseManager.h"
-#include "Models/StaticAPIManager.h"
-
-#include "Kismet/KismetStringLibrary.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
@@ -45,6 +41,7 @@ public:
 		FGameFuseCallback OnError;
 	
 	//> Getters
+	
     UFUNCTION(BlueprintPure, Category = "GameFuse")
     	static int32 GetGameId();
 	
@@ -67,10 +64,12 @@ public:
 		static const TArray<UGameFuseLeaderboardItem*>& GetLeaderboard();
 	
 	// > GameSetup
+	
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category = "GameFuse")
 		static UGameFuseCore* SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore);
 
 	//> Action Requests
+	
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category = "GameFuse")
 		static UGameFuseCore* SendPasswordResetEmail(const FString& Email);
 
@@ -84,7 +83,7 @@ public:
     	static UGameFuseCore* FetchStoreItems();
 
 	UFUNCTION()
-		void InternalResponseManager(bool bWasSuccessful, const FString& ResponseStr);
+		void InternalResponseManager(bool bSuccess, const FString& ResponseStr);
 	
 private:
 	

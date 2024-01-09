@@ -14,17 +14,13 @@
 #include "Objects/GameFuseLeaderboardItem.h"
 #include "Objects/GameFuseStoreItem.h"
 
-#include "Models/HTTPResponseManager.h"
 #include "Models/UserAPIManager.h"
 
-#include "Kismet/KismetStringLibrary.h"
-#include "Kismet/GameplayStatics.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
-
 
 #include "GameFuseUser.generated.h"
 
@@ -79,6 +75,8 @@ public:
 
     UFUNCTION(BlueprintPure, Category = "GameFuse|User")
         bool IsSignedIn() const;
+
+    FString GetAuthenticationToken() const;
     
     //> Sign
     
@@ -144,10 +142,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
         void FetchPurchaseStoreItems(bool bChainedFromLogin, FGameFuseAPIResponseCallback CompletionCallback);
     
-    FString GetAuthenticationToken() const;
-
     UFUNCTION()
-        void InternalResponseManager(bool bWasSuccessful, const FString& ResponseStr);
+        void InternalResponseManager(bool bSuccess, const FString& ResponseStr);
 
 private:
 
