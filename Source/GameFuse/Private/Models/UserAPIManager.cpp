@@ -263,11 +263,17 @@ void UUserAPIManager::RemoveStoreItem(const int StoreItemId, const int Id, const
 
 void UUserAPIManager::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, TMap<FString, FString>* ExtraAttributes, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
-	const FString ExtraAttributes_Encoded = FPlatformHttp::UrlEncode(GameFuseUtilities::ConvertMapToJsonStr(*ExtraAttributes));
-    
+	FString ExtraAttributesStr = "";
+
+	if(ExtraAttributes != nullptr)
+	{
+		const FString ExtraAttributes_Encoded = FPlatformHttp::UrlEncode(GameFuseUtilities::ConvertMapToJsonStr(*ExtraAttributes));
+		ExtraAttributesStr = FString::Printf(TEXT("&extra_attributes=%s"), *ExtraAttributes_Encoded);
+	}
+	
 	const FString ApiEndpoint = FString::Printf(
-		TEXT("%s/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s&extra_attributes=%s")
-	, *BaseURL, Id, *AuthenticationToken, OurScore, *LeaderboardName, *ExtraAttributes_Encoded);
+		TEXT("%s/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s%s")
+	, *BaseURL, Id, *AuthenticationToken, OurScore, *LeaderboardName, *ExtraAttributesStr);
 
 	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Adding Leaderboard : %s : %d"), *LeaderboardName, OurScore);
 
