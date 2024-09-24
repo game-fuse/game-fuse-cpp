@@ -25,7 +25,7 @@
 #include "GameFuseUser.generated.h"
 
 
-
+//TODO: update class methods.md docs to reflect this list
 UCLASS()
 class GAMEFUSE_API UGameFuseUser : public UGameInstanceSubsystem
 {

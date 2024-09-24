@@ -290,7 +290,7 @@ void UGameFuseUser::InternalResponseManager(bool bSuccess, const FString& Respon
         UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Failed To Parse JSON Response From API"));
         return;
     }
-        
+    //surely theres a cleaner way to write this
     if(JsonObject->HasField("id") && JsonObject->HasField("username")) // the request is for : SignUp or SignIn
     {
         SetSignInInternal(JsonObject);
