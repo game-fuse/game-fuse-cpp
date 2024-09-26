@@ -19,7 +19,7 @@ void UUserAPIManager::SignUp(const FString& Email, const FString& Password, cons
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users?email=%s&password=%s&password_confirmation=%s&username=%s&game_id=%d&game_token=%s")
 	, *BaseURL, *Email, *Password, *PasswordConfirmation, *Username, InGameId, *InToken);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Sending Static Request - Signing Up"));
+	UE_LOG(LogGameFuse, Display, TEXT("Sending Static Request - Signing Up"));
 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -41,7 +41,7 @@ void UUserAPIManager::SignIn(const FString& Email, const FString& Password, cons
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/sessions?email=%s&password=%s&game_id=%d&game_token=%s")
    , *BaseURL, *Email, *Password, InGameId, *InToken);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Sending Static Request - Signing In"));
+	UE_LOG(LogGameFuse, Display, TEXT("Sending Static Request - Signing In"));
 	
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -63,7 +63,7 @@ void UUserAPIManager::AddCredits(const int AddCredits, const int Id, const FStri
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_credits?authentication_token=%s&credits=%d")
 		, *BaseURL, Id, *AuthenticationToken, AddCredits);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Adding Credits: %d"), AddCredits);
+	UE_LOG(LogGameFuse, Display, TEXT("Adding Credits: %d"), AddCredits);
 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -85,7 +85,7 @@ void UUserAPIManager::SetCredits(const int SetCredits, const int Id, const FStri
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/set_credits?authentication_token=%s&credits=%d")
 		, *BaseURL, Id, *AuthenticationToken, SetCredits);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Setting Credits: %d"), SetCredits);
+	UE_LOG(LogGameFuse, Display, TEXT("Setting Credits: %d"), SetCredits);
 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -107,7 +107,7 @@ void UUserAPIManager::AddScore(const int AddScore, const int Id, const FString& 
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_score?authentication_token=%s&score=%d")
 		, *BaseURL, Id, *AuthenticationToken, AddScore);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Adding Scores: %d"), AddScore);
+	UE_LOG(LogGameFuse, Display, TEXT("Adding Scores: %d"), AddScore);
 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -129,7 +129,7 @@ void UUserAPIManager::SetScore(const int SetScore, const int Id, const FString& 
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/set_score?authentication_token=%s&score=%d")
 		, *BaseURL, Id, *AuthenticationToken, SetScore);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Setting Scores: %d"), SetScore);
+	UE_LOG(LogGameFuse, Display, TEXT("Setting Scores: %d"), SetScore);
 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -151,7 +151,7 @@ void UUserAPIManager::SetAttribute(const FString& SetKey, const FString& SetValu
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_game_user_attribute?authentication_token=%s&key=%s&value=%s")
 		, *BaseURL, Id, *AuthenticationToken, *SetKey, *SetValue);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Setting Attribute: %s : %s"), *SetKey, *SetValue);
+	UE_LOG(LogGameFuse, Display, TEXT("Setting Attribute: %s : %s"), *SetKey, *SetValue);
     
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -175,7 +175,7 @@ void UUserAPIManager::SyncLocalAttributes(const TMap<FString, FString>& DirtyAtt
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/add_game_user_attribute")
 	, *BaseURL, Id);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Syncing All Local Dirty Attributes: %s, %s"), *Json_Dirty_Attributes, *AuthenticationToken);
+	UE_LOG(LogGameFuse, Display, TEXT("Syncing All Local Dirty Attributes: %s, %s"), *Json_Dirty_Attributes, *AuthenticationToken);
     
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -200,7 +200,7 @@ void UUserAPIManager::RemoveAttribute(const FString& SetKey, const int Id, const
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/remove_game_user_attributes?authentication_token=%s&key=%s")
 		, *BaseURL, Id, *AuthenticationToken, *SetKey);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Removing Attribute: %s"), *SetKey);
+	UE_LOG(LogGameFuse, Display, TEXT("Removing Attribute: %s"), *SetKey);
     
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
@@ -222,7 +222,7 @@ void UUserAPIManager::PurchaseStoreItem(const int StoreItemId, const int Id, con
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
 			, *BaseURL, Id, *AuthenticationToken, StoreItemId);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Purchasing Store Item: %d"), StoreItemId);
+	UE_LOG(LogGameFuse, Display, TEXT("Purchasing Store Item: %d"), StoreItemId);
     
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -244,7 +244,7 @@ void UUserAPIManager::RemoveStoreItem(const int StoreItemId, const int Id, const
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
 		, *BaseURL, Id, *AuthenticationToken, StoreItemId);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Removing Store Item: %d"), StoreItemId);
+	UE_LOG(LogGameFuse, Display, TEXT("Removing Store Item: %d"), StoreItemId);
     
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
@@ -275,7 +275,7 @@ void UUserAPIManager::AddLeaderboardEntry(const FString& LeaderboardName, const 
 		TEXT("%s/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s%s")
 	, *BaseURL, Id, *AuthenticationToken, OurScore, *LeaderboardName, *ExtraAttributesStr);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Adding Leaderboard : %s : %d"), *LeaderboardName, OurScore);
+	UE_LOG(LogGameFuse, Display, TEXT("User Adding Leaderboard : %s : %d"), *LeaderboardName, OurScore);
 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -297,7 +297,7 @@ void UUserAPIManager::ClearLeaderboardEntry(const FString& LeaderboardName, cons
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/clear_my_leaderboard_entries?authentication_token=%s&leaderboard_name=%s")
 	, *BaseURL, Id, *AuthenticationToken, *LeaderboardName);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Clearing Leaderboard : %s"), *LeaderboardName);
+	UE_LOG(LogGameFuse, Display, TEXT("User Clearing Leaderboard : %s"), *LeaderboardName);
     
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
@@ -321,7 +321,7 @@ void UUserAPIManager::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUse
 		TEXT("%s/users/%d/leaderboard_entries?authentication_token=%s&limit=%d&one_per_user=%s")
 		, *BaseURL, Id, *AuthenticationToken, Limit, *OnePerUserStr);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Fetching My Leaderboard : %d : %s"), Limit, *OnePerUserStr);
+	UE_LOG(LogGameFuse, Display, TEXT("Fetching My Leaderboard : %d : %s"), Limit, *OnePerUserStr);
     
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
@@ -343,7 +343,7 @@ void UUserAPIManager::FetchAttributes(bool bChainedFromLogin, const int Id, cons
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/game_user_attributes?authentication_token=%s")
 		, *BaseURL, Id, *AuthenticationToken);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Fetching Attributes"));
+	UE_LOG(LogGameFuse, Display, TEXT("User Fetching Attributes"));
 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
@@ -365,7 +365,7 @@ void UUserAPIManager::FetchPurchaseStoreItems(bool bChainedFromLogin, const int 
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/users/%d/game_user_store_items?authentication_token=%s")
 		, *BaseURL, Id, *AuthenticationToken);
 
-	UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Fetching Purchased Store Items"));
+	UE_LOG(LogGameFuse, Display, TEXT("User Fetching Purchased Store Items"));
 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
