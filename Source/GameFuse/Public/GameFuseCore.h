@@ -25,6 +25,8 @@
 
 #include "GameFuseCore.generated.h"
 
+
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGameFuseCallback, const FString&, ResponseString);
 
 //TODO: update class methods.md docs to reflect this list
