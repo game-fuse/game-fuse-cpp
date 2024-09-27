@@ -65,14 +65,14 @@ const TArray<UGameFuseLeaderboardItem*>& UGameFuseCore::GetLeaderboard()
 // < End Region
 // > Region Game Fuse Asynchronous Functions
 
-UGameFuseCore* UGameFuseCore::SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore)
+UGameFuseCore* UGameFuseCore::SetUpGame(const FString& InGameId, const FString& InToken)
 {
     UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
     AsyncTask->AddToRoot();
 
     UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-    UCoreAPIManager::SetUpGame(InGameId, InToken, bSeedStore);
+    UCoreAPIManager::SetUpGame(InGameId, InToken);
 
     return AsyncTask;
 }

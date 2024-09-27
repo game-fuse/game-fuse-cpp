@@ -12,7 +12,7 @@ Three main classes are
 - CoreAPIManager.h / .cpp
   - Actually implements the HTTP calls defining the endpoint and using the ResponseManager to call the callbacks
 
-API Access Classes
+### API Access Classes
 - APIResponseManager.h / .cpp
   - Wrapper class receives the HTTP response and calls the Callback
 - UserAPIManager.h / .cpp
@@ -21,5 +21,5 @@ API Access Classes
 
 ### Overall Notes
 
--GameFuseUser/Core need to have their signatures fixed/updated in the docs (class methods)
--GameFuseUser/Core both import Serialization, maybe refactor
+- GameFuseUser/Core need to have their signatures fixed/updated in the docs (class methods)
+- GameFuseUser/Core both import Serialization, maybe refactor

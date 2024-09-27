@@ -69,7 +69,7 @@ public:
 	// > GameSetup
 	
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category = "GameFuse")
-		static UGameFuseCore* SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore);
+		static UGameFuseCore* SetUpGame(const FString& InGameId, const FString& InToken);
 
 	//> Action Requests
 	
