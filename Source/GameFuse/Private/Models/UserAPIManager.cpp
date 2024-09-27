@@ -24,14 +24,7 @@ void UUserAPIManager::SignUp(const FString& Email, const FString& Password, cons
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
     
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 	
 	RequestManager->ProcessRequest();
 }
@@ -46,14 +39,7 @@ void UUserAPIManager::SignIn(const FString& Email, const FString& Password, cons
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
     
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -68,14 +54,7 @@ void UUserAPIManager::AddCredits(const int AddCredits, const int Id, const FStri
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -90,14 +69,7 @@ void UUserAPIManager::SetCredits(const int SetCredits, const int Id, const FStri
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -112,14 +84,7 @@ void UUserAPIManager::AddScore(const int AddScore, const int Id, const FString& 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -134,14 +99,7 @@ void UUserAPIManager::SetScore(const int SetScore, const int Id, const FString& 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -156,14 +114,7 @@ void UUserAPIManager::SetAttribute(const FString& SetKey, const FString& SetValu
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -183,14 +134,7 @@ void UUserAPIManager::SyncLocalAttributes(const TMap<FString, FString>& DirtyAtt
 	RequestManager->SetContentAsString(Json_Dirty_Attributes);
 	RequestManager->SetHeader(TEXT("authentication_token"), *AuthenticationToken);
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -205,14 +149,7 @@ void UUserAPIManager::RemoveAttribute(const FString& SetKey, const int Id, const
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -227,14 +164,7 @@ void UUserAPIManager::PurchaseStoreItem(const int StoreItemId, const int Id, con
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -249,14 +179,7 @@ void UUserAPIManager::RemoveStoreItem(const int StoreItemId, const int Id, const
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -280,14 +203,7 @@ void UUserAPIManager::AddLeaderboardEntry(const FString& LeaderboardName, const 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -302,14 +218,7 @@ void UUserAPIManager::ClearLeaderboardEntry(const FString& LeaderboardName, cons
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("POST");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -326,17 +235,11 @@ void UUserAPIManager::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUse
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
+
 
 void UUserAPIManager::FetchAttributes(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback)
 {
@@ -348,14 +251,7 @@ void UUserAPIManager::FetchAttributes(bool bChainedFromLogin, const int Id, cons
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
-		const FString ResponseStr = Response->GetContentAsString();
-		const int32 ResponseCode = Response->GetResponseCode();
-		const bool bSuccess = (ResponseCode == 200);
-		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
 
 	RequestManager->ProcessRequest();
 }
@@ -370,14 +266,18 @@ void UUserAPIManager::FetchPurchaseStoreItems(bool bChainedFromLogin, const int 
 	RequestManager->SetURL(ApiEndpoint);
 	RequestManager->SetVerb("GET");
 
-	RequestManager->OnProcessRequestComplete().BindLambda([APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
-	{
+	RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(APICompletionCallback));
+
+	RequestManager->ProcessRequest();
+}
+
+TFunction<void(FHttpRequestPtr, const FHttpResponsePtr&, bool)> UUserAPIManager::HandleResponseReceived(const FGameFuseAPIResponseCallback& APICompletionCallback) {
+	return [APICompletionCallback](FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful) {
 		UHTTPResponseManager::OnHttpResponseReceivedManager(Request, Response, bWasSuccessful);
 		const FString ResponseStr = Response->GetContentAsString();
 		const int32 ResponseCode = Response->GetResponseCode();
 		const bool bSuccess = (ResponseCode == 200);
 		APICompletionCallback.Execute(bSuccess, ResponseStr);
-	});
-
-	RequestManager->ProcessRequest();
+	};
 }
+
