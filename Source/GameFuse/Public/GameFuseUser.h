@@ -166,7 +166,7 @@ private:
 
     //> Setters
     
-    void SetSignInInternal(const TSharedPtr<FJsonObject>& JsonObject);
+    void SetLoginInternal(const TSharedPtr<FJsonObject>& JsonObject);
     void SetCreditsInternal(const TSharedPtr<FJsonObject>& JsonObject);
     void SetScoresInternal(const TSharedPtr<FJsonObject>& JsonObject);
     void SetAttributesInternal(const TSharedPtr<FJsonObject>& JsonObject);
