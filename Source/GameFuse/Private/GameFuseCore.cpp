@@ -311,7 +311,7 @@ void UGameFuseCore::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
                 return;
             }
         }
-        UE_LOG(LogGameFuse, Log, TEXT("Fetched Store Items amount of : %d"), LeaderboardEntries.Num());
+        UE_LOG(LogGameFuse, Log, TEXT("Fetched Store Items amount of : %d"), StoreItems.Num());
     }
     else
     {
