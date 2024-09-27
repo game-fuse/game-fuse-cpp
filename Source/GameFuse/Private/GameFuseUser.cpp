@@ -38,7 +38,7 @@ void UGameFuseUser::Initialize(FSubsystemCollectionBase& Collection)
         this->Credits = (LoadedSaveGame->Credits);
         this->Id = (LoadedSaveGame->Id);
         
-        UE_LOG(LogGameFuse, Display, TEXT("Game Fuse Subsystem Loaded"));
+        UE_LOG(LogGameFuse, Log, TEXT("Game Fuse Subsystem Loaded"));
     }
     
 }
@@ -181,7 +181,7 @@ void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetV
 
     FString Set_Dirty_Attribute_Message = FString::Printf(TEXT("Setting Dirty Attribute (local-and-temporary) : %s : %s"), *SetKey, *SetValue);;
 
-    UE_LOG(LogGameFuse, Display, TEXT("%s"), *Set_Dirty_Attribute_Message);
+    UE_LOG(LogGameFuse, Log, TEXT("%s"), *Set_Dirty_Attribute_Message);
     
     UHTTPResponseManager::CompletionCallback.Execute(true, Set_Dirty_Attribute_Message);
 }
@@ -339,7 +339,7 @@ void UGameFuseUser::SetSignInInternal(const TSharedPtr<FJsonObject>& JsonObject)
         SaveGameInstance->Id = this->Id;
     
         UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-        UE_LOG(LogGameFuse, Display, TEXT("Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
+        UE_LOG(LogGameFuse, Log, TEXT("Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
     }
     else
     {
@@ -356,7 +356,7 @@ void UGameFuseUser::SetCreditsInternal(const TSharedPtr<FJsonObject>& JsonObject
         this->Credits = NewCredits;
         SaveGameInstance->Credits = NewCredits;
         UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-        UE_LOG(LogGameFuse, Display, TEXT("Updated The Credits Into SlotName:GameFuseSaveSlot UserIndex:0"));
+        UE_LOG(LogGameFuse, Log, TEXT("Updated The Credits Into SlotName:GameFuseSaveSlot UserIndex:0"));
     }
     else
     {
@@ -373,7 +373,7 @@ void UGameFuseUser::SetScoresInternal(const TSharedPtr<FJsonObject>& JsonObject)
         this->Score = NewScores;
         SaveGameInstance->Score = NewScores;
         UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-        UE_LOG(LogGameFuse, Display, TEXT("Updated The Scores Into SlotName:GameFuseSaveSlot UserIndex:0"));
+        UE_LOG(LogGameFuse, Log, TEXT("Updated The Scores Into SlotName:GameFuseSaveSlot UserIndex:0"));
     }
     else
     {
@@ -402,14 +402,14 @@ void UGameFuseUser::SetAttributesInternal(const TSharedPtr<FJsonObject>& JsonObj
 
                 // Add to the attribute map
                 Attributes.Add(Key, Value);
-                UE_LOG(LogGameFuse, Display, TEXT("User SetAttributes : %s : %s"), *Key, *Value);
+                UE_LOG(LogGameFuse, Log, TEXT("User SetAttributes : %s : %s"), *Key, *Value);
             }else
             {
                 UE_LOG(LogGameFuse, Error, TEXT("User Failed to parse JSON"));
                 return;
             }
         }
-        UE_LOG(LogGameFuse, Display, TEXT("User Attributes Updated"), Attributes.Num());
+        UE_LOG(LogGameFuse, Log, TEXT("User Attributes Updated"), Attributes.Num());
     }
     else
     {
@@ -445,14 +445,14 @@ void UGameFuseUser::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
                         
                 // Add to the attribute map
                 PurchasedStoreItems.Add(NewItem);
-                UE_LOG(LogGameFuse, Display, TEXT("User Store Item : %s, %s"), *NewItem->Name, *NewItem->Category);
+                UE_LOG(LogGameFuse, Log, TEXT("User Store Item : %s, %s"), *NewItem->Name, *NewItem->Category);
             }else
             {
                 UE_LOG(LogGameFuse, Error, TEXT("User Failed To Parse JSON"));
                 return;
             }
         }
-        UE_LOG(LogGameFuse, Display, TEXT("User Store Items Updated"), Attributes.Num());
+        UE_LOG(LogGameFuse, Log, TEXT("User Store Items Updated"), Attributes.Num());
     }
     else
     {

@@ -185,7 +185,7 @@ void UGameFuseCore::InternalResponseManager(bool bSuccess, const FString& Respon
         this->CompleteTask(bSuccess , ResponseStr);
     }else if (JsonObject->HasField("mailer_response"))                       // the request is for : forgot email
     {
-        UE_LOG(LogGameFuse, Display, TEXT("Forgot Password Email Sent!"));
+        UE_LOG(LogGameFuse, Log, TEXT("Forgot Password Email Sent!"));
         this->CompleteTask(bSuccess , ResponseStr);
     }else                                                                    // the request is for : nothings !
     {
@@ -201,7 +201,7 @@ void UGameFuseCore::SetSetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObje
     JsonObject->TryGetStringField(TEXT("token"), Token);
     JsonObject->TryGetStringField(TEXT("description"), Description);
 
-    UE_LOG(LogGameFuse, Display, TEXT("SetUp Game Completed : %d : %s"), GameId, *Token);
+    UE_LOG(LogGameFuse, Log, TEXT("SetUp Game Completed : %d : %s"), GameId, *Token);
 }
 
 void UGameFuseCore::SetVariablesInternal(const FString& JsonStr)
@@ -226,7 +226,7 @@ void UGameFuseCore::SetVariablesInternal(const FString& JsonStr)
                     GameVariables.Add(Key, Value);
                 }
             }
-            UE_LOG(LogGameFuse, Display, TEXT("Fetched Variables amount of : %d"), GameVariables.Num());
+            UE_LOG(LogGameFuse, Log, TEXT("Fetched Variables amount of : %d"), GameVariables.Num());
         }
     }
     else
@@ -269,7 +269,7 @@ void UGameFuseCore::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
                 return;
             }
         }
-        UE_LOG(LogGameFuse, Display, TEXT("Fetched Leaderboards amount of : %d"), LeaderboardEntries.Num());
+        UE_LOG(LogGameFuse, Log, TEXT("Fetched Leaderboards amount of : %d"), LeaderboardEntries.Num());
     }
     else
     {
@@ -311,7 +311,7 @@ void UGameFuseCore::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
                 return;
             }
         }
-        UE_LOG(LogGameFuse, Display, TEXT("Fetched Store Items amount of : %d"), LeaderboardEntries.Num());
+        UE_LOG(LogGameFuse, Log, TEXT("Fetched Store Items amount of : %d"), LeaderboardEntries.Num());
     }
     else
     {

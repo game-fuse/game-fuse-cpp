@@ -24,7 +24,7 @@ void UHTTPResponseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request
     
     if (ResponseCode == 200)
     {
-        UE_LOG(LogGameFuse, Display, TEXT("HTTP Request Succeed"));
+        UE_LOG(LogGameFuse, Log, TEXT("HTTP Request Succeed"));
         
         if (CompletionCallback.IsBound()) CompletionCallback.Execute(true, ResponseStr);
     }
