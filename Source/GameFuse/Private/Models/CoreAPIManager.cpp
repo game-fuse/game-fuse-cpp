@@ -9,11 +9,10 @@
 #include "Models/CoreAPIManager.h"
 
 
-void UCoreAPIManager::SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore)
+void UCoreAPIManager::SetUpGame(const FString& InGameId, const FString& InToken)
 {
 	FString ApiEndpoint = FString::Printf(TEXT("%s/games/verify?client_from_library=cpp&game_id=%s&game_token=%s")
 		, *BaseURL, *InGameId, *InToken);
-	if (bSeedStore) ApiEndpoint.Append("&seed_store=true");
     
 	UE_LOG(LogGameFuse, Display, TEXT("Sending Static Request - Setting Up Game : %s"), *ApiEndpoint);
 
