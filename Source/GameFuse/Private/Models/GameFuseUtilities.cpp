@@ -81,30 +81,30 @@ FString GameFuseUtilities::MakeStrRequestBody(const FString AuthenticationToken,
 
 EGFCoreAPIResponseType GameFuseUtilities::DetermineCoreAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	if (JsonObject->HasField("id") && JsonObject->HasField("game_variables"))
+	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("game_variables")))
 		return EGFCoreAPIResponseType::SetUpGame;
-	if (JsonObject->HasField("leaderboard_entries"))
+	if (JsonObject->HasField(TEXT("leaderboard_entries")))
 		return EGFCoreAPIResponseType::ListLeaderboardEntries;
-	if (JsonObject->HasField("store_items"))
+	if (JsonObject->HasField(TEXT("store_items")))
 		return EGFCoreAPIResponseType::ListStoreItems;
-	if (JsonObject->HasField("mailer_response"))
+	if (JsonObject->HasField(TEXT("mailer_response")))
 		return EGFCoreAPIResponseType::ForgotPassword;
 	return EGFCoreAPIResponseType::None;
 }
 
 EGFUserAPIResponseType GameFuseUtilities::DetermineUserAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	if (JsonObject->HasField("id") && JsonObject->HasField("username"))
+	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("username")))
 		return EGFUserAPIResponseType::Login;
-	if (JsonObject->HasField("game_user_attributes"))
+	if (JsonObject->HasField(TEXT("game_user_attributes")))
 		return EGFUserAPIResponseType::Attributes;
-	if (JsonObject->HasField("game_user_store_items"))
+	if (JsonObject->HasField(TEXT("game_user_store_items")))
 		return EGFUserAPIResponseType::StoreItems;
-	if (JsonObject->HasField("leaderboard_entries"))
+	if (JsonObject->HasField(TEXT("leaderboard_entries")))
 		return EGFUserAPIResponseType::LeaderboardEntries;
-	if (JsonObject->HasField("credits"))
+	if (JsonObject->HasField(TEXT("credits")))
 		return EGFUserAPIResponseType::Credits;
-	if (JsonObject->HasField("score"))
+	if (JsonObject->HasField(TEXT("score")))
 		return EGFUserAPIResponseType::Score;
 	return EGFUserAPIResponseType::None;
 }

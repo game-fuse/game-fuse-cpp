@@ -236,7 +236,7 @@ void UGameFuseCore::SetVariablesInternal(const FString& JsonStr)
 
 	if (TSharedPtr<FJsonObject> JsonObject; FJsonSerializer::Deserialize(JsonReader, JsonObject))
 	{
-		if (const TArray<TSharedPtr<FJsonValue>>* GameVariablesArray = nullptr; JsonObject->TryGetArrayField("game_variables", GameVariablesArray))
+		if (const TArray<TSharedPtr<FJsonValue>>* GameVariablesArray = nullptr; JsonObject->TryGetArrayField(TEXT("game_variables"), GameVariablesArray))
 		{
 			for (const TSharedPtr<FJsonValue>& JsonValue : *GameVariablesArray)
 			{
@@ -245,7 +245,7 @@ void UGameFuseCore::SetVariablesInternal(const FString& JsonStr)
 				FString Key = "";
 				FString Value = "";
 
-				if (VariableObject->TryGetStringField("key", Key) && VariableObject->TryGetStringField("value", Value))
+				if (VariableObject->TryGetStringField(TEXT("key"), Key) && VariableObject->TryGetStringField(TEXT("value"), Value))
 				{
 					GameVariables.Add(Key, Value);
 				}
