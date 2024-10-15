@@ -12,6 +12,7 @@
 #include "GameFuseUser.h"
 #include "Models/CoreAPIManager.h"
 #include "Kismet/KismetStringLibrary.h"
+#include "Library/GameFuseStructLibrary.h"
 #include "Models/GameFuseUtilities.h"
 
 
@@ -21,7 +22,7 @@ FString UGameFuseCore::Token = "";
 FString UGameFuseCore::Name = "";
 FString UGameFuseCore::Description = "";
 
-TArray<UGameFuseStoreItem*> UGameFuseCore::StoreItems;
+TArray<FGFStoreItem> UGameFuseCore::StoreItems;
 TArray<UGameFuseLeaderboardItem*> UGameFuseCore::LeaderboardEntries;
 TMap<FString, FString> UGameFuseCore::GameVariables;
 
@@ -53,7 +54,7 @@ const TMap<FString, FString>& UGameFuseCore::GetGameVariables()
 	return GameVariables;
 }
 
-const TArray<UGameFuseStoreItem*>& UGameFuseCore::GetGameStoreItems()
+const TArray<FGFStoreItem>& UGameFuseCore::GetGameStoreItems()
 {
 	return StoreItems;
 }
@@ -192,30 +193,6 @@ void UGameFuseCore::InternalResponseManager(bool bSuccess, const FString& Respon
 		default:
 			UE_LOG(LogGameFuse, Warning, TEXT("Unknown Core Response Data"));
 	}
-	//
-	// if(JsonObject->HasField("id") && JsonObject->HasField("game_variables")) // the request is for SetUpGame and Variables
-	// {
-	//     SetSetUpGameInternal(JsonObject);
-	//     SetVariablesInternal(ResponseStr);
-	//     this->CompleteTask(bSuccess , ResponseStr);
-	// }
-	// else if (JsonObject->HasField("leaderboard_entries"))                    // the request is for : Leaderboards
-	// {
-	//     SetLeaderboardsInternal(JsonObject);
-	//     this->CompleteTask(bSuccess , ResponseStr);
-	// }else if (JsonObject->HasField("store_items"))                           // the request is for : Store Items
-	// {
-	//     SetStoreItemsInternal(JsonObject);
-	//     this->CompleteTask(bSuccess , ResponseStr);
-	// }else if (JsonObject->HasField("mailer_response"))                       // the request is for : forgot email
-	// {
-	//     UE_LOG(LogGameFuse, Log, TEXT("Forgot Password Email Sent!"));
-	//     this->CompleteTask(bSuccess , ResponseStr);
-	// }else                                                                    // the request is for : nothings !
-	// {
-	//     UE_LOG(LogGameFuse, Warning, TEXT("Unknown Json"));
-	//     this->CompleteTask(bSuccess , ResponseStr);
-	// }
 }
 
 void UGameFuseCore::SetSetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject)
@@ -302,39 +279,24 @@ void UGameFuseCore::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
 	}
 }
 
+
+
 void UGameFuseCore::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
 	StoreItems.Empty();
 
 	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("store_items"), AttributeArray))
 	{
-		FString Cost = "";
-		FString Id = "";
-
+		StoreItems.Reserve(AttributeArray->Num());
 		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray)
 		{
-			if (AttributeValue->Type == EJson::Object)
-			{
-				const TSharedPtr<FJsonObject> AttributeObject = AttributeValue->AsObject();
-				UGameFuseStoreItem* NewItem = NewObject<UGameFuseStoreItem>();
+			//create store items in place
+			const size_t newIndex = StoreItems.AddDefaulted();
 
-				// Extract key and value from the JSON object
-				AttributeObject->TryGetStringField(TEXT("name"), NewItem->Name);
-				AttributeObject->TryGetStringField(TEXT("category"), NewItem->Category);
-				AttributeObject->TryGetStringField(TEXT("description"), NewItem->Description);
-				AttributeObject->TryGetStringField(TEXT("cost"), Cost);
-				AttributeObject->TryGetStringField(TEXT("id"), Id);
-				AttributeObject->TryGetStringField(TEXT("icon_url"), NewItem->IconUrl);
-				NewItem->Cost = UKismetStringLibrary::Conv_StringToInt(Cost);
-				NewItem->Id = UKismetStringLibrary::Conv_StringToInt(Id);
-
-				// Add to the attribute map
-				StoreItems.Add(NewItem);
-			}
-			else
+			bool bSuccess = GameFuseUtilities::ConvertJsonToStoreItem(StoreItems[newIndex], AttributeValue);
+			if (!bSuccess)
 			{
-				UE_LOG(LogGameFuse, Error, TEXT("Fetching Store Items Failed to parse JSON Items"));
-				return;
+				StoreItems.RemoveAt(newIndex);
 			}
 		}
 		UE_LOG(LogGameFuse, Log, TEXT("Fetched Store Items amount of : %d"), StoreItems.Num());

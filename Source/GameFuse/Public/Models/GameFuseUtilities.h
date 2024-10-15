@@ -15,15 +15,20 @@
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 #include "Library/GameFuseEnumLibrary.h"
+#include "Library/GameFuseStructLibrary.h"
+#include "Models/APIResponseManager.h"
 
 class GAMEFUSE_API GameFuseUtilities
 {
 public:
+
 	static TMap<FString, FString> ConvertJsonToMap(const FString& JsonString);
+
+	static bool ConvertJsonToStoreItem(FGFStoreItem& NewStoreItem, const TSharedPtr<FJsonValue>& JsonValue);
 
 	static FString ConvertMapToJsonStr(const TMap<FString, FString>& OurMap);
 
-	static FString MakeStrRequestBody(const FString AuthenticationToken, const FString MapBody, const TMap<FString, FString>& OurMap);
+	static FString MakeStrRequestBody(const FString& AuthenticationToken, const FString& MapBody, const TMap<FString, FString>& OurMap);
 
 	static EGFCoreAPIResponseType DetermineCoreAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject);
 

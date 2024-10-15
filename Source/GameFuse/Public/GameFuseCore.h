@@ -22,6 +22,7 @@
 
 #include "Kismet/BlueprintAsyncActionBase.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Library/GameFuseStructLibrary.h"
 
 #include "GameFuseCore.generated.h"
 
@@ -61,7 +62,7 @@ public:
 	static const TMap<FString, FString>& GetGameVariables();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static const TArray<UGameFuseStoreItem*>& GetGameStoreItems();
+	static const TArray<FGFStoreItem>& GetGameStoreItems();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
 	static const TArray<UGameFuseLeaderboardItem*>& GetLeaderboard();
@@ -95,7 +96,7 @@ private:
 	static FString Name;
 	static FString Description;
 
-	static TArray<UGameFuseStoreItem*> StoreItems;
+	static TArray<FGFStoreItem> StoreItems;
 	static TArray<UGameFuseLeaderboardItem*> LeaderboardEntries;
 	static TMap<FString, FString> GameVariables;
 

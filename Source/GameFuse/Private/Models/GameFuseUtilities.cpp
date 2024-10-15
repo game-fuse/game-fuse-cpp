@@ -8,6 +8,8 @@
 
 #include "Models/GameFuseUtilities.h"
 
+
+
 TMap<FString, FString> GameFuseUtilities::ConvertJsonToMap(const FString& JsonString)
 {
 	TMap<FString, FString> TempMap;
@@ -32,6 +34,28 @@ TMap<FString, FString> GameFuseUtilities::ConvertJsonToMap(const FString& JsonSt
 	return TempMap;
 }
 
+bool GameFuseUtilities::ConvertJsonToStoreItem(FGFStoreItem& NewStoreItem, const TSharedPtr<FJsonValue>& JsonValue)
+{
+	if (JsonValue->Type != EJson::Object)
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Fetching Store Items Failed to parse JSON Items"));
+		return false;
+	}
+
+	const TSharedPtr<FJsonObject> JsonObject = JsonValue->AsObject();
+
+	JsonObject->TryGetStringField(TEXT("name"), NewStoreItem.Name);
+	JsonObject->TryGetStringField(TEXT("category"), NewStoreItem.Category);
+	JsonObject->TryGetStringField(TEXT("description"), NewStoreItem.Description);
+	JsonObject->TryGetStringField(TEXT("icon_url"), NewStoreItem.IconUrl);
+
+	JsonObject->TryGetNumberField(TEXT("id"), NewStoreItem.Id);
+	JsonObject->TryGetNumberField(TEXT("cost"), NewStoreItem.Cost);
+
+	return true;
+}
+
+
 FString GameFuseUtilities::ConvertMapToJsonStr(const TMap<FString, FString>& OurMap)
 {
 	const TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
@@ -48,7 +72,7 @@ FString GameFuseUtilities::ConvertMapToJsonStr(const TMap<FString, FString>& Our
 	return JsonString;
 }
 
-FString GameFuseUtilities::MakeStrRequestBody(const FString AuthenticationToken, const FString MapBody, const TMap<FString, FString>& OurMap)
+FString GameFuseUtilities::MakeStrRequestBody(const FString& AuthenticationToken, const FString& MapBody, const TMap<FString, FString>& OurMap)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
 
@@ -82,29 +106,49 @@ FString GameFuseUtilities::MakeStrRequestBody(const FString AuthenticationToken,
 EGFCoreAPIResponseType GameFuseUtilities::DetermineCoreAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject)
 {
 	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("game_variables")))
+	{
 		return EGFCoreAPIResponseType::SetUpGame;
+	}
 	if (JsonObject->HasField(TEXT("leaderboard_entries")))
+	{
 		return EGFCoreAPIResponseType::ListLeaderboardEntries;
+	}
 	if (JsonObject->HasField(TEXT("store_items")))
+	{
 		return EGFCoreAPIResponseType::ListStoreItems;
+	}
 	if (JsonObject->HasField(TEXT("mailer_response")))
+	{
 		return EGFCoreAPIResponseType::ForgotPassword;
+	}
 	return EGFCoreAPIResponseType::None;
 }
 
 EGFUserAPIResponseType GameFuseUtilities::DetermineUserAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject)
 {
 	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("username")))
+	{
 		return EGFUserAPIResponseType::Login;
+	}
 	if (JsonObject->HasField(TEXT("game_user_attributes")))
+	{
 		return EGFUserAPIResponseType::Attributes;
+	}
 	if (JsonObject->HasField(TEXT("game_user_store_items")))
+	{
 		return EGFUserAPIResponseType::StoreItems;
+	}
 	if (JsonObject->HasField(TEXT("leaderboard_entries")))
+	{
 		return EGFUserAPIResponseType::LeaderboardEntries;
+	}
 	if (JsonObject->HasField(TEXT("credits")))
+	{
 		return EGFUserAPIResponseType::Credits;
+	}
 	if (JsonObject->HasField(TEXT("score")))
+	{
 		return EGFUserAPIResponseType::Score;
+	}
 	return EGFUserAPIResponseType::None;
 }

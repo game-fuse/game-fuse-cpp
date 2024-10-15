@@ -1,4 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿/**
+*  Copyright (c) 2024-09-30 GameFuse
+ *  All rights reserved.
+ *
+ *  https://GameFuse.co/
+ *  https://github.com/game-fuse/game-fuse-cpp
+ */
 
 #pragma once
 

@@ -105,7 +105,7 @@ FString UGameFuseUser::GetAttributeValue(const FString Key) const
 	return Attributes.FindRef(Key);
 }
 
-TArray<UGameFuseStoreItem*>& UGameFuseUser::GetPurchasedStoreItems()
+TArray<FGFStoreItem>& UGameFuseUser::GetPurchasedStoreItems()
 {
 	return PurchasedStoreItems;
 }
@@ -200,11 +200,11 @@ void UGameFuseUser::RemoveAttribute(const FString& SetKey, FGameFuseAPIResponseC
 	UUserAPIManager::RemoveAttribute(SetKey, Id, AuthenticationToken, CompletionCallback);
 }
 
-void UGameFuseUser::PurchaseStoreItem(const UGameFuseStoreItem* StoreItem, FGameFuseAPIResponseCallback CompletionCallback)
+void UGameFuseUser::PurchaseStoreItem(const FGFStoreItem& StoreItem, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::PurchaseStoreItem(StoreItem->Id, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::PurchaseStoreItem(StoreItem.Id, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FGameFuseAPIResponseCallback CompletionCallback)
@@ -214,11 +214,11 @@ void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FGameFuseAPIR
 	UUserAPIManager::PurchaseStoreItem(StoreItemId, Id, AuthenticationToken, CompletionCallback);
 }
 
-void UGameFuseUser::RemoveStoreItem(const UGameFuseStoreItem* StoreItem, FGameFuseAPIResponseCallback CompletionCallback)
+void UGameFuseUser::RemoveStoreItem(const FGFStoreItem& StoreItem, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::RemoveStoreItem(StoreItem->Id, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::RemoveStoreItem(StoreItem.Id, Id, AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FGameFuseAPIResponseCallback CompletionCallback)
@@ -425,34 +425,16 @@ void UGameFuseUser::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
 
 	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("game_user_store_items"), AttributeArray))
 	{
+		PurchasedStoreItems.Reserve(AttributeArray->Num());
 		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray)
 		{
-			if (AttributeValue->Type == EJson::Object)
+			size_t newIndex = PurchasedStoreItems.AddDefaulted();
+
+			bool bSuccess = GameFuseUtilities::ConvertJsonToStoreItem(PurchasedStoreItems[newIndex], AttributeValue);
+
+			if (!bSuccess)
 			{
-				const TSharedPtr<FJsonObject> AttributeObject = AttributeValue->AsObject();
-				UGameFuseStoreItem* NewItem = NewObject<UGameFuseStoreItem>();
-
-				FString Cost = "";
-				FString ItemId = "";
-
-				// Extract key and value from the JSON object
-				AttributeObject->TryGetStringField(TEXT("name"), NewItem->Name);
-				AttributeObject->TryGetStringField(TEXT("category"), NewItem->Category);
-				AttributeObject->TryGetStringField(TEXT("description"), NewItem->Description);
-				AttributeObject->TryGetStringField(TEXT("cost"), Cost);
-				AttributeObject->TryGetStringField(TEXT("id"), ItemId);
-				AttributeObject->TryGetStringField(TEXT("icon_url"), NewItem->IconUrl);
-				NewItem->Cost = UKismetStringLibrary::Conv_StringToInt(Cost);
-				NewItem->Id = UKismetStringLibrary::Conv_StringToInt(ItemId);
-
-				// Add to the attribute map
-				PurchasedStoreItems.Add(NewItem);
-				UE_LOG(LogGameFuse, Log, TEXT("User Store Item : %s, %s"), *NewItem->Name, *NewItem->Category);
-			}
-			else
-			{
-				UE_LOG(LogGameFuse, Error, TEXT("User Failed To Parse JSON"));
-				return;
+				PurchasedStoreItems.RemoveAt(newIndex);
 			}
 		}
 		UE_LOG(LogGameFuse, Log, TEXT("User Store Items Updated"), Attributes.Num());
