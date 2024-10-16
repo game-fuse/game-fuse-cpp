@@ -9,7 +9,7 @@
 
 #include "Models/UserAPIManager.h"
 
-#include "Models/Utilities.h"
+#include "Models/GameFuseUtilities.h"
 #include "Unix/UnixPlatformHttp.h"
 
 
