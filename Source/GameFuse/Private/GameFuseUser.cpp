@@ -14,7 +14,7 @@
 #include "Kismet/KismetStringLibrary.h"
 #include "Objects/GameFuseSignData.h"
 #include "Models/GameFuseUtilities.h"
-#include "Unix/UnixPlatformHttp.h"
+
 
 
 // > Region Game Fuse User Initialization and Deinitialization
@@ -110,7 +110,7 @@ TArray<FGFStoreItem>& UGameFuseUser::GetPurchasedStoreItems()
 	return PurchasedStoreItems;
 }
 
-TArray<UGameFuseLeaderboardItem*>& UGameFuseUser::GetLeaderboards()
+const TArray<FGFLeaderboardEntry>& UGameFuseUser::GetLeaderboardEntries()
 {
 	return LeaderboardEntries;
 }
@@ -292,7 +292,7 @@ void UGameFuseUser::InternalResponseManager(bool bSuccess, const FString& Respon
 	}
 	switch (GameFuseUtilities::DetermineUserAPIResponseType(JsonObject))
 	{
-		//switch on EGF_UserAPIResonse
+		//switch on EGF_UserAPIResponse
 		case (EGFUserAPIResponseType::Login):
 			SetLoginInternal(JsonObject);
 			break;
@@ -411,7 +411,7 @@ void UGameFuseUser::SetAttributesInternal(const TSharedPtr<FJsonObject>& JsonObj
 				return;
 			}
 		}
-		UE_LOG(LogGameFuse, Log, TEXT("User Attributes Updated"), Attributes.Num());
+		UE_LOG(LogGameFuse, Log, TEXT("User Attributes Updated : %i"), Attributes.Num());
 	}
 	else
 	{
@@ -437,7 +437,7 @@ void UGameFuseUser::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
 				PurchasedStoreItems.RemoveAt(newIndex);
 			}
 		}
-		UE_LOG(LogGameFuse, Log, TEXT("User Store Items Updated"), Attributes.Num());
+		UE_LOG(LogGameFuse, Log, TEXT("User Store Items Updated : %i"), Attributes.Num());
 	}
 	else
 	{
@@ -445,43 +445,37 @@ void UGameFuseUser::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
 	}
 }
 
+/** Response is mixed leaderboard entries from many leaderboards*/
 void UGameFuseUser::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
 	LeaderboardEntries.Empty();
-
-	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("leaderboard_entries"), AttributeArray))
+	if (!JsonObject->HasField(TEXT("leaderboard_entries")))
 	{
-		FString GainedScore = "";
-		FString GameUserId = "";
+		UE_LOG(LogGameFuse, Error, TEXT("Fetching Users Leaderboard Entries Failed to parse JSON"));
+		return;
+	}
 
-		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray)
+	const TArray<TSharedPtr<FJsonValue>>& AttributeArray = JsonObject->GetArrayField(TEXT("leaderboard_entries"));
+	if (AttributeArray.Num() == 0)
+	{
+		return;
+	}
+
+
+	LeaderboardEntries.Reserve(AttributeArray.Num());
+
+
+	for (const TSharedPtr<FJsonValue>& AttributeValue : AttributeArray)
+	{
+		size_t newIndex = LeaderboardEntries.AddDefaulted();
+		const bool bSuccess = GameFuseUtilities::ConvertJsonToLeaderboardItem(LeaderboardEntries[newIndex], AttributeValue);
+
+		if (!bSuccess)
 		{
-			if (AttributeValue->Type == EJson::Object)
-			{
-				const TSharedPtr<FJsonObject> AttributeObject = AttributeValue->AsObject();
-				UGameFuseLeaderboardItem* NewItem = NewObject<UGameFuseLeaderboardItem>();
-
-				// Extract key and value from the JSON object
-				AttributeObject->TryGetStringField(TEXT("username"), NewItem->Username);
-				AttributeObject->TryGetStringField(TEXT("score"), GainedScore);
-				AttributeObject->TryGetStringField(TEXT("leaderboard_name"), NewItem->LeaderboardName);
-				AttributeObject->TryGetStringField(TEXT("game_user_id"), GameUserId);
-				AttributeObject->TryGetStringField(TEXT("extra_attributes"), NewItem->ExtraAttributes);
-				NewItem->Score = UKismetStringLibrary::Conv_StringToInt(GainedScore);
-				NewItem->GameUserId = UKismetStringLibrary::Conv_StringToInt(GameUserId);
-
-				// Add to the attribute map
-				LeaderboardEntries.Add(NewItem);
-			}
-			else
-			{
-				UE_LOG(LogGameFuse, Error, TEXT("Fetching My Leaderboard Failed to parse JSON Items"));
-				return;
-			}
+			LeaderboardEntries.RemoveAt(newIndex);
 		}
+
 	}
-	else
-	{
-		UE_LOG(LogGameFuse, Error, TEXT("Fetching My Leaderboard Failed to parse JSON"));
-	}
+	UE_LOG(LogGameFuse, Log, TEXT("Fetched User Leaderboard Entries. Amount : %d"), LeaderboardEntries.Num());
+
 }

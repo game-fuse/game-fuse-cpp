@@ -9,18 +9,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "Objects/GameFuseLeaderboardItem.h"
-#include "Objects/GameFuseStoreItem.h"
-
 #include "Models/UserAPIManager.h"
-
-#include "Serialization/JsonReader.h"
-#include "Serialization/JsonWriter.h"
-#include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
-#include "Dom/JsonValue.h"
 #include "Library/GameFuseStructLibrary.h"
 
 #include "GameFuseUser.generated.h"
@@ -72,7 +63,7 @@ public:
 	TArray<FGFStoreItem>& GetPurchasedStoreItems();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse|User")
-	TArray<UGameFuseLeaderboardItem*>& GetLeaderboards();
+	const TArray<FGFLeaderboardEntry>& GetLeaderboardEntries();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse|User")
 	bool IsSignedIn() const;
@@ -132,6 +123,7 @@ public:
 	void ClearLeaderboardEntry(const FString& LeaderboardName, FGameFuseAPIResponseCallback CompletionCallback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
+	/** Fetches entries for all leaderboards User has posted entries in. */
 	void FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FGameFuseAPIResponseCallback CompletionCallback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|User")
@@ -160,7 +152,7 @@ private:
 	TMap<FString, FString> Attributes;
 	TMap<FString, FString> DirtyAttributes;
 	TArray<FGFStoreItem> PurchasedStoreItems;
-	TArray<UGameFuseLeaderboardItem*> LeaderboardEntries;
+	TArray<FGFLeaderboardEntry> LeaderboardEntries;
 	TSharedRef<IHttpRequest> RequestManager = FHttpModule::Get().CreateRequest();
 
 	FGameFuseAPIResponseCallback* CompletionCallbackInternal;

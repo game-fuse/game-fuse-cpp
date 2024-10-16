@@ -38,20 +38,20 @@ struct FGFStoreItem
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|LeaderboardItem")
-struct FGFLeaderboardItem
+struct FGFLeaderboardEntry
 {
 	GENERATED_BODY()
 
-	FGFLeaderboardItem() = default;
+	FGFLeaderboardEntry() = default;
 
 	UPROPERTY(BlueprintReadOnly)
 	FString LeaderboardName = "";
 
 	UPROPERTY(BlueprintReadOnly)
-	int32 Score = 0;
+	FString Username = "";
 
 	UPROPERTY(BlueprintReadOnly)
-	FString Username = "";
+	int32 Score = 0;
 
 	UPROPERTY(BlueprintReadOnly)
 	int32 GameUserId = 0;
@@ -62,4 +62,25 @@ struct FGFLeaderboardItem
 	UPROPERTY(BlueprintReadOnly)
 	FString DateTime = "";
 
+};
+
+USTRUCT(BlueprintType, Category = "GameFuse|Leaderboard")
+struct FGFLeaderboard
+{
+	GENERATED_BODY()
+
+	FGFLeaderboard() = default;
+
+	FGFLeaderboard(FString Name)
+	{
+		this->Name = Name;
+		this->Entries = TArray<FGFLeaderboardEntry>();
+	}
+
+
+	UPROPERTY(BlueprintReadOnly)
+	FString Name = "";
+
+	UPROPERTY(BlueprintReadOnly)
+	TArray<FGFLeaderboardEntry> Entries;
 };

@@ -23,7 +23,8 @@ FString UGameFuseCore::Name = "";
 FString UGameFuseCore::Description = "";
 
 TArray<FGFStoreItem> UGameFuseCore::StoreItems;
-TArray<UGameFuseLeaderboardItem*> UGameFuseCore::LeaderboardEntries;
+TMap<FString, FGFLeaderboard> UGameFuseCore::Leaderboards;
+TArray<FGFLeaderboardEntry> UGameFuseCore::EmptyEntries;
 TMap<FString, FString> UGameFuseCore::GameVariables;
 
 
@@ -59,9 +60,19 @@ const TArray<FGFStoreItem>& UGameFuseCore::GetGameStoreItems()
 	return StoreItems;
 }
 
-const TArray<UGameFuseLeaderboardItem*>& UGameFuseCore::GetLeaderboard()
+const TMap<FString, FGFLeaderboard>& UGameFuseCore::GetLeaderboards()
 {
-	return LeaderboardEntries;
+	return Leaderboards;
+}
+
+const TArray<FGFLeaderboardEntry>& UGameFuseCore::GetLeaderboardEntries(const FString& LeaderboardName)
+{
+	if (!Leaderboards.Contains(LeaderboardName))
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Leaderboard %s has not been fetched"), *LeaderboardName);
+		return EmptyEntries;
+	}
+	return Leaderboards[LeaderboardName].Entries;
 }
 
 // < End Region
@@ -239,44 +250,49 @@ void UGameFuseCore::SetVariablesInternal(const FString& JsonStr)
 
 void UGameFuseCore::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	LeaderboardEntries.Empty();
 
-	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("leaderboard_entries"), AttributeArray))
+	if (!JsonObject->HasField(TEXT("leaderboard_entries")))
 	{
-		FString Score = "";
-		FString GameUserId = "";
+		UE_LOG(LogGameFuse, Error, TEXT("Fetching Leaderboard Failed to parse JSON"));
+		return;
+	}
 
-		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray)
-		{
-			if (AttributeValue->Type == EJson::Object)
-			{
-				const TSharedPtr<FJsonObject> AttributeObject = AttributeValue->AsObject();
-				UGameFuseLeaderboardItem* NewItem = NewObject<UGameFuseLeaderboardItem>();
+	const TArray<TSharedPtr<FJsonValue>>& AttributeArray = JsonObject->GetArrayField(TEXT("leaderboard_entries"));
+	if (AttributeArray.Num() == 0)
+	{
+		return;
+	}
 
-				// Extract key and value from the JSON object
-				AttributeObject->TryGetStringField(TEXT("username"), NewItem->Username);
-				AttributeObject->TryGetStringField(TEXT("score"), Score);
-				AttributeObject->TryGetStringField(TEXT("leaderboard_name"), NewItem->LeaderboardName);
-				AttributeObject->TryGetStringField(TEXT("game_user_id"), GameUserId);
-				AttributeObject->TryGetStringField(TEXT("extra_attributes"), NewItem->ExtraAttributes);
-				NewItem->Score = UKismetStringLibrary::Conv_StringToInt(Score);
-				NewItem->GameUserId = UKismetStringLibrary::Conv_StringToInt(GameUserId);
+	// grab leaderboard_name from the first entry
+	const FString LeaderboardKey = AttributeArray[0]->AsObject()->GetStringField(TEXT("leaderboard_name"));
 
-				// Add to the attribute map
-				LeaderboardEntries.Add(NewItem);
-			}
-			else
-			{
-				UE_LOG(LogGameFuse, Error, TEXT("Fetching Leaderboard Failed to parse JSON Items"));
-				return;
-			}
-		}
-		UE_LOG(LogGameFuse, Log, TEXT("Fetched Leaderboards amount of : %d"), LeaderboardEntries.Num());
+	// Entries.Reserve(AttributeArray.Num());
+
+	if (!Leaderboards.Contains(LeaderboardKey))
+	{
+		Leaderboards.Add(LeaderboardKey, FGFLeaderboard(LeaderboardKey));
 	}
 	else
 	{
-		UE_LOG(LogGameFuse, Error, TEXT("Fetching Leaderboard Failed to parse JSON"));
+		Leaderboards[LeaderboardKey].Entries.Empty();
 	}
+
+	TArray<FGFLeaderboardEntry>& CurrLeaderboardEntries = Leaderboards[LeaderboardKey].Entries;
+	CurrLeaderboardEntries.Reserve(AttributeArray.Num());
+
+
+	for (const TSharedPtr<FJsonValue>& AttributeValue : AttributeArray)
+	{
+		const size_t newIndex = CurrLeaderboardEntries.AddDefaulted();
+		const bool bSuccess = GameFuseUtilities::ConvertJsonToLeaderboardItem(CurrLeaderboardEntries[newIndex], AttributeValue);
+		if (!bSuccess)
+		{
+			CurrLeaderboardEntries.RemoveAt(newIndex);
+		}
+
+	}
+	UE_LOG(LogGameFuse, Log, TEXT("Fetched Leaderboards amount of : %d"), CurrLeaderboardEntries.Num());
+
 }
 
 

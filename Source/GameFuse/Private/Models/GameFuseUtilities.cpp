@@ -8,6 +8,8 @@
 
 #include "Models/GameFuseUtilities.h"
 
+#include "Models/APIResponseManager.h"
+
 
 
 TMap<FString, FString> GameFuseUtilities::ConvertJsonToMap(const FString& JsonString)
@@ -51,6 +53,27 @@ bool GameFuseUtilities::ConvertJsonToStoreItem(FGFStoreItem& NewStoreItem, const
 
 	JsonObject->TryGetNumberField(TEXT("id"), NewStoreItem.Id);
 	JsonObject->TryGetNumberField(TEXT("cost"), NewStoreItem.Cost);
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& NewLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue)
+{
+	if (JsonValue->Type != EJson::Object)
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Fetching Leaderboard Items Failed to parse JSON Items"));
+		return false;
+	}
+
+	const TSharedPtr<FJsonObject> JsonObject = JsonValue->AsObject();
+
+	JsonObject->TryGetStringField(TEXT("username"), NewLeaderboardItem.Username);
+	JsonObject->TryGetStringField(TEXT("leaderboard_name"), NewLeaderboardItem.LeaderboardName);
+	JsonObject->TryGetStringField(TEXT("extra_attributes"), NewLeaderboardItem.ExtraAttributes);
+
+	JsonObject->TryGetNumberField(TEXT("score"), NewLeaderboardItem.Score);
+	JsonObject->TryGetNumberField(TEXT("game_user_id"), NewLeaderboardItem.GameUserId);
+
 
 	return true;
 }

@@ -11,9 +11,6 @@
 #include "CoreMinimal.h"
 #include "GameFuseUser.h"
 
-#include "Objects/GameFuseLeaderboardItem.h"
-#include "Objects/GameFuseStoreItem.h"
-
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
@@ -64,8 +61,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
 	static const TArray<FGFStoreItem>& GetGameStoreItems();
 
+	/** Returns a TMap of all leaderboards that have been fetched from GameFuse */
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static const TArray<UGameFuseLeaderboardItem*>& GetLeaderboard();
+	static const TMap<FString, FGFLeaderboard>& GetLeaderboards();
+
+	/** Returns a TArray of all leaderboard entries that have been fetched from GameFuse.
+	 *  If LeaderboardEntries have not been fetched, returns an empty TArray. */
+	UFUNCTION(BlueprintPure, Category = "GameFuse")
+	static const TArray<FGFLeaderboardEntry>& GetLeaderboardEntries(const FString& LeaderboardName);
 
 	// > GameSetup
 
@@ -97,7 +100,8 @@ private:
 	static FString Description;
 
 	static TArray<FGFStoreItem> StoreItems;
-	static TArray<UGameFuseLeaderboardItem*> LeaderboardEntries;
+	static TMap<FString, FGFLeaderboard> Leaderboards;
+	static TArray<FGFLeaderboardEntry> EmptyEntries;
 	static TMap<FString, FString> GameVariables;
 
 	void CompleteTask(bool bSuccess, const FString& Result);
