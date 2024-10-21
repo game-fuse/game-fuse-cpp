@@ -23,9 +23,13 @@ public:
 
 	static TMap<FString, FString> ConvertJsonToMap(const FString& JsonString);
 
-	static bool ConvertJsonToStoreItem(FGFStoreItem& NewStoreItem, const TSharedPtr<FJsonValue>& JsonValue);
+	static bool ConvertJsonToGameData(FGFGameData& InGameData, const TSharedPtr<FJsonObject>& JsonObject);
 
-	static bool ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& NewLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
+	static bool ConvertJsonToUserData(FGFUserData& InUserData, const TSharedPtr<FJsonObject>& JsonObject);
+
+	static bool ConvertJsonToStoreItem(FGFStoreItem& InStoreItem, const TSharedPtr<FJsonValue>& JsonValue);
+
+	static bool ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
 
 	static FString ConvertMapToJsonStr(const TMap<FString, FString>& OurMap);
 

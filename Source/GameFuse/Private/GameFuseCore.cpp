@@ -17,10 +17,7 @@
 
 
 
-int32 UGameFuseCore::GameId = 0;
-FString UGameFuseCore::Token = "";
-FString UGameFuseCore::Name = "";
-FString UGameFuseCore::Description = "";
+FGFGameData UGameFuseCore::GameData;
 
 TArray<FGFStoreItem> UGameFuseCore::StoreItems;
 TMap<FString, FGFLeaderboard> UGameFuseCore::Leaderboards;
@@ -30,24 +27,28 @@ TMap<FString, FString> UGameFuseCore::GameVariables;
 
 // > Region Instance Getters
 
+const FGFGameData& UGameFuseCore::GetGameData() {
+	return GameData;
+}
+
 int32 UGameFuseCore::GetGameId()
 {
-	return GameId;
+	return GameData.Id;
 }
 
 FString UGameFuseCore::GetGameName()
 {
-	return Name;
+	return GameData.Name;
 }
 
 FString UGameFuseCore::GetGameDescription()
 {
-	return Description;
+	return GameData.Description;
 }
 
 FString UGameFuseCore::GetGameToken()
 {
-	return Token;
+	return GameData.Token;
 }
 
 const TMap<FString, FString>& UGameFuseCore::GetGameVariables()
@@ -96,7 +97,7 @@ UGameFuseCore* UGameFuseCore::SendPasswordResetEmail(const FString& Email)
 	UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
 	AsyncTask->AddToRoot();
 
-	if (GameId == 0)
+	if (GameData.Id == 0)
 	{
 		UE_LOG(LogGameFuse, Error, TEXT("Please set up your game with SetUpGame() before sending password resets"));
 		AsyncTask->CompleteTask(false, "Please set up your game with SetUpGame() before sending password resets");
@@ -105,7 +106,7 @@ UGameFuseCore* UGameFuseCore::SendPasswordResetEmail(const FString& Email)
 
 	UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-	UCoreAPIManager::SendPasswordResetEmail(Email, GameId, Token);
+	UCoreAPIManager::SendPasswordResetEmail(Email, GameData.Id, GameData.Token);
 
 	return AsyncTask;
 }
@@ -117,7 +118,7 @@ UGameFuseCore* UGameFuseCore::FetchGameVariables()
 
 	UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-	UCoreAPIManager::FetchGameVariables(GameId, Token);
+	UCoreAPIManager::FetchGameVariables(GameData.Id, GameData.Token);
 
 	return AsyncTask;
 }
@@ -129,7 +130,7 @@ UGameFuseCore* UGameFuseCore::FetchLeaderboardEntries(UGameFuseUser* GameFuseUse
 
 	UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-	UCoreAPIManager::FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameId, GameFuseUser->GetAuthenticationToken());
+	UCoreAPIManager::FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, GameFuseUser->GetAuthenticationToken());
 
 	return AsyncTask;
 }
@@ -141,7 +142,7 @@ UGameFuseCore* UGameFuseCore::FetchStoreItems()
 
 	UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-	UCoreAPIManager::FetchStoreItems(GameId, Token);
+	UCoreAPIManager::FetchStoreItems(GameData.Id, GameData.Token);
 
 	return AsyncTask;
 }
@@ -208,12 +209,12 @@ void UGameFuseCore::InternalResponseManager(bool bSuccess, const FString& Respon
 
 void UGameFuseCore::SetSetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	GameId = JsonObject->GetIntegerField(TEXT("id"));
-	JsonObject->TryGetStringField(TEXT("name"), Name);
-	JsonObject->TryGetStringField(TEXT("token"), Token);
-	JsonObject->TryGetStringField(TEXT("description"), Description);
-
-	UE_LOG(LogGameFuse, Log, TEXT("SetUp Game Completed : %d : %s"), GameId, *Token);
+	bool bSuccess = GameFuseUtilities::ConvertJsonToGameData(GameData, JsonObject);
+	if (!bSuccess)
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse Game Data"));
+	}
+	UE_LOG(LogGameFuse, Log, TEXT("SetUp Game Completed : %d : %s"), GameData.Id, *GameData.Token);
 }
 
 void UGameFuseCore::SetVariablesInternal(const FString& JsonStr)

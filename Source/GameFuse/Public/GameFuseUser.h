@@ -33,13 +33,16 @@ public:
 	//> Getters
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse|User")
+	const FGFUserData& GetUserData() const;
+
+	UFUNCTION(BlueprintPure, Category = "GameFuse|User")
+	FString GetUsername() const;
+
+	UFUNCTION(BlueprintPure, Category = "GameFuse|User")
 	int32 GetNumberOfLogins() const;
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse|User")
 	FString GetLastLogin() const;
-
-	UFUNCTION(BlueprintPure, Category = "GameFuse|User")
-	FString GetUsername() const;
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse|User")
 	int32 GetScore() const;
@@ -140,14 +143,7 @@ public:
 
 private:
 
-	int32 NumberOfLogins = 0;
-	FString LastLogin;
-	FString AuthenticationToken;
-	FString Username;
-	int32 Id = 0;
-	bool SignedIn = false;
-	int32 Score = 0;
-	int32 Credits = 0;
+	FGFUserData UserData;
 
 	TMap<FString, FString> Attributes;
 	TMap<FString, FString> DirtyAttributes;
