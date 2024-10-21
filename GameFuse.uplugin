@@ -24,6 +24,11 @@
 				"Linux",
 				"Mac"
 			]
+		},
+		{
+			"Name": "GameFuseTests",
+			"Type": "DeveloperTool",
+			"LoadingPhase": "Default"
 		}
 	]
 }
