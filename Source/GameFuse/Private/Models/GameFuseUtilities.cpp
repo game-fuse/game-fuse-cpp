@@ -36,7 +36,45 @@ TMap<FString, FString> GameFuseUtilities::ConvertJsonToMap(const FString& JsonSt
 	return TempMap;
 }
 
-bool GameFuseUtilities::ConvertJsonToStoreItem(FGFStoreItem& NewStoreItem, const TSharedPtr<FJsonValue>& JsonValue)
+
+bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const TSharedPtr<FJsonObject>& JsonObject)
+{
+
+	if (!JsonObject.IsValid())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for GameData conversion"));
+		return false;
+	}
+
+	JsonObject->TryGetNumberField(TEXT("id"), InGameData.Id);
+	JsonObject->TryGetStringField(TEXT("token"), InGameData.Token);
+	JsonObject->TryGetStringField(TEXT("name"), InGameData.Name);
+	JsonObject->TryGetStringField(TEXT("description"), InGameData.Description);
+
+	return true;
+
+}
+
+bool GameFuseUtilities::ConvertJsonToUserData(FGFUserData& InUserData, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (!JsonObject.IsValid())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for UserData conversion"));
+		return false;
+	}
+
+	JsonObject->TryGetNumberField(TEXT("id"), InUserData.Id);
+	JsonObject->TryGetStringField(TEXT("username"), InUserData.Username);
+	JsonObject->TryGetNumberField(TEXT("number_of_logins"), InUserData.NumberOfLogins);
+	JsonObject->TryGetStringField(TEXT("authentication_token"), InUserData.AuthenticationToken);
+	JsonObject->TryGetNumberField(TEXT("score"), InUserData.Score);
+	JsonObject->TryGetNumberField(TEXT("credits"), InUserData.Credits);
+	JsonObject->TryGetStringField(TEXT("last_login"), InUserData.LastLogin);
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToStoreItem(FGFStoreItem& InStoreItem, const TSharedPtr<FJsonValue>& JsonValue)
 {
 	if (JsonValue->Type != EJson::Object)
 	{
@@ -46,18 +84,18 @@ bool GameFuseUtilities::ConvertJsonToStoreItem(FGFStoreItem& NewStoreItem, const
 
 	const TSharedPtr<FJsonObject> JsonObject = JsonValue->AsObject();
 
-	JsonObject->TryGetStringField(TEXT("name"), NewStoreItem.Name);
-	JsonObject->TryGetStringField(TEXT("category"), NewStoreItem.Category);
-	JsonObject->TryGetStringField(TEXT("description"), NewStoreItem.Description);
-	JsonObject->TryGetStringField(TEXT("icon_url"), NewStoreItem.IconUrl);
+	JsonObject->TryGetStringField(TEXT("name"), InStoreItem.Name);
+	JsonObject->TryGetStringField(TEXT("category"), InStoreItem.Category);
+	JsonObject->TryGetStringField(TEXT("description"), InStoreItem.Description);
+	JsonObject->TryGetStringField(TEXT("icon_url"), InStoreItem.IconUrl);
 
-	JsonObject->TryGetNumberField(TEXT("id"), NewStoreItem.Id);
-	JsonObject->TryGetNumberField(TEXT("cost"), NewStoreItem.Cost);
+	JsonObject->TryGetNumberField(TEXT("id"), InStoreItem.Id);
+	JsonObject->TryGetNumberField(TEXT("cost"), InStoreItem.Cost);
 
 	return true;
 }
 
-bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& NewLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue)
+bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue)
 {
 	if (JsonValue->Type != EJson::Object)
 	{
@@ -67,12 +105,12 @@ bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& NewLea
 
 	const TSharedPtr<FJsonObject> JsonObject = JsonValue->AsObject();
 
-	JsonObject->TryGetStringField(TEXT("username"), NewLeaderboardItem.Username);
-	JsonObject->TryGetStringField(TEXT("leaderboard_name"), NewLeaderboardItem.LeaderboardName);
-	JsonObject->TryGetStringField(TEXT("extra_attributes"), NewLeaderboardItem.ExtraAttributes);
+	JsonObject->TryGetStringField(TEXT("username"), InLeaderboardItem.Username);
+	JsonObject->TryGetStringField(TEXT("leaderboard_name"), InLeaderboardItem.LeaderboardName);
+	JsonObject->TryGetStringField(TEXT("extra_attributes"), InLeaderboardItem.ExtraAttributes);
 
-	JsonObject->TryGetNumberField(TEXT("score"), NewLeaderboardItem.Score);
-	JsonObject->TryGetNumberField(TEXT("game_user_id"), NewLeaderboardItem.GameUserId);
+	JsonObject->TryGetNumberField(TEXT("score"), InLeaderboardItem.Score);
+	JsonObject->TryGetNumberField(TEXT("game_user_id"), InLeaderboardItem.GameUserId);
 
 
 	return true;

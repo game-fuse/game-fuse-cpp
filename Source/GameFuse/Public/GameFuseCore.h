@@ -42,6 +42,8 @@ public:
 	FGameFuseCallback OnError;
 
 	//> Getters
+	UFUNCTION(BlueprintPure, Category = "GameFuse")
+	static const FGFGameData& GetGameData();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
 	static int32 GetGameId();
@@ -94,10 +96,8 @@ public:
 
 private:
 
-	static int32 GameId;
-	static FString Token;
-	static FString Name;
-	static FString Description;
+
+	static FGFGameData GameData;
 
 	static TArray<FGFStoreItem> StoreItems;
 	static TMap<FString, FGFLeaderboard> Leaderboards;

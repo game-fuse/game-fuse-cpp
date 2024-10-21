@@ -11,6 +11,58 @@
 
 #include "GameFuseStructLibrary.generated.h"
 
+// Add this new struct to the file
+USTRUCT(BlueprintType, Category = "GameFuse|GameData")
+struct FGFGameData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 Id = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString Token = "";
+
+	UPROPERTY(BlueprintReadOnly)
+	FString Name = "";
+
+	UPROPERTY(BlueprintReadOnly)
+	FString Description = "";
+
+};
+
+USTRUCT(BlueprintType, Category = "GameFuse|UserData")
+struct FGFUserData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 Id = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString Username = "";
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bSignedIn = false;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 NumberOfLogins = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString AuthenticationToken = "";
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 Score = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 Credits = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString LastLogin = "0000-00-00";
+
+};
+
+
 USTRUCT(BlueprintType, Category = "GameFuse|StoreItem")
 struct FGFStoreItem
 {

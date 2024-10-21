@@ -25,19 +25,8 @@ void UGameFuseUser::Initialize(FSubsystemCollectionBase& Collection)
 
 	if (const UGameFuseSaveData* LoadedSaveGame = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0)))
 	{
-		FString LastLoginUser = LoadedSaveGame->LastLogin;
-		FString AuthenticationTokenUser = LoadedSaveGame->AuthenticationToken;
-		FString UsernameUser = LoadedSaveGame->Username;
 
-		this->SignedIn = true;
-		this->NumberOfLogins = (LoadedSaveGame->NumberOfLogins);
-		this->LastLogin = (LastLoginUser);
-		this->AuthenticationToken = (AuthenticationTokenUser);
-		this->Username = (UsernameUser);
-		this->Score = (LoadedSaveGame->Score);
-		this->Credits = (LoadedSaveGame->Credits);
-		this->Id = (LoadedSaveGame->Id);
-
+		UserData = LoadedSaveGame->UserData;
 		UE_LOG(LogGameFuse, Log, TEXT("Game Fuse Subsystem Loaded"));
 	}
 
@@ -48,38 +37,43 @@ void UGameFuseUser::Deinitialize()
 	Super::Deinitialize();
 }
 
-
 // < End Region
+
 // > Region Game Fuse User Getters
+
+const FGFUserData& UGameFuseUser::GetUserData() const
+{
+	return UserData;
+}
 
 bool UGameFuseUser::IsSignedIn() const
 {
-	return SignedIn;
+	return UserData.bSignedIn;
 }
 
 int32 UGameFuseUser::GetNumberOfLogins() const
 {
-	return NumberOfLogins;
+	return UserData.NumberOfLogins;
 }
 
 FString UGameFuseUser::GetLastLogin() const
 {
-	return LastLogin;
+	return UserData.LastLogin;
 }
 
 FString UGameFuseUser::GetUsername() const
 {
-	return Username;
+	return UserData.Username;
 }
 
 int32 UGameFuseUser::GetScore() const
 {
-	return Score;
+	return UserData.Score;
 }
 
 int32 UGameFuseUser::GetCredits() const
 {
-	return Credits;
+	return UserData.Credits;
 }
 
 TMap<FString, FString>& UGameFuseUser::GetAttributes()
@@ -117,7 +111,7 @@ const TArray<FGFLeaderboardEntry>& UGameFuseUser::GetLeaderboardEntries()
 
 FString UGameFuseUser::GetAuthenticationToken() const
 {
-	return AuthenticationToken;
+	return UserData.AuthenticationToken;
 }
 
 // < End Region
@@ -144,35 +138,35 @@ void UGameFuseUser::AddCredits(const int AddCredits, FGameFuseAPIResponseCallbac
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::AddCredits(AddCredits, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::AddCredits(AddCredits, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::SetCredits(const int SetCredits, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::SetCredits(SetCredits, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::SetCredits(SetCredits, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::AddScore(const int AddScore, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::AddScore(AddScore, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::AddScore(AddScore, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::SetScore(const int SetScore, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::SetScore(SetScore, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::SetScore(SetScore, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::SetAttribute(SetKey, SetValue, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::SetAttribute(SetKey, SetValue, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetValue, FGameFuseAPIResponseCallback CompletionCallback)
@@ -190,70 +184,70 @@ void UGameFuseUser::SyncLocalAttributes(FGameFuseAPIResponseCallback CompletionC
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::SyncLocalAttributes(DirtyAttributes, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::SyncLocalAttributes(DirtyAttributes, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::RemoveAttribute(const FString& SetKey, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::RemoveAttribute(SetKey, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::RemoveAttribute(SetKey, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::PurchaseStoreItem(const FGFStoreItem& StoreItem, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::PurchaseStoreItem(StoreItem.Id, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::PurchaseStoreItem(StoreItem.Id, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::PurchaseStoreItem(StoreItemId, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::PurchaseStoreItem(StoreItemId, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::RemoveStoreItem(const FGFStoreItem& StoreItem, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::RemoveStoreItem(StoreItem.Id, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::RemoveStoreItem(StoreItem.Id, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::RemoveStoreItem(StoreItemId, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::RemoveStoreItem(StoreItemId, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, TMap<FString, FString> ExtraAttributes, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::FetchMyLeaderboardEntries(Limit, bOnePerUser, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::FetchMyLeaderboardEntries(Limit, bOnePerUser, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::ClearLeaderboardEntry(LeaderboardName, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::ClearLeaderboardEntry(LeaderboardName, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 
@@ -261,14 +255,14 @@ void UGameFuseUser::FetchAttributes(bool bChainedFromLogin, FGameFuseAPIResponse
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::FetchAttributes(bChainedFromLogin, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::FetchAttributes(bChainedFromLogin, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 void UGameFuseUser::FetchPurchaseStoreItems(const bool bChainedFromLogin, FGameFuseAPIResponseCallback CompletionCallback)
 {
 	UHTTPResponseManager::CompletionCallback.BindDynamic(this, &UGameFuseUser::InternalResponseManager);
 
-	UUserAPIManager::FetchPurchaseStoreItems(bChainedFromLogin, Id, AuthenticationToken, CompletionCallback);
+	UUserAPIManager::FetchPurchaseStoreItems(bChainedFromLogin, UserData.Id, UserData.AuthenticationToken, CompletionCallback);
 }
 
 
@@ -320,26 +314,17 @@ void UGameFuseUser::InternalResponseManager(bool bSuccess, const FString& Respon
 
 void UGameFuseUser::SetLoginInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	this->SignedIn = true;
-	this->NumberOfLogins = UKismetStringLibrary::Conv_StringToInt(JsonObject->GetStringField(TEXT("number_of_logins")));
-	JsonObject->TryGetStringField(TEXT("last_login"), this->LastLogin);
-	JsonObject->TryGetStringField(TEXT("authentication_token"), this->AuthenticationToken);
-	JsonObject->TryGetStringField(TEXT("username"), this->Username);
-	this->Score = UKismetStringLibrary::Conv_StringToInt(JsonObject->GetStringField(TEXT("score")));
-	this->Credits = UKismetStringLibrary::Conv_StringToInt(JsonObject->GetStringField(TEXT("credits")));
-	this->Id = UKismetStringLibrary::Conv_StringToInt(JsonObject->GetStringField(TEXT("id")));
+	const bool bSuccess = GameFuseUtilities::ConvertJsonToUserData(UserData, JsonObject);
 
-	if (UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::CreateSaveGameObject(UGameFuseSaveData::StaticClass())))
+	if (bSuccess)
 	{
-		SaveGameInstance->NumberOfLogins = this->NumberOfLogins;
-		SaveGameInstance->LastLogin = this->LastLogin;
-		SaveGameInstance->AuthenticationToken = this->AuthenticationToken;
-		SaveGameInstance->Username = this->Username;
-		SaveGameInstance->Score = this->Score;
-		SaveGameInstance->Credits = this->Credits;
-		SaveGameInstance->Id = this->Id;
+		UserData.bSignedIn = true;
+
+		UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::CreateSaveGameObject(UGameFuseSaveData::StaticClass()));
+		SaveGameInstance->UserData = UserData;
 
 		UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
+
 		UE_LOG(LogGameFuse, Log, TEXT("Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
 	}
 	else
@@ -354,8 +339,8 @@ void UGameFuseUser::SetCreditsInternal(const TSharedPtr<FJsonObject>& JsonObject
 
 	if (UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0)))
 	{
-		this->Credits = NewCredits;
-		SaveGameInstance->Credits = NewCredits;
+		UserData.Credits = NewCredits;
+		SaveGameInstance->UserData.Credits = NewCredits;
 		UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
 		UE_LOG(LogGameFuse, Log, TEXT("Updated The Credits Into SlotName:GameFuseSaveSlot UserIndex:0"));
 	}
@@ -371,8 +356,8 @@ void UGameFuseUser::SetScoresInternal(const TSharedPtr<FJsonObject>& JsonObject)
 
 	if (UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0)))
 	{
-		this->Score = NewScores;
-		SaveGameInstance->Score = NewScores;
+		UserData.Score = NewScores;
+		SaveGameInstance->UserData.Score = NewScores;
 		UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
 		UE_LOG(LogGameFuse, Log, TEXT("Updated The Scores Into SlotName:GameFuseSaveSlot UserIndex:0"));
 	}
