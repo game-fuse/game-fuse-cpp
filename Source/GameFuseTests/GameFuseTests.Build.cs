@@ -1,26 +1,22 @@
 using UnrealBuildTool;
 
-public class GameFuseTests : ModuleRules
-{
-    public GameFuseTests(ReadOnlyTargetRules Target) : base(Target)
-    {
-        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+public class GameFuseTests : ModuleRules {
+	public GameFuseTests(ReadOnlyTargetRules Target) : base(Target) {
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        PublicDependencyModuleNames.AddRange(
-            new string[]
-            {
-                "Core", "GameFuse",
-            }
-        );
+		PublicDependencyModuleNames.AddRange(
+			new[] {
+				"Core", "GameFuse", "Json", "JsonUtilities"
+			}
+		);
 
-        PrivateDependencyModuleNames.AddRange(
-            new string[]
-            {
-                "CoreUObject",
-                "Engine",
-                "Slate",
-                "SlateCore"
-            }
-        );
-    }
+		PrivateDependencyModuleNames.AddRange(
+			new[] {
+				"CoreUObject",
+				"Engine",
+				"Slate",
+				"SlateCore"
+			}
+		);
+	}
 }

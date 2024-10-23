@@ -27,7 +27,8 @@ TMap<FString, FString> UGameFuseCore::GameVariables;
 
 // > Region Instance Getters
 
-const FGFGameData& UGameFuseCore::GetGameData() {
+const FGFGameData& UGameFuseCore::GetGameData()
+{
 	return GameData;
 }
 
@@ -174,8 +175,8 @@ void UGameFuseCore::InternalResponseManager(bool bSuccess, const FString& Respon
 		return;
 	}
 
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseStr);
 	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseStr);
 
 	if (!FJsonSerializer::Deserialize(Reader, JsonObject))
 	{

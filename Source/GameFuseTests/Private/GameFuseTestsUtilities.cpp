@@ -1,9 +1,9 @@
 #include "GameFuseTestsUtilities.h"
 
-#include "GameFuseTestAPIManager.h"
+#include "TestSuiteAPIManager.h"
 
 
 void UGameFuseTestsUtilities::CleanUpTestData()
 {
-	UGameFuseTestAPIManager::CleanUpTestData(1);
+	// UTestSuiteAPIManager::CleanUpTestData(1);
 }

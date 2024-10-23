@@ -12,28 +12,40 @@
 
 
 
-TMap<FString, FString> GameFuseUtilities::ConvertJsonToMap(const FString& JsonString)
+void GameFuseUtilities::ConvertJsonToMap(TMap<FString, FString>& InMap, const FString& JsonString)
 {
-	TMap<FString, FString> TempMap;
+
+	InMap.Empty();
 
 	TSharedPtr<FJsonObject> JsonObject;
-	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonString);
+	const TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonString);
 
 	if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
 	{
-		for (auto JsonField = JsonObject->Values.CreateConstIterator(); JsonField; ++JsonField)
-		{
-			const FString Key = JsonField.Key();
-			FString Value;
+		// Reserve memory in the map to avoid reallocations
+		InMap.Reserve(JsonObject->Values.Num());
 
-			if (JsonObject->TryGetStringField(Key, Value))
+		// Iterate over the JSON object's key-value pairs
+		for (const auto& JsonField : JsonObject->Values)
+		{
+			const FString& Key = JsonField.Key;
+			const TSharedPtr<FJsonValue>& JsonValue = JsonField.Value;
+
+			// Check if the JSON value is a string
+			if (JsonValue.IsValid() && JsonValue->Type == EJson::String)
 			{
-				TempMap.Add(Key, Value);
+				// Access the string value directly
+				const FString& Value = JsonValue->AsString();
+
+				// Add the key-value pair to the map without unnecessary copies
+				InMap.Emplace(Key, Value);
+			}
+			else
+			{
+				UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON value for key: %s \n Input String :\n %s"), *Key, *JsonString);
 			}
 		}
 	}
-
-	return TempMap;
 }
 
 
