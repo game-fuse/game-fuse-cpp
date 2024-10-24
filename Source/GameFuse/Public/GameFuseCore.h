@@ -25,15 +25,18 @@
 
 #include "GameFuseCore.generated.h"
 
+
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGameFuseCallback, const FString&, ResponseString);
 
+//TODO: update class methods.md docs to reflect this list
 UCLASS()
 class GAMEFUSE_API UGameFuseCore : public UBlueprintAsyncActionBase
 {
 	GENERATED_BODY()
 
 public:
-	
+
 	UPROPERTY(BlueprintAssignable)
 		FGameFuseCallback OnSuccess;
 
@@ -66,7 +69,7 @@ public:
 	// > GameSetup
 	
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category = "GameFuse")
-		static UGameFuseCore* SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore);
+		static UGameFuseCore* SetUpGame(const FString& InGameId, const FString& InToken);
 
 	//> Action Requests
 	

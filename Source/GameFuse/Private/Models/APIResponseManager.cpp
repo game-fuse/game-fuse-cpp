@@ -8,6 +8,7 @@
 
 #include "Models/APIResponseManager.h"
 
+DEFINE_LOG_CATEGORY(LogGameFuse);
 
 void UHTTPResponseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
 {
@@ -16,21 +17,21 @@ void UHTTPResponseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request
 
     if (!bWasSuccessful || !Response.IsValid())
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Request Failed"));
+        UE_LOG(LogGameFuse, Error, TEXT("HTTP Request Failed"));
         if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, "Game Fuse HTTP Request Failed");
         return;
     }
     
     if (ResponseCode == 200)
     {
-        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  HTTP Request Succeed"));
+        UE_LOG(LogGameFuse, Log, TEXT("HTTP Request Succeed"));
         
         if (CompletionCallback.IsBound()) CompletionCallback.Execute(true, ResponseStr);
     }
     else
     {
         if (CompletionCallback.IsBound()) CompletionCallback.Execute(false, ResponseStr);
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Request Returned Status Code %d"), ResponseCode);
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  HTTP Response : %s"), *ResponseStr);
+        UE_LOG(LogGameFuse, Error, TEXT("HTTP Request Returned Status Code %d"), ResponseCode);
+        UE_LOG(LogGameFuse, Error, TEXT("HTTP Response : %s"), *ResponseStr);
     }
 }

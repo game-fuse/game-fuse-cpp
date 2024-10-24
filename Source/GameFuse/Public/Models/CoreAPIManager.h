@@ -27,7 +27,7 @@ public:
 	
 	//> Setup Game Request
 	
-	static void SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore);
+	static void SetUpGame(const FString& InGameId, const FString& InToken);
 	
 	//> Action Requests
 	

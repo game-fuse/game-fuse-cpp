@@ -38,7 +38,7 @@ void UGameFuseUser::Initialize(FSubsystemCollectionBase& Collection)
         this->Credits = (LoadedSaveGame->Credits);
         this->Id = (LoadedSaveGame->Id);
         
-        UE_LOG(LogTemp, Display, TEXT("LogGameFuse : Game Fuse Subsystem Loaded"));
+        UE_LOG(LogGameFuse, Log, TEXT("Game Fuse Subsystem Loaded"));
     }
     
 }
@@ -181,7 +181,7 @@ void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetV
 
     FString Set_Dirty_Attribute_Message = FString::Printf(TEXT("Setting Dirty Attribute (local-and-temporary) : %s : %s"), *SetKey, *SetValue);;
 
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  %s"), *Set_Dirty_Attribute_Message);
+    UE_LOG(LogGameFuse, Log, TEXT("%s"), *Set_Dirty_Attribute_Message);
     
     UHTTPResponseManager::CompletionCallback.Execute(true, Set_Dirty_Attribute_Message);
 }
@@ -287,10 +287,10 @@ void UGameFuseUser::InternalResponseManager(bool bSuccess, const FString& Respon
         
     if (!FJsonSerializer::Deserialize(Reader, JsonObject))
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Failed To Parse JSON Response From API"));
+        UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse JSON Response From API"));
         return;
     }
-        
+    //surely theres a cleaner way to write this
     if(JsonObject->HasField("id") && JsonObject->HasField("username")) // the request is for : SignUp or SignIn
     {
         SetSignInInternal(JsonObject);
@@ -313,7 +313,7 @@ void UGameFuseUser::InternalResponseManager(bool bSuccess, const FString& Respon
         SetScoresInternal(JsonObject);
     }else                                                              // the request is for : nothings !
     {
-        UE_LOG(LogTemp, Warning, TEXT("LogGameFuse :  Unknown Json"));
+        UE_LOG(LogGameFuse, Warning, TEXT("Unknown Json"));
     }
 }
 
@@ -339,11 +339,11 @@ void UGameFuseUser::SetSignInInternal(const TSharedPtr<FJsonObject>& JsonObject)
         SaveGameInstance->Id = this->Id;
     
         UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
+        UE_LOG(LogGameFuse, Log, TEXT("Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Save SignIn Information !"));
+        UE_LOG(LogGameFuse, Error, TEXT("User Failed To Save SignIn Information !"));
     }
 }
 
@@ -356,11 +356,11 @@ void UGameFuseUser::SetCreditsInternal(const TSharedPtr<FJsonObject>& JsonObject
         this->Credits = NewCredits;
         SaveGameInstance->Credits = NewCredits;
         UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Updated The Credits Into SlotName:GameFuseSaveSlot UserIndex:0"));
+        UE_LOG(LogGameFuse, Log, TEXT("Updated The Credits Into SlotName:GameFuseSaveSlot UserIndex:0"));
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Update Credits !"));
+        UE_LOG(LogGameFuse, Error, TEXT("User Failed To Update Credits !"));
     }
 }
 
@@ -373,11 +373,11 @@ void UGameFuseUser::SetScoresInternal(const TSharedPtr<FJsonObject>& JsonObject)
         this->Score = NewScores;
         SaveGameInstance->Score = NewScores;
         UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Updated The Scores Into SlotName:GameFuseSaveSlot UserIndex:0"));
+        UE_LOG(LogGameFuse, Log, TEXT("Updated The Scores Into SlotName:GameFuseSaveSlot UserIndex:0"));
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Update Scores !"));
+        UE_LOG(LogGameFuse, Error, TEXT("User Failed To Update Scores !"));
     }
 }
 
@@ -402,18 +402,18 @@ void UGameFuseUser::SetAttributesInternal(const TSharedPtr<FJsonObject>& JsonObj
 
                 // Add to the attribute map
                 Attributes.Add(Key, Value);
-                UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User SetAttributes : %s : %s"), *Key, *Value);
+                UE_LOG(LogGameFuse, Log, TEXT("User SetAttributes : %s : %s"), *Key, *Value);
             }else
             {
-                UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed to parse JSON"));
+                UE_LOG(LogGameFuse, Error, TEXT("User Failed to parse JSON"));
                 return;
             }
         }
-        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Attributes Updated"), Attributes.Num());
+        UE_LOG(LogGameFuse, Log, TEXT("User Attributes Updated"), Attributes.Num());
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Parse JSON"));
+        UE_LOG(LogGameFuse, Error, TEXT("User Failed To Parse JSON"));
     }
 }
 
@@ -445,18 +445,18 @@ void UGameFuseUser::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
                         
                 // Add to the attribute map
                 PurchasedStoreItems.Add(NewItem);
-                UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Store Item : %s, %s"), *NewItem->Name, *NewItem->Category);
+                UE_LOG(LogGameFuse, Log, TEXT("User Store Item : %s, %s"), *NewItem->Name, *NewItem->Category);
             }else
             {
-                UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Parse JSON"));
+                UE_LOG(LogGameFuse, Error, TEXT("User Failed To Parse JSON"));
                 return;
             }
         }
-        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  User Store Items Updated"), Attributes.Num());
+        UE_LOG(LogGameFuse, Log, TEXT("User Store Items Updated"), Attributes.Num());
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  User Failed To Parse JSON"));
+        UE_LOG(LogGameFuse, Error, TEXT("User Failed To Parse JSON"));
     }
 }
 
@@ -489,13 +489,13 @@ void UGameFuseUser::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
                 LeaderboardEntries.Add(NewItem);
             }else
             {
-                UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Fetching My Leaderboard Failed to parse JSON Items"));
+                UE_LOG(LogGameFuse, Error, TEXT("Fetching My Leaderboard Failed to parse JSON Items"));
                 return;
             }
         }
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Fetching My Leaderboard Failed to parse JSON"));
+        UE_LOG(LogGameFuse, Error, TEXT("Fetching My Leaderboard Failed to parse JSON"));
     }
 }

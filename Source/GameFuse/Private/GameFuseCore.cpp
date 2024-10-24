@@ -15,7 +15,6 @@
 
 
 
-
 int32 UGameFuseCore::GameId        = 0;
 FString UGameFuseCore::Token       = "";
 FString UGameFuseCore::Name        = "";
@@ -66,14 +65,14 @@ const TArray<UGameFuseLeaderboardItem*>& UGameFuseCore::GetLeaderboard()
 // < End Region
 // > Region Game Fuse Asynchronous Functions
 
-UGameFuseCore* UGameFuseCore::SetUpGame(const FString& InGameId, const FString& InToken, bool bSeedStore)
+UGameFuseCore* UGameFuseCore::SetUpGame(const FString& InGameId, const FString& InToken)
 {
     UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
     AsyncTask->AddToRoot();
 
     UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
-    UCoreAPIManager::SetUpGame(InGameId, InToken, bSeedStore);
+    UCoreAPIManager::SetUpGame(InGameId, InToken);
 
     return AsyncTask;
 }
@@ -86,7 +85,7 @@ UGameFuseCore* UGameFuseCore::SendPasswordResetEmail(const FString& Email)
     
     if(GameId == 0)
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Please set up your game with SetUpGame() before sending password resets"));
+        UE_LOG(LogGameFuse, Error, TEXT("Please set up your game with SetUpGame() before sending password resets"));
         AsyncTask->CompleteTask(false, "Please set up your game with SetUpGame() before sending password resets");
         return AsyncTask;
     }
@@ -166,7 +165,7 @@ void UGameFuseCore::InternalResponseManager(bool bSuccess, const FString& Respon
     
     if (!FJsonSerializer::Deserialize(Reader, JsonObject))
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Failed To Parse JSON Response"));
+        UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse JSON Response"));
         return;
     }
 
@@ -186,11 +185,11 @@ void UGameFuseCore::InternalResponseManager(bool bSuccess, const FString& Respon
         this->CompleteTask(bSuccess , ResponseStr);
     }else if (JsonObject->HasField("mailer_response"))                       // the request is for : forgot email
     {
-        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Forgot Password Email Sent!"));
+        UE_LOG(LogGameFuse, Log, TEXT("Forgot Password Email Sent!"));
         this->CompleteTask(bSuccess , ResponseStr);
     }else                                                                    // the request is for : nothings !
     {
-        UE_LOG(LogTemp, Warning, TEXT("LogGameFuse :  Unknown Json"));
+        UE_LOG(LogGameFuse, Warning, TEXT("Unknown Json"));
         this->CompleteTask(bSuccess , ResponseStr);
     }
 }
@@ -202,7 +201,7 @@ void UGameFuseCore::SetSetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObje
     JsonObject->TryGetStringField(TEXT("token"), Token);
     JsonObject->TryGetStringField(TEXT("description"), Description);
 
-    UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  SetUp Game Completed : %d : %s"), GameId, *Token);
+    UE_LOG(LogGameFuse, Log, TEXT("SetUp Game Completed : %d : %s"), GameId, *Token);
 }
 
 void UGameFuseCore::SetVariablesInternal(const FString& JsonStr)
@@ -227,13 +226,13 @@ void UGameFuseCore::SetVariablesInternal(const FString& JsonStr)
                     GameVariables.Add(Key, Value);
                 }
             }
-            UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Fetched Variables amount of : %d"), GameVariables.Num());
+            UE_LOG(LogGameFuse, Log, TEXT("Fetched Variables amount of : %d"), GameVariables.Num());
         }
     }
     else
     {
         // Handle JSON parsing error
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Fetching Game Variables Failed to parse JSON"));
+        UE_LOG(LogGameFuse, Error, TEXT("Fetching Game Variables Failed to parse JSON"));
     }
 }
 
@@ -266,15 +265,15 @@ void UGameFuseCore::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
                 LeaderboardEntries.Add(NewItem);
             }else
             {
-                UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Fetching Leaderboard Failed to parse JSON Items"));
+                UE_LOG(LogGameFuse, Error, TEXT("Fetching Leaderboard Failed to parse JSON Items"));
                 return;
             }
         }
-        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Fetched Leaderboards amount of : %d"), LeaderboardEntries.Num());
+        UE_LOG(LogGameFuse, Log, TEXT("Fetched Leaderboards amount of : %d"), LeaderboardEntries.Num());
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Fetching Leaderboard Failed to parse JSON"));
+        UE_LOG(LogGameFuse, Error, TEXT("Fetching Leaderboard Failed to parse JSON"));
     }
 }
 
@@ -308,15 +307,15 @@ void UGameFuseCore::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
                 StoreItems.Add(NewItem);
             }else
             {
-                UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Fetching Store Items Failed to parse JSON Items"));
+                UE_LOG(LogGameFuse, Error, TEXT("Fetching Store Items Failed to parse JSON Items"));
                 return;
             }
         }
-        UE_LOG(LogTemp, Display, TEXT("LogGameFuse :  Fetched Store Items amount of : %d"), LeaderboardEntries.Num());
+        UE_LOG(LogGameFuse, Log, TEXT("Fetched Store Items amount of : %d"), LeaderboardEntries.Num());
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("LogGameFuse :  Fetching Store Items Failed to parse JSON"));
+        UE_LOG(LogGameFuse, Error, TEXT("Fetching Store Items Failed to parse JSON"));
     }
 }
 
