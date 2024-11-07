@@ -17,13 +17,14 @@ public:
 
 	UTestSuiteAPIManager();
 	static void LogRequestInfo(TSharedRef<IHttpRequest> HttpRequest);
-	static void CreateGame(FDefaultCallback Callback);
-	static void OnStatusCodeReceived(TSharedPtr<IHttpRequest> HttpRequest, int I);
+	static void LogRequestInfo(const FHttpRequestPtr& HttpRequest);
+	void CreateGame(FDefaultCallback Callback);
+	void OnStatusCodeReceived(TSharedPtr<IHttpRequest> HttpRequest, int I);
 
-	static void CreateUser(int32 GameId, const FString& Username, const FString& Email, FDefaultCallback Callback);
-	static void CreateStoreItem(int32 GameId, const FString& Name, const FString& Description, const FString& Category, int32 cost, FDefaultCallback Callback);
-	static void CreateStoreItem(int32 GameId, const FGFStoreItem&, FDefaultCallback Callback);
-	static void CleanUpTestData(int32 GameId, FDefaultCallback Callback);
+	void CreateUser(int32 GameId, const FString& Username, const FString& Email, FDefaultCallback Callback);
+	void CreateStoreItem(int32 GameId, const FString& Name, const FString& Description, const FString& Category, int32 cost, FDefaultCallback Callback);
+	void CreateStoreItem(int32 GameId, const FGFStoreItem& StoreItem, FDefaultCallback Callback);
+	void CleanUpTestData(int32 GameId, FDefaultCallback Callback);
 
 protected:
 

@@ -78,7 +78,6 @@ public:
 	static UGameFuseCore* SetUpGame(const FString& InGameId, const FString& InToken);
 
 	//> Action Requests
-
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category = "GameFuse")
 	static UGameFuseCore* SendPasswordResetEmail(const FString& Email);
 
@@ -95,7 +94,6 @@ public:
 	void InternalResponseManager(bool bSuccess, const FString& ResponseStr);
 
 private:
-
 
 	static FGFGameData GameData;
 

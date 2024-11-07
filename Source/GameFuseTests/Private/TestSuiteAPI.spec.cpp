@@ -1,90 +1,61 @@
 #if WITH_AUTOMATION_TESTS
 
-#include "JsonObjectConverter.h"
-#include "Models/GameFuseUtilities.h"
-#include "TestSuiteAPIManager.h"
-#include "GameFuseTestsUtilities.h"
-
+#include "TestSession.h"
 #include "Library/GameFuseStructLibrary.h"
 #include "Misc/AutomationTest.h"
 
 BEGIN_DEFINE_SPEC(TestSuiteAPI, "GameFuseTests.TestSuiteAPI", EAutomationTestFlags::ProductFilter | EAutomationTestFlags::ApplicationContextMask)
-
-	// Declare Variables Here (basically a header)
+	TObjectPtr<UTestSession> TestSession;
 	FGFGameData GameData;
-
-END_DEFINE_SPEC(TestSuiteAPI);
+END_DEFINE_SPEC(TestSuiteAPI)
 
 void TestSuiteAPI::Define()
 {
-	Describe("Test Environment", [this]() {
+	Describe("TestSession", [this]() {
+		LatentIt("Creates a test session successfully", [this](const FDoneDelegate& Done) {
+			UTestSession::CreateTestSession(FGameCreatedDelegate::CreateLambda([this, Done](UTestSession* CreatedSession) {
+				TestSession = CreatedSession;
+				TestNotNull("Test Session was created", TestSession.Get());
+				TestTrue("Test Session has a valid ID", TestSession->GetGameData().Id != 0);
+				Done.ExecuteIfBound();
+			}));
+		});
+	});
 
+	Describe("User Operations", [this]() {
 		LatentBeforeEach([this](const FDoneDelegate& Done) {
-			GameData = FGFGameData();
-			UTestSuiteAPIManager::CreateGame([this, Done](FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bWasSuccessful) {
-				AddErrorIfFalse(bWasSuccessful, FString::Printf(TEXT("Connection failed with Response: %s"), *HttpResponse->GetContentAsString()));
+			UTestSession::CreateTestSession(FGameCreatedDelegate::CreateLambda([this, Done](UTestSession* CreatedSession) {
+				TestSession = CreatedSession;
+				GameData = CreatedSession->GetGameData();
+				Done.ExecuteIfBound();
+			}));
+		});
 
-				TestTrue("Create Game success", bWasSuccessful);
-				const FString ResponseStr = HttpResponse->GetContentAsString();
-				const int ResponseCode = HttpResponse->GetResponseCode();
-				FJsonObjectConverter::JsonObjectStringToUStruct(ResponseStr, &GameData);
+		LatentIt("Creates a User", [this](const FDoneDelegate& Done) {
+			TestNotNull("Test Session exists", TestSession.Get());
+			TestSession->CreateTestUser(GameData.Id, TEXT("Username"), TEXT("test_email@test.com"), FUserCreatedDelegate::CreateLambda([this, Done](const FGFUserData& NewUser, const uint8 ResponseCode) {
+				TestEqual("Request was successful", ResponseCode, 200);
+				TestNotEqual("UserData is not default", NewUser, FGFUserData());
+				Done.ExecuteIfBound();
+			}));
+		});
 
-				TestTrue("GameData ID is not default", GameData.Id != 0);
-				AddInfo(FString::Printf(TEXT("====== Created Game ID: %d"), GameData.Id));
-				Done.Execute();
-			});
+		LatentIt("Fails with invalid game ID", [this](const FDoneDelegate& Done) {
+			TestSession->CreateTestUser(0, TEXT("Username"), TEXT("test_email@test.com"), FUserCreatedDelegate::CreateLambda([this, Done](const FGFUserData& NewUser, const uint8 ResponseCode) {
+				TestEqual("Response code should be 404", ResponseCode, 404);
+				TestEqual("Returned User should be default", NewUser, FGFUserData());
+				Done.ExecuteIfBound();
+			}));
 		});
 
 		LatentAfterEach([this](const FDoneDelegate& Done) {
-			AddErrorIfFalse(GameData.Id != 0, "Game was not setup properly");
-			UTestSuiteAPIManager::CleanUpTestData(GameData.Id, [this, Done](FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bWasSuccessful) {
-				AddErrorIfFalse(bWasSuccessful, FString::Printf(TEXT("Connection failed with Response: %s"), *HttpResponse->GetContentAsString()));
-				TestTrue("cleans up game data", bWasSuccessful);
-				AddInfo(FString::Printf(TEXT("====== Deleted Game ID: %d"), GameData.Id));
-				Done.Execute();
-			});
-		});
-		//
-		// LatentIt("Creates a Game", EAsyncExecution::TaskGraph, [this](const FDoneDelegate& Done) {
-		// 	UTestSuiteAPIManager::CreateGame([this, Done](FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bWasSuccessful) {
-		// 		AddErrorIfFalse(bWasSuccessful, FString::Printf(TEXT("Connection failed with Response: %s"), *HttpResponse->GetContentAsString()));
-		//
-		// 		const FString ResponseStr = HttpResponse->GetContentAsString();
-		// 		const int ResponseCode = HttpResponse->GetResponseCode();
-		// 		FJsonObjectConverter::JsonObjectStringToUStruct(ResponseStr, &GameData);
-		//
-		// 		TestTrue("GameData ID is not default", GameData.Id != 0);
-		// 		Done.Execute();
-		// 	});
-		// });
-
-		LatentIt("Creates a User", [this](const FDoneDelegate& Done) {
-			AddErrorIfFalse(GameData.Id != 0, "Game was not setup properly");
-			UTestSuiteAPIManager::CreateUser(GameData.Id, TEXT("Username"), TEXT("test_email@test.com"), [this, Done](FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bWasSuccessful) {
-				const FString ResponseStr = HttpResponse->GetContentAsString();
-
-
-				AddErrorIfFalse(bWasSuccessful, FString::Printf(TEXT("Connection failed with Response: %s"), *ResponseStr));
-				FGFUserData UserData;
-				FJsonObjectConverter::JsonObjectStringToUStruct(ResponseStr, &UserData);
-
-				TestTrue("User ID is not default", UserData.Id != 0);
-				Done.Execute();
-			});
+			if (TestSession) {
+				TestSession->Cleanup(Done);
+			} else {
+				Done.ExecuteIfBound();
+			}
 		});
 	});
-	//
-	// Describe("Fail Cases", [this]() {
-	// 	LatentIt("Fails with bad ID", [this](const FDoneDelegate& Done) {
-	// 		UTestSuiteAPIManager::CleanUpTestData(0, [this, Done](FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bWasSuccessful) {
-	// 			const int32 ResponseCode = HttpResponse->GetResponseCode();
-	//
-	// 			TestTrue("Response code is 404", ResponseCode == 404);
-	//
-	// 			Done.Execute();
-	// 		});
-	// 	});
-	// });
 }
 
-#endif
+#endif // WITH_AUTOMATION_TESTS

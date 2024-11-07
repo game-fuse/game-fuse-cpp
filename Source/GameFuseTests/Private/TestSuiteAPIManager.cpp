@@ -23,6 +23,17 @@ void UTestSuiteAPIManager::LogRequestInfo(TSharedRef<IHttpRequest> HttpRequest)
 	}
 }
 
+void UTestSuiteAPIManager::LogRequestInfo(const FHttpRequestPtr& HttpRequest)
+{
+
+	UE_LOG(LogGameFuse, Log, TEXT("=========   URL   ========= \n %s"), *RequestManager->GetURL());
+	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
+	for (const FString& currHeader : HttpRequest->GetAllHeaders())
+	{
+		UE_LOG(LogGameFuse, Log, TEXT("%s"), *currHeader);
+	}
+}
+
 void UTestSuiteAPIManager::CreateGame(FDefaultCallback Callback)
 {
 	RequestManager->SetURL(FString::Printf(TEXT("%s/create_game"), *BaseURL));

@@ -17,17 +17,22 @@ struct FGFGameData
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	int32 Id = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Token = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Name = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Description = "";
+
+	bool operator==(const FGFGameData& Other) const
+	{
+		return Id == Other.Id && Token == Other.Token && Name == Other.Name && Description == Other.Description;
+	}
 
 };
 
@@ -36,29 +41,38 @@ struct FGFUserData
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 Id = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	FString Username = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	bool bSignedIn = false;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 NumberOfLogins = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	FString AuthenticationToken = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 Score = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 Credits = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	FString LastLogin = "0000-00-00";
+
+
+	/*
+	 * Only checks critical user values, Token, Score, Credits and Login Details are NOT included
+	 */
+	bool operator==(const FGFUserData& Other) const
+	{
+		return Id == Other.Id && Username == Other.Username;
+	}
 
 };
 
@@ -69,22 +83,22 @@ struct FGFStoreItem
 	GENERATED_BODY()
 	FGFStoreItem() = default;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Name = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Category = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Description = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	int32 Cost = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	int32 Id = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString IconUrl = "";
 
 };
@@ -96,26 +110,30 @@ struct FGFLeaderboardEntry
 
 	FGFLeaderboardEntry() = default;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|LeaderboardItem")
 	FString LeaderboardName = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|LeaderboardItem")
 	FString Username = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|LeaderboardItem")
 	int32 Score = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|LeaderboardItem")
 	int32 GameUserId = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|LeaderboardItem")
 	FString ExtraAttributes = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|LeaderboardItem")
 	FString DateTime = "";
 
 };
 
+/**
+ * Wrapper Struct allows TMap<FString, TArray<FGFLeaderboardEntry>> to be used
+ *
+ ***/
 USTRUCT(BlueprintType, Category = "GameFuse|Leaderboard")
 struct FGFLeaderboard
 {
@@ -130,9 +148,9 @@ struct FGFLeaderboard
 	}
 
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString Name = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	TArray<FGFLeaderboardEntry> Entries;
 };
