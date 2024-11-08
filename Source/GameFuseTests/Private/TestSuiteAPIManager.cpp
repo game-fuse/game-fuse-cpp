@@ -1,5 +1,4 @@
 #include "TestSuiteAPIManager.h"
-struct FLogCategoryLogGameFuse LogGameFuse;
 
 
 UTestSuiteAPIManager::UTestSuiteAPIManager()
@@ -17,8 +16,7 @@ void UTestSuiteAPIManager::LogRequestInfo(TSharedRef<IHttpRequest> HttpRequest)
 
 	UE_LOG(LogGameFuse, Log, TEXT("=========   URL   ========= \n %s"), *RequestManager->GetURL());
 	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
-	for (const FString& currHeader : HttpRequest->GetAllHeaders())
-	{
+	for (const FString& currHeader : HttpRequest->GetAllHeaders()) {
 		UE_LOG(LogGameFuse, Log, TEXT("%s"), *currHeader);
 	}
 }
@@ -28,8 +26,7 @@ void UTestSuiteAPIManager::LogRequestInfo(const FHttpRequestPtr& HttpRequest)
 
 	UE_LOG(LogGameFuse, Log, TEXT("=========   URL   ========= \n %s"), *RequestManager->GetURL());
 	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
-	for (const FString& currHeader : HttpRequest->GetAllHeaders())
-	{
+	for (const FString& currHeader : HttpRequest->GetAllHeaders()) {
 		UE_LOG(LogGameFuse, Log, TEXT("%s"), *currHeader);
 	}
 }

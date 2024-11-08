@@ -31,7 +31,7 @@ public:
 private:
 
 	void Initialize(FDoneDelegate OnInitialized);
-	bool HandleAPIResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	bool CheckValidResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
 	UPROPERTY()
 	TObjectPtr<UTestSuiteAPIManager> TestAPIManager;

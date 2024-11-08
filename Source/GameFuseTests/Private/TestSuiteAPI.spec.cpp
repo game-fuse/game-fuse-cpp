@@ -41,6 +41,7 @@ void TestSuiteAPI::Define()
 		});
 
 		LatentIt("Fails with invalid game ID", [this](const FDoneDelegate& Done) {
+			TestNotNull("Test Session exists", TestSession.Get());
 			TestSession->CreateTestUser(0, TEXT("Username"), TEXT("test_email@test.com"), FUserCreatedDelegate::CreateLambda([this, Done](const FGFUserData& NewUser, const uint8 ResponseCode) {
 				TestEqual("Response code should be 404", ResponseCode, 404);
 				TestEqual("Returned User should be default", NewUser, FGFUserData());
