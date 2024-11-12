@@ -16,11 +16,13 @@ void UCoreAPIManager::SetUpGame(const FString& InGameId, const FString& InToken)
     
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Setting Up Game : %s"), *ApiEndpoint);
 
-	RequestManager->SetURL(ApiEndpoint);
-	RequestManager->SetVerb("GET");
+	UAPIRequestManager* RequestManager = UAPIRequestManager::CreateRequest();
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
-	RequestManager->ProcessRequest();
+	RequestManager->GetRequest()->SetURL(ApiEndpoint);
+	RequestManager->GetRequest()->SetVerb("GET");
+
+	RequestManager->GetRequest()->OnProcessRequestComplete().BindLambda(&UAPIRequestManager::OnHttpResponseReceivedManager);
+	RequestManager->GetRequest()->ProcessRequest();
 }
 
 
@@ -33,11 +35,13 @@ void UCoreAPIManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUser,
 
 	UE_LOG(LogGameFuse, Log, TEXT("Fetching Leaderboard : %s : %d"), *LeaderboardName, Limit);
 
-	RequestManager->SetURL(ApiEndpoint);
-	RequestManager->SetVerb("GET");
+	UAPIRequestManager* RequestManager = UAPIRequestManager::CreateRequest();
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
-	RequestManager->ProcessRequest();
+	RequestManager->GetRequest()->SetURL(ApiEndpoint);
+	RequestManager->GetRequest()->SetVerb("GET");
+
+	RequestManager->GetRequest()->OnProcessRequestComplete().BindLambda(&UAPIRequestManager::OnHttpResponseReceivedManager);
+	RequestManager->GetRequest()->ProcessRequest();
 }
 
 void UCoreAPIManager::SendPasswordResetEmail(const FString& Email, const int GameID, const FString Token)
@@ -47,11 +51,13 @@ void UCoreAPIManager::SendPasswordResetEmail(const FString& Email, const int Gam
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Password Reset Email - %s "), *ApiEndpoint);
 
-	RequestManager->SetURL(ApiEndpoint);
-	RequestManager->SetVerb("GET");
+	UAPIRequestManager* RequestManager = UAPIRequestManager::CreateRequest();
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
-	RequestManager->ProcessRequest();
+	RequestManager->GetRequest()->SetURL(ApiEndpoint);
+	RequestManager->GetRequest()->SetVerb("GET");
+
+	RequestManager->GetRequest()->OnProcessRequestComplete().BindLambda(&UAPIRequestManager::OnHttpResponseReceivedManager);
+	RequestManager->GetRequest()->ProcessRequest();
 }
 
 void UCoreAPIManager::FetchGameVariables(const int GameID, const FString Token)
@@ -61,11 +67,13 @@ void UCoreAPIManager::FetchGameVariables(const int GameID, const FString Token)
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Fetching Game Variables: %s"), *ApiEndpoint);
 
-	RequestManager->SetURL(ApiEndpoint);
-	RequestManager->SetVerb("GET");
+	UAPIRequestManager* RequestManager = UAPIRequestManager::CreateRequest();
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
-	RequestManager->ProcessRequest();
+	RequestManager->GetRequest()->SetURL(ApiEndpoint);
+	RequestManager->GetRequest()->SetVerb("GET");
+
+	RequestManager->GetRequest()->OnProcessRequestComplete().BindLambda(&UAPIRequestManager::OnHttpResponseReceivedManager);
+	RequestManager->GetRequest()->ProcessRequest();
 }
 
 void UCoreAPIManager::FetchStoreItems(const int GameID, const FString Token)
@@ -75,9 +83,11 @@ void UCoreAPIManager::FetchStoreItems(const int GameID, const FString Token)
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Fetching Store Items"));
 
-	RequestManager->SetURL(ApiEndpoint);
-	RequestManager->SetVerb("GET");
+	UAPIRequestManager* RequestManager = UAPIRequestManager::CreateRequest();
 
-	RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
-	RequestManager->ProcessRequest();
+	RequestManager->GetRequest()->SetURL(ApiEndpoint);
+	RequestManager->GetRequest()->SetVerb("GET");
+
+	RequestManager->GetRequest()->OnProcessRequestComplete().BindLambda(&UAPIRequestManager::OnHttpResponseReceivedManager);
+	RequestManager->GetRequest()->ProcessRequest();
 }

@@ -10,31 +10,31 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "APIResponseManager.h"
+#include "APIRequestManager.h"
 #include "UserAPIManager.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class GAMEFUSE_API UUserAPIManager : public UHTTPResponseManager
+class GAMEFUSE_API UUserAPIManager : public UAPIRequestManager
 {
 	GENERATED_BODY()
 
 public:
 	
-	static void SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, const int InGameId, const FString& InToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
-	static void SignIn(const FString& Email, const FString& Password, const int InGameId, const FString& InToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
+	static void SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, int InGameId, const FString& InToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
+	static void SignIn(const FString& Email, const FString& Password, int InGameId, const FString& InToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
     
 	//> User Requests
  
-	static void AddCredits(const int AddCredits, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
+	static void AddCredits(int AddCredits, int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
  
-    static void SetCredits(const int SetCredits, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
+    static void SetCredits(int SetCredits, int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
  
-    static void AddScore(const int AddScore, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
+    static void AddScore(int AddScore, int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
         
-    static void SetScore(const int SetScore, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
+    static void SetScore(int SetScore, int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
     
 	static void SetAttribute(const FString& SetKey, const FString& SetValue, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
 	
@@ -56,9 +56,9 @@ public:
 
 	static void FetchAttributes(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
 	
-	static void FetchPurchaseStoreItems(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
+	static void FetchPurchaseStoreItems(bool bChainedFromLogin, int Id, const FString& AuthenticationToken, const FGameFuseAPIResponseCallback& APICompletionCallback);
 
 	//> Helper Functions
-	static TFunction<void(FHttpRequestPtr, const FHttpResponsePtr&, bool)> HandleResponseReceived(const FGameFuseAPIResponseCallback& APICompletionCallback);
+	static TFunction<void(FHttpRequestPtr, const FHttpResponsePtr&, bool)> HandleResponseReceived(UAPIRequestManager* RequestManager, const FGameFuseAPIResponseCallback& APICompletionCallback);
 	
 };

@@ -10,7 +10,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "APIResponseManager.h"
+#include "APIRequestManager.h"
 #include "CoreAPIManager.generated.h"
 
 
@@ -19,7 +19,7 @@
  * 
  */
 UCLASS()
-class GAMEFUSE_API UCoreAPIManager : public UHTTPResponseManager
+class GAMEFUSE_API UCoreAPIManager : public UAPIRequestManager
 {
 	GENERATED_BODY()
 

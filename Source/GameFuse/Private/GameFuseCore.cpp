@@ -70,7 +70,7 @@ UGameFuseCore* UGameFuseCore::SetUpGame(const FString& InGameId, const FString& 
     UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
     AsyncTask->AddToRoot();
 
-    UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
+    APIRequestManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
     UCoreAPIManager::SetUpGame(InGameId, InToken);
 
@@ -90,7 +90,7 @@ UGameFuseCore* UGameFuseCore::SendPasswordResetEmail(const FString& Email)
         return AsyncTask;
     }
     
-    UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
+    APIRequestManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
     UCoreAPIManager::SendPasswordResetEmail(Email, GameId, Token);
 
@@ -102,7 +102,7 @@ UGameFuseCore* UGameFuseCore::FetchGameVariables()
     UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
     AsyncTask->AddToRoot();
 
-    UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
+    APIRequestManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
     UCoreAPIManager::FetchGameVariables(GameId, Token);
 
@@ -114,7 +114,7 @@ UGameFuseCore* UGameFuseCore::FetchLeaderboardEntries(UGameFuseUser* GameFuseUse
     UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
     AsyncTask->AddToRoot();
 
-    UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
+    APIRequestManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
     UCoreAPIManager::FetchLeaderboardEntries(Limit,  bOnePerUser, LeaderboardName, GameId, GameFuseUser->GetAuthenticationToken());
 
@@ -126,7 +126,7 @@ UGameFuseCore* UGameFuseCore::FetchStoreItems()
     UGameFuseCore* AsyncTask = NewObject<UGameFuseCore>();
     AsyncTask->AddToRoot();
 
-    UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
+    APIRequestManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseCore::InternalResponseManager);
 
     UCoreAPIManager::FetchStoreItems(GameId, Token);
 
