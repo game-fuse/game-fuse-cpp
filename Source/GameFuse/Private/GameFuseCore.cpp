@@ -27,7 +27,8 @@ TMap<FString, FString> UGameFuseCore::GameVariables;
 
 // > Region Instance Getters
 
-const FGFGameData& UGameFuseCore::GetGameData() {
+const FGFGameData& UGameFuseCore::GetGameData()
+{
 	return GameData;
 }
 
