@@ -6,20 +6,22 @@
  *  https://github.com/game-fuse/game-fuse-cpp
  */
 
-#include "Models/CoreRequestHandler.h"
+#include "Models/CoreAPIHandler.h"
+
+#include "GameFuseManager.h"
 #include "Models/APIResponseManager.h"
+#include "Objects/GameFuseAsyncAction.h"
 
 
-void UCoreRequestHandler::SetUpGame(const FString& InGameId, const FString& InToken)
+void UCoreAPIHandler::SetUpGame(const FString& InGameId, const FString& InToken, FOnApiResponseReceived Callback)
 {
 	FString ApiEndpoint = FString::Printf(TEXT("/games/verify?client_from_library=cpp&game_id=%s&game_token=%s"), *InGameId, *InToken);
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Setting Up Game : %s"), *ApiEndpoint);
 
-	FOnApiResponseReceived OnResponseDelegate;
-	OnResponseDelegate.BindDynamic(this, &UCoreRequestHandler::OnHttpResponseReceivedManager);
+	Callback.BindDynamic(this, &ThisClass::OnHttpResponseReceivedManager);
 
-	SendRequest(ApiEndpoint, TEXT("GET"), TEXT(""), OnResponseDelegate);
+	SendRequest(ApiEndpoint, TEXT("GET"), TEXT(""), Callback);
 
 	// RequestManager->SetURL(ApiEndpoint);
 	// RequestManager->SetVerb("GET");
@@ -29,26 +31,26 @@ void UCoreRequestHandler::SetUpGame(const FString& InGameId, const FString& InTo
 }
 
 
-void UCoreRequestHandler::FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const int GameId, const FString& UserAuthenticationToken)
+void UCoreAPIHandler::FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const int GameId, const FString& UserAuthenticationToken)
 {
 	const FString OnePerUserStr = (bOnePerUser) ? TEXT("true") : TEXT("false");
 	const FString ApiEndpoint = FString::Printf(
 	TEXT("%s/games/%d/leaderboard_entries?authentication_token=%s&leaderboard_name=%s&limit=%d&one_per_user=%s")
-	, *UApiRequestHandler::BaseUrl, GameId, *UserAuthenticationToken, *LeaderboardName, Limit, *OnePerUserStr);
+	, *BaseUrl, GameId, *UserAuthenticationToken, *LeaderboardName, Limit, *OnePerUserStr);
 
 	UE_LOG(LogGameFuse, Log, TEXT("Fetching Leaderboard : %s : %d"), *LeaderboardName, Limit);
 
 	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("GET");
+	// RequestManageru->SetVerb("GET");
 	//
 	// RequestManager->OnProcessRequestComplete().BindStatic(&UHTTPResponseManager::OnHttpResponseReceivedManager);
 	// RequestManager->ProcessRequest();
 }
 
-void UCoreRequestHandler::SendPasswordResetEmail(const FString& Email, const int GameID, const FString Token)
+void UCoreAPIHandler::SendPasswordResetEmail(const FString& Email, const int GameID, const FString Token)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/games/%d/forget_password?game_token=%s&game_id=%d&email=%s")
-	                                            , *UApiRequestHandler::BaseUrl, GameID, *Token, GameID, *Email);
+	                                            , *BaseUrl, GameID, *Token, GameID, *Email);
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Password Reset Email - %s "), *ApiEndpoint);
 
@@ -59,10 +61,10 @@ void UCoreRequestHandler::SendPasswordResetEmail(const FString& Email, const int
 	// RequestManager->ProcessRequest();
 }
 
-void UCoreRequestHandler::FetchGameVariables(const int GameID, const FString Token)
+void UCoreAPIHandler::FetchGameVariables(const int GameID, const FString Token)
 {
 	const FString ApiEndpoint = FString::Printf(
-	TEXT("%s/games/fetch_game_variables.json?game_id=%d&game_token=%s"), *UApiRequestHandler::BaseUrl, GameID, *Token);
+	TEXT("%s/games/fetch_game_variables.json?game_id=%d&game_token=%s"), *BaseUrl, GameID, *Token);
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Fetching Game Variables: %s"), *ApiEndpoint);
 
@@ -73,10 +75,10 @@ void UCoreRequestHandler::FetchGameVariables(const int GameID, const FString Tok
 	// RequestManager->ProcessRequest();
 }
 
-void UCoreRequestHandler::FetchStoreItems(const int GameID, const FString Token)
+void UCoreAPIHandler::FetchStoreItems(const int GameID, const FString Token)
 {
 	FString ApiEndpoint = FString::Printf(TEXT("%s/games/store_items?game_id=%d&game_token=%s")
-	                                      , *UApiRequestHandler::BaseUrl, GameID, *Token);
+	                                      , *BaseUrl, GameID, *Token);
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Fetching Store Items"));
 
@@ -87,7 +89,8 @@ void UCoreRequestHandler::FetchStoreItems(const int GameID, const FString Token)
 	// RequestManager->ProcessRequest();
 }
 
-void UCoreRequestHandler::OnHttpResponseReceivedManager(FString RequestId, FString ResponseContent)
+void UCoreAPIHandler::OnHttpResponseReceivedManager(bool bSuccess, FString ResponseContent, FString RequestId)
 {
-	return ;
+
+	UE_LOG(LogGameFuse, Log, TEXT("Core API Response Received: %i"), bSuccess);
 }

@@ -8,13 +8,13 @@
 /**
  * Delegate to handle API request responses
  */
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnApiResponseReceived, FString, RequestId, FString, ResponseContent);
+DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnApiResponseReceived, bool, bSuccess, FString, ResponseContent, FString, RequestId);
 
 /**
- * UApiRequestHandler - Centralized class to manage API requests
+ * UAPIRequestHandler - Centralized class to manage API requests
  */
 UCLASS()
-class GAMEFUSE_API UApiRequestHandler : public UObject
+class GAMEFUSE_API UAPIRequestHandler : public UObject
 {
 	GENERATED_BODY()
 
@@ -35,7 +35,7 @@ protected:
 	TMap<FString, FString> DefaultHeaders;
 
 	// Constructor to initialize default headers
-	UApiRequestHandler();
+	UAPIRequestHandler();
 
 private:
 

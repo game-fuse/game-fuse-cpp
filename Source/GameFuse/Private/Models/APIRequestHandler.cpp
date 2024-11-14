@@ -1,13 +1,15 @@
-#include "Models/ApiRequestHandler.h"
+#include "Models/APIRequestHandler.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpResponse.h"
 
-UApiRequestHandler::UApiRequestHandler()
+UAPIRequestHandler::UAPIRequestHandler()
 {
 	// Initialize default headers
 	DefaultHeaders.Add(TEXT("Content-Type"), TEXT("application/json"));
 	DefaultHeaders.Add(TEXT("Accept"), TEXT("application/json"));
 }
 
-FGuid UApiRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FString& RequestBody, FOnApiResponseReceived OnResponseReceived)
+FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FString& RequestBody, FOnApiResponseReceived OnResponseReceived)
 {
 	// Generate unique ID for the request
 	FGuid RequestId = GenerateRequestId();
@@ -28,7 +30,7 @@ FGuid UApiRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	}
 
 	// Bind to response callback using direct reference
-	HttpRequest->OnProcessRequestComplete().BindUObject(this, &UApiRequestHandler::HandleResponse);
+	HttpRequest->OnProcessRequestComplete().BindUObject(this, &UAPIRequestHandler::HandleResponse);
 
 	// Add to ActiveRequests map
 	ActiveRequests.Add(RequestId, HttpRequest);
@@ -42,7 +44,7 @@ FGuid UApiRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	return RequestId;
 }
 
-void UApiRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
 	FGuid RequestId;
 	for (const auto& Pair : ActiveRequests)
@@ -65,7 +67,7 @@ void UApiRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 	{
 		FOnApiResponseReceived Delegate = ResponseDelegates[RequestId];
 		FString ResponseContent = bWasSuccessful && Response.IsValid() ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
-		Delegate.ExecuteIfBound(RequestId.ToString(), ResponseContent);
+		Delegate.ExecuteIfBound(bWasSuccessful && Response.IsValid(), ResponseContent, RequestId.ToString());
 		ResponseDelegates.Remove(RequestId);
 	}
 
@@ -81,7 +83,7 @@ void UApiRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 	}
 }
 
-FGuid UApiRequestHandler::GenerateRequestId()
+FGuid UAPIRequestHandler::GenerateRequestId()
 {
 	return FGuid::NewGuid();
 }

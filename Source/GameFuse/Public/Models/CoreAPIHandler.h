@@ -11,8 +11,9 @@
 
 #include "CoreMinimal.h"
 #include "APIRequestHandler.h"
+#include "Objects/GameFuseAsyncAction.h"
 
-#include "CoreRequestHandler.generated.h"
+#include "CoreAPIHandler.generated.h"
 
 
 
@@ -20,7 +21,7 @@
  * 
  */
 UCLASS()
-class GAMEFUSE_API UCoreRequestHandler : public UApiRequestHandler
+class GAMEFUSE_API UCoreAPIHandler : public UAPIRequestHandler
 {
 	GENERATED_BODY()
 
@@ -28,7 +29,9 @@ public:
 
 	//> Setup Game Request
 
-	void SetUpGame(const FString& InGameId, const FString& InToken);
+	void SetUpGame(
+	/*UGameFuseAsyncAction* AsyncAction, */
+	const FString& InGameId, const FString& InToken, FOnApiResponseReceived Callback);
 
 	//> Action Requests
 
@@ -41,7 +44,7 @@ public:
 	void FetchStoreItems(const int GameID, const FString Token);
 
 	UFUNCTION()
-	void OnHttpResponseReceivedManager(FString RequestId, FString ResponseContent);
+	void OnHttpResponseReceivedManager(bool bSuccess, FString ResponseContent, FString RequestId);
 
 
 };
