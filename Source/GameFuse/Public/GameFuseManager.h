@@ -71,25 +71,25 @@ public:
 
 	// > GameSetup
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse")
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Core")
 	void SetUpGame(const FString& GameId, const FString& Token, FOnApiResponseReceived Callback);
 
 	//> Action Requests
 
-	// UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category = "GameFuse")
-	// UGameFuseAsyncAction* SendPasswordResetEmail(const FString& Email);
-	//
-	// UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category = "GameFuse")
-	// UGameFuseAsyncAction* FetchGameVariables();
-	//
-	// UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category = "GameFuse")
-	// UGameFuseAsyncAction* FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName);
-	//
-	// UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category = "GameFuse")
-	// UGameFuseAsyncAction* FetchStoreItems();
-	//
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Core")
+	void SendPasswordResetEmail(const FString& Email, FOnApiResponseReceived Callback);
+
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Core")
+	void FetchGameVariables(FOnApiResponseReceived Callback);
+
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Core")
+	void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FOnApiResponseReceived Callback);
+
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Core")
+	void FetchStoreItems(FOnApiResponseReceived Callback);
+
 	UFUNCTION()
-	void InternalResponseManager(bool bSuccess, const FString& ResponseStr);
+	void InternalResponseManager(bool bSuccess, FString ResponseStr, FString RequestID);
 
 private:
 
@@ -102,7 +102,7 @@ private:
 
 	static TObjectPtr<UCoreAPIHandler> RequestHandler;
 
-	void SetSetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject);
+	void SetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	void SetVariablesInternal(const FString& JsonStr);
 	void SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	void SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObject);

@@ -9,13 +9,11 @@
 
 #include "GameFuseManager.h"
 
-#include "GameFuseCore.h"
 #include "GameFuseUser.h"
+#include "JsonObjectConverter.h"
 #include "Models/CoreAPIManager.h"
-#include "Kismet/KismetStringLibrary.h"
 #include "Library/GameFuseStructLibrary.h"
 #include "Models/GameFuseUtilities.h"
-#include "Objects/GameFuseAsyncAction.h"
 
 
 TObjectPtr<UCoreAPIHandler> UGameFuseManager::RequestHandler;
@@ -98,8 +96,23 @@ const TArray<FGFLeaderboardEntry>& UGameFuseManager::GetLeaderboardEntries(const
 
 void UGameFuseManager::SetUpGame(const FString& GameId, const FString& Token, FOnApiResponseReceived Callback)
 {
+	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
 	RequestHandler->SetUpGame(GameId, Token, Callback);
 }
+
+void UGameFuseManager::SendPasswordResetEmail(const FString& Email, FOnApiResponseReceived Callback)
+{
+	// RequestHandler->SendPasswordResetEmail(Email, Callback);
+}
+
+void UGameFuseManager::FetchGameVariables(FOnApiResponseReceived Callback)
+{}
+
+void UGameFuseManager::FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FOnApiResponseReceived Callback)
+{}
+
+void UGameFuseManager::FetchStoreItems(FOnApiResponseReceived Callback)
+{}
 
 
 /*
@@ -114,7 +127,7 @@ UGameFuseAsyncAction* UGameFuseManager::SendPasswordResetEmail(const FString& Em
 		return AsyncAction;
 	}
 
-	// UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseManager::InternalResponseManager);
+	// UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseManager::OnHTTPResponseManager);
 	//
 	// UCoreAPIManager::SendPasswordResetEmail(Email, GameData.Id, GameData.Token);
 
@@ -125,7 +138,7 @@ UGameFuseAsyncAction* UGameFuseManager::FetchGameVariables()
 {
 	UGameFuseAsyncAction* AsyncAction = NewObject<UGameFuseAsyncAction>();
 
-	// UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseManager::InternalResponseManager);
+	// UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseManager::OnHTTPResponseManager);
 	//
 	// UCoreAPIManager::FetchGameVariables(GameData.Id, GameData.Token);
 
@@ -136,7 +149,7 @@ UGameFuseAsyncAction* UGameFuseManager::FetchLeaderboardEntries(UGameFuseUser* G
 {
 	UGameFuseAsyncAction* AsyncAction = NewObject<UGameFuseAsyncAction>();
 
-	// UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseManager::InternalResponseManager);
+	// UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseManager::OnHTTPResponseManager);
 	//
 	// UCoreAPIManager::FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, GameFuseUser->GetAuthenticationToken());
 
@@ -147,7 +160,7 @@ UGameFuseAsyncAction* UGameFuseManager::FetchStoreItems()
 {
 	UGameFuseAsyncAction* AsyncAction = NewObject<UGameFuseAsyncAction>();
 
-	// UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseManager::InternalResponseManager);
+	// UHTTPResponseManager::CompletionCallback.BindDynamic(AsyncTask, &UGameFuseManager::OnHTTPResponseManager);
 	//
 	// UCoreAPIManager::FetchStoreItems(GameData.Id, GameData.Token);
 
@@ -158,14 +171,13 @@ UGameFuseAsyncAction* UGameFuseManager::FetchStoreItems()
 */
 
 // > Region Internal Setters
-void UGameFuseManager::InternalResponseManager(bool bSuccess, const FString& ResponseStr)
+void UGameFuseManager::InternalResponseManager(bool bSuccess, FString ResponseStr, FString RequestId)
 {
 	if (!bSuccess)
 	{
-		// this->CompleteTask(bSuccess, ResponseStr);
+		UE_LOG(LogGameFuse, Warning, TEXT("THERE SHOULD BE ANOTHER ERROR BEFORE THIS. Core API Request Failed. ID : %s"), *RequestId);
 		return;
 	}
-
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseStr);
 	TSharedPtr<FJsonObject> JsonObject;
 
@@ -178,30 +190,26 @@ void UGameFuseManager::InternalResponseManager(bool bSuccess, const FString& Res
 	switch (GameFuseUtilities::DetermineCoreAPIResponseType(JsonObject))
 	{
 		case EGFCoreAPIResponseType::SetUpGame:
-			SetSetUpGameInternal(JsonObject);
+			SetUpGameInternal(JsonObject);
 			SetVariablesInternal(ResponseStr);
-		// this->CompleteTask(bSuccess, ResponseStr);
 			break;
 		case EGFCoreAPIResponseType::ListLeaderboardEntries:
 			SetLeaderboardsInternal(JsonObject);
-		// this->CompleteTask(bSuccess, ResponseStr);
 			break;
 		case EGFCoreAPIResponseType::ListStoreItems:
 			SetStoreItemsInternal(JsonObject);
-		// this->CompleteTask(bSuccess, ResponseStr);
 			break;
 		case EGFCoreAPIResponseType::ForgotPassword:
 			UE_LOG(LogGameFuse, Log, TEXT("Forgot Password Email Sent!"));
-		// this->CompleteTask(bSuccess, ResponseStr);
 			break;
 		default:
 			UE_LOG(LogGameFuse, Warning, TEXT("Unknown Core Response Data"));
 	}
 }
 
-void UGameFuseManager::SetSetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject)
+void UGameFuseManager::SetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	bool bSuccess = GameFuseUtilities::ConvertJsonToGameData(GameData, JsonObject);
+	const bool bSuccess = FJsonObjectConverter::JsonObjectToUStruct(JsonObject.ToSharedRef(), &GameData);
 	if (!bSuccess)
 	{
 		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse Game Data"));

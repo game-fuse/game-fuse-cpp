@@ -1,6 +1,7 @@
 #include "Models/APIRequestHandler.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Models/APIResponseManager.h"
 
 UAPIRequestHandler::UAPIRequestHandler()
 {
@@ -31,7 +32,7 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 
 	// Bind to response callback using direct reference
 	HttpRequest->OnProcessRequestComplete().BindUObject(this, &UAPIRequestHandler::HandleResponse);
-
+	UE_LOG(LogGameFuse, Log, TEXT("Sending Request"));
 	// Add to ActiveRequests map
 	ActiveRequests.Add(RequestId, HttpRequest);
 
@@ -46,6 +47,8 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 
 void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
+	UE_LOG(LogGameFuse, Log, TEXT("Response received"));
+
 	FGuid RequestId;
 	for (const auto& Pair : ActiveRequests)
 	{
@@ -55,6 +58,7 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 			break;
 		}
 	}
+
 
 	// Remove from ActiveRequests map
 	if (RequestId.IsValid())
@@ -67,6 +71,7 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 	{
 		FOnApiResponseReceived Delegate = ResponseDelegates[RequestId];
 		FString ResponseContent = bWasSuccessful && Response.IsValid() ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
+
 		Delegate.ExecuteIfBound(bWasSuccessful && Response.IsValid(), ResponseContent, RequestId.ToString());
 		ResponseDelegates.Remove(RequestId);
 	}

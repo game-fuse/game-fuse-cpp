@@ -29,22 +29,20 @@ public:
 
 	//> Setup Game Request
 
-	void SetUpGame(
-	/*UGameFuseAsyncAction* AsyncAction, */
-	const FString& InGameId, const FString& InToken, FOnApiResponseReceived Callback);
+	void SetUpGame(const FString& InGameId, const FString& InToken, FOnApiResponseReceived Callback);
 
 	//> Action Requests
 
-	void SendPasswordResetEmail(const FString& Email, const int GameID, const FString Token);
+	void SendPasswordResetEmail(const FString& Email, int GameID, FString Token, FOnApiResponseReceived Callback);
 
-	void FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const int GameId, const FString& UserAuthenticationToken);
+	void FetchLeaderboardEntries(int Limit, bool bOnePerUser, const FString& LeaderboardName, int GameId, const FString& UserAuthenticationToken, FOnApiResponseReceived Callback);
 
-	void FetchGameVariables(const int GameID, const FString Token);
+	void FetchGameVariables(int GameID, FString Token, FOnApiResponseReceived Callback);
 
-	void FetchStoreItems(const int GameID, const FString Token);
+	void FetchStoreItems(int GameID, FString Token, FOnApiResponseReceived Callback);
 
-	UFUNCTION()
-	void OnHttpResponseReceivedManager(bool bSuccess, FString ResponseContent, FString RequestId);
+	// UFUNCTION()
+	// void OnHTTPResponseManager(bool bSuccess, FString ResponseContent, FString RequestId);
 
 
 };
