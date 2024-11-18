@@ -40,52 +40,62 @@ public:
 	virtual void Deinitialize() override;
 	//> Getters
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static const FGFGameData& GetGameData();
+	const FGFGameData& GetGameData();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static int32 GetGameId();
+	int32 GetGameId();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static FString GetGameName();
+	FString GetGameName();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static FString GetGameDescription();
+	FString GetGameDescription();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static FString GetGameToken();
+	FString GetGameToken();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static const TMap<FString, FString>& GetGameVariables();
+	const TMap<FString, FString>& GetGameVariables();
 
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static const TArray<FGFStoreItem>& GetGameStoreItems();
+	const TArray<FGFStoreItem>& GetGameStoreItems();
 
 	/** Returns a TMap of all leaderboards that have been fetched from GameFuse */
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static const TMap<FString, FGFLeaderboard>& GetLeaderboards();
+	const TMap<FString, FGFLeaderboard>& GetLeaderboards();
 
 	/** Returns a TArray of all leaderboard entries that have been fetched from GameFuse.
 	 *  If LeaderboardEntries have not been fetched, returns an empty TArray. */
-	UFUNCTION(BlueprintPure, Category = "GameFuse")
-	static const TArray<FGFLeaderboardEntry>& GetLeaderboardEntries(const FString& LeaderboardName);
+	UFUNCTION(BlueprintPure, Category = "GameFuse | Manager")
+	const TArray<FGFLeaderboardEntry>& GetLeaderboardEntries(const FString& LeaderboardName);
 
-	// > GameSetup
+	UFUNCTION(BlueprintPure, Category = "GameFuse | Manager")
+	bool IsSetUp();
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Core")
+	UFUNCTION(NotBlueprintable, Category = "GameFuse | Manager")
+	bool SetupCheck();
+
+
+	/*
+	 * Registers the GameFuseManager with the GameFuse API.
+	 * @param GameId The GameFuse ID of the game.
+	 * @param Token The GameFuse API Token of the game.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
 	void SetUpGame(const FString& GameId, const FString& Token, FOnApiResponseReceived Callback);
 
 	//> Action Requests
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Core")
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
 	void SendPasswordResetEmail(const FString& Email, FOnApiResponseReceived Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Core")
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
 	void FetchGameVariables(FOnApiResponseReceived Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Core")
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
 	void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FOnApiResponseReceived Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Core")
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
 	void FetchStoreItems(FOnApiResponseReceived Callback);
 
 	UFUNCTION()
@@ -93,14 +103,14 @@ public:
 
 private:
 
-	static FGFGameData GameData;
+	FGFGameData GameData;
 
-	static TArray<FGFStoreItem> StoreItems;
-	static TMap<FString, FGFLeaderboard> Leaderboards;
-	static TArray<FGFLeaderboardEntry> EmptyEntries;
-	static TMap<FString, FString> GameVariables;
+	TArray<FGFStoreItem> StoreItems;
+	TMap<FString, FGFLeaderboard> Leaderboards;
+	TArray<FGFLeaderboardEntry> EmptyEntries;
+	TMap<FString, FString> GameVariables;
 
-	static TObjectPtr<UCoreAPIHandler> RequestHandler;
+	TObjectPtr<UCoreAPIHandler> RequestHandler;
 
 	void SetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	void SetVariablesInternal(const FString& JsonStr);

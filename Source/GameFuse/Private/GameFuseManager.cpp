@@ -15,15 +15,15 @@
 #include "Library/GameFuseStructLibrary.h"
 #include "Models/GameFuseUtilities.h"
 
-
-TObjectPtr<UCoreAPIHandler> UGameFuseManager::RequestHandler;
-
-FGFGameData UGameFuseManager::GameData;
-
-TArray<FGFStoreItem> UGameFuseManager::StoreItems;
-TMap<FString, FGFLeaderboard> UGameFuseManager::Leaderboards;
-TArray<FGFLeaderboardEntry> UGameFuseManager::EmptyEntries;
-TMap<FString, FString> UGameFuseManager::GameVariables;
+//
+// TObjectPtr<UCoreAPIHandler> UGameFuseManager::RequestHandler;
+//
+// FGFGameData UGameFuseManager::GameData;
+//
+// TArray<FGFStoreItem> UGameFuseManager::StoreItems;
+// TMap<FString, FGFLeaderboard> UGameFuseManager::Leaderboards;
+// TArray<FGFLeaderboardEntry> UGameFuseManager::EmptyEntries;
+// TMap<FString, FString> UGameFuseManager::GameVariables;
 
 
 
@@ -91,28 +91,61 @@ const TArray<FGFLeaderboardEntry>& UGameFuseManager::GetLeaderboardEntries(const
 	return Leaderboards[LeaderboardName].Entries;
 }
 
+
+
 // < End Region
 // > Region Game Fuse Asynchronous Functions
 
 void UGameFuseManager::SetUpGame(const FString& GameId, const FString& Token, FOnApiResponseReceived Callback)
 {
+	if (!SetupCheck())
+	{
+		return;
+	}
+
 	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
 	RequestHandler->SetUpGame(GameId, Token, Callback);
 }
 
 void UGameFuseManager::SendPasswordResetEmail(const FString& Email, FOnApiResponseReceived Callback)
 {
-	// RequestHandler->SendPasswordResetEmail(Email, Callback);
+	if (!SetupCheck())
+	{
+		return;
+	}
+	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
+	RequestHandler->SendPasswordResetEmail(Email, GameData.Id, GameData.Token, Callback);
 }
 
 void UGameFuseManager::FetchGameVariables(FOnApiResponseReceived Callback)
-{}
+{
+	if (!SetupCheck())
+	{
+		return;
+	}
+	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
+	RequestHandler->FetchGameVariables(GameData.Id, GameData.Token, Callback);
+}
 
 void UGameFuseManager::FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FOnApiResponseReceived Callback)
-{}
+{
+	if (!SetupCheck())
+	{
+		return;
+	}
+	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
+	RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, GameData.Token, Callback);
+}
 
 void UGameFuseManager::FetchStoreItems(FOnApiResponseReceived Callback)
-{}
+{
+	if (!SetupCheck())
+	{
+		return;
+	}
+	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
+	RequestHandler->FetchStoreItems(GameData.Id, GameData.Token, Callback);
+}
 
 
 /*
@@ -169,6 +202,27 @@ UGameFuseAsyncAction* UGameFuseManager::FetchStoreItems()
 
 //< End Region/
 */
+
+// > Region State Checkers
+bool UGameFuseManager::IsSetUp()
+{
+	return GameData.Id != 0 && !GameData.Token.IsEmpty();
+}
+
+
+/*
+ * Checks if GameFuse has been set up.
+ * @return True if GameFuse has been set up, false otherwise.
+ */
+bool UGameFuseManager::SetupCheck()
+{
+	if (!IsSetUp())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("GameFuse has not been set up. Please call SetUpGame() before using GameFuse."));
+		return false;
+	}
+	return true;
+}
 
 // > Region Internal Setters
 void UGameFuseManager::InternalResponseManager(bool bSuccess, FString ResponseStr, FString RequestId)
@@ -290,7 +344,6 @@ void UGameFuseManager::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& Js
 		{
 			CurrLeaderboardEntries.RemoveAt(newIndex);
 		}
-
 	}
 	UE_LOG(LogGameFuse, Log, TEXT("Fetched Leaderboards amount of : %d"), CurrLeaderboardEntries.Num());
 

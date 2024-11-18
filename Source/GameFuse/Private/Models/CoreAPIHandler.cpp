@@ -22,7 +22,7 @@ void UCoreAPIHandler::SetUpGame(const FString& InGameId, const FString& InToken,
 
 	// Callback.BindDynamic(this, &ThisClass::OnHTTPResponseManager);
 
-	SendRequest(ApiEndpoint, TEXT("GET"), TEXT(""), Callback);
+	SendRequest(ApiEndpoint, TEXT("GET"), Callback);
 
 	// RequestManager->SetURL(ApiEndpoint);
 	// RequestManager->SetVerb("GET");
@@ -40,6 +40,7 @@ void UCoreAPIHandler::FetchLeaderboardEntries(const int Limit, bool bOnePerUser,
 	, *BaseUrl, GameId, *UserAuthenticationToken, *LeaderboardName, Limit, *OnePerUserStr);
 
 	UE_LOG(LogGameFuse, Log, TEXT("Fetching Leaderboard : %s : %d"), *LeaderboardName, Limit);
+	SendRequest(ApiEndpoint, TEXT("GET"), Callback);
 	// Callback.BindDynamic(this, &ThisClass::OnHTTPResponseManager);
 
 

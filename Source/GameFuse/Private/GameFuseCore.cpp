@@ -17,6 +17,8 @@
 
 
 
+
+
 FGFGameData UGameFuseCore::GameData;
 
 TArray<FGFStoreItem> UGameFuseCore::StoreItems;

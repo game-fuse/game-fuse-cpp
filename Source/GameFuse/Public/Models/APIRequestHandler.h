@@ -21,7 +21,7 @@ class GAMEFUSE_API UAPIRequestHandler : public UObject
 public:
 
 	// Sends an HTTP Request, returns unique Request ID
-	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FString& RequestBody, FOnApiResponseReceived OnResponseReceived = FOnApiResponseReceived());
+	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, FOnApiResponseReceived OnResponseReceived = FOnApiResponseReceived());
 
 	// Handles the response received for the HTTP request
 	void HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);

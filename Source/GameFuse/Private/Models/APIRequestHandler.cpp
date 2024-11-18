@@ -10,7 +10,7 @@ UAPIRequestHandler::UAPIRequestHandler()
 	DefaultHeaders.Add(TEXT("Accept"), TEXT("application/json"));
 }
 
-FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FString& RequestBody, FOnApiResponseReceived OnResponseReceived)
+FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod,/* const FString& RequestBody,*/ FOnApiResponseReceived OnResponseReceived)
 {
 	// Generate unique ID for the request
 	FGuid RequestId = GenerateRequestId();
@@ -22,7 +22,9 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->SetURL(URL);
 	HttpRequest->SetVerb(HttpMethod);
-	HttpRequest->SetContentAsString(RequestBody);
+
+	// Request Body not used for Gamefuse API
+	// HttpRequest->SetContentAsString(RequestBody);
 
 	// Add Default Headers
 	for (const TPair<FString, FString>& Header : DefaultHeaders)
