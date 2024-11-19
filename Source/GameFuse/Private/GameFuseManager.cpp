@@ -96,55 +96,58 @@ const TArray<FGFLeaderboardEntry>& UGameFuseManager::GetLeaderboardEntries(const
 // < End Region
 // > Region Game Fuse Asynchronous Functions
 
-void UGameFuseManager::SetUpGame(const FString& GameId, const FString& Token, FOnApiResponseReceived Callback)
+void UGameFuseManager::SetUpGame(const FString& GameId, const FString& Token, const FBP_ApiCallback& Callback)
 {
-	if (!SetupCheck())
-	{
-		return;
-	}
-
-	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
-	RequestHandler->SetUpGame(GameId, Token, Callback);
+	FApiCallback InternalCallback = UAPIRequestHandler::WrapBlueprintCallback(Callback);
+	InternalCallback.AddDynamic(this, &UGameFuseManager::InternalResponseManager);
+	RequestHandler->SetUpGame(GameId, Token, InternalCallback);
 }
 
-void UGameFuseManager::SendPasswordResetEmail(const FString& Email, FOnApiResponseReceived Callback)
+void UGameFuseManager::SendPasswordResetEmail(const FString& Email, const FBP_ApiCallback& Callback)
 {
 	if (!SetupCheck())
 	{
 		return;
 	}
-	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
-	RequestHandler->SendPasswordResetEmail(Email, GameData.Id, GameData.Token, Callback);
+	FApiCallback InternalCallback = UAPIRequestHandler::WrapBlueprintCallback(Callback);
+	InternalCallback.AddDynamic(this, &UGameFuseManager::InternalResponseManager);
+	RequestHandler->SendPasswordResetEmail(Email, GameData.Id, GameData.Token, InternalCallback);
 }
 
-void UGameFuseManager::FetchGameVariables(FOnApiResponseReceived Callback)
+void UGameFuseManager::FetchGameVariables(const FBP_ApiCallback& Callback)
 {
 	if (!SetupCheck())
 	{
 		return;
 	}
-	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
-	RequestHandler->FetchGameVariables(GameData.Id, GameData.Token, Callback);
+	FApiCallback InternalCallback = UAPIRequestHandler::WrapBlueprintCallback(Callback);
+	InternalCallback.AddDynamic(this, &UGameFuseManager::InternalResponseManager);
+	// Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
+	RequestHandler->FetchGameVariables(GameData.Id, GameData.Token, InternalCallback);
 }
 
-void UGameFuseManager::FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FOnApiResponseReceived Callback)
+void UGameFuseManager::FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, const FBP_ApiCallback& Callback)
 {
 	if (!SetupCheck())
 	{
 		return;
 	}
-	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
-	RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, GameData.Token, Callback);
+	FApiCallback InternalCallback = UAPIRequestHandler::WrapBlueprintCallback(Callback);
+	InternalCallback.AddDynamic(this, &UGameFuseManager::InternalResponseManager);
+	// Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
+	RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, GameData.Token, InternalCallback);
 }
 
-void UGameFuseManager::FetchStoreItems(FOnApiResponseReceived Callback)
+void UGameFuseManager::FetchStoreItems(const FBP_ApiCallback& Callback)
 {
 	if (!SetupCheck())
 	{
 		return;
 	}
-	Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
-	RequestHandler->FetchStoreItems(GameData.Id, GameData.Token, Callback);
+	FApiCallback InternalCallback = UAPIRequestHandler::WrapBlueprintCallback(Callback);
+	InternalCallback.AddDynamic(this, &UGameFuseManager::InternalResponseManager);
+	// Callback.BindDynamic(this, &UGameFuseManager::InternalResponseManager);
+	RequestHandler->FetchStoreItems(GameData.Id, GameData.Token, InternalCallback);
 }
 
 
@@ -225,14 +228,14 @@ bool UGameFuseManager::SetupCheck()
 }
 
 // > Region Internal Setters
-void UGameFuseManager::InternalResponseManager(bool bSuccess, FString ResponseStr, FString RequestId)
+void UGameFuseManager::InternalResponseManager(FGFAPIResponse ResponseData)
 {
-	if (!bSuccess)
+	if (!ResponseData.bSuccess)
 	{
-		UE_LOG(LogGameFuse, Warning, TEXT("THERE SHOULD BE ANOTHER ERROR BEFORE THIS. Core API Request Failed. ID : %s"), *RequestId);
+		UE_LOG(LogGameFuse, Warning, TEXT("THERE SHOULD BE ANOTHER ERROR BEFORE THIS. Core API Request Failed. ID : %s"), *ResponseData.RequestId);
 		return;
 	}
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseStr);
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseData.ResponseStr);
 	TSharedPtr<FJsonObject> JsonObject;
 
 	if (!FJsonSerializer::Deserialize(Reader, JsonObject))
@@ -245,7 +248,7 @@ void UGameFuseManager::InternalResponseManager(bool bSuccess, FString ResponseSt
 	{
 		case EGFCoreAPIResponseType::SetUpGame:
 			SetUpGameInternal(JsonObject);
-			SetVariablesInternal(ResponseStr);
+			SetVariablesInternal(ResponseData.ResponseStr);
 			break;
 		case EGFCoreAPIResponseType::ListLeaderboardEntries:
 			SetLeaderboardsInternal(JsonObject);
@@ -315,6 +318,7 @@ void UGameFuseManager::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& Js
 	const TArray<TSharedPtr<FJsonValue>>& AttributeArray = JsonObject->GetArrayField(TEXT("leaderboard_entries"));
 	if (AttributeArray.Num() == 0)
 	{
+		UE_LOG(LogGameFuse, Log, TEXT("Leaderboard Entries Empty"));
 		return;
 	}
 

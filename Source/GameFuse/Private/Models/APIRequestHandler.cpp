@@ -10,7 +10,8 @@ UAPIRequestHandler::UAPIRequestHandler()
 	DefaultHeaders.Add(TEXT("Accept"), TEXT("application/json"));
 }
 
-FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod,/* const FString& RequestBody,*/ FOnApiResponseReceived OnResponseReceived)
+FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, /* const FString& RequestBody,*/
+                                      const FApiCallback& OnResponseReceived)
 {
 	// Generate unique ID for the request
 	FGuid RequestId = GenerateRequestId();
@@ -71,10 +72,10 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 	// Retrieve and execute the response delegate
 	if (ResponseDelegates.Contains(RequestId))
 	{
-		FOnApiResponseReceived Delegate = ResponseDelegates[RequestId];
+		const FApiCallback& Delegate = ResponseDelegates[RequestId];
 		FString ResponseContent = bWasSuccessful && Response.IsValid() ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
 
-		Delegate.ExecuteIfBound(bWasSuccessful && Response.IsValid(), ResponseContent, RequestId.ToString());
+		Delegate.Broadcast(FGFAPIResponse(bWasSuccessful && Response.IsValid(), ResponseContent, RequestId.ToString()));
 		ResponseDelegates.Remove(RequestId);
 	}
 
@@ -93,4 +94,12 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 FGuid UAPIRequestHandler::GenerateRequestId()
 {
 	return FGuid::NewGuid();
+}
+
+FApiCallback UAPIRequestHandler::WrapBlueprintCallback(const FBP_ApiCallback& BPCallback)
+{
+	FApiCallback WrapperCallback;
+	WrapperCallback.Add(BPCallback);
+
+	return WrapperCallback;
 }

@@ -29,17 +29,17 @@ public:
 
 	//> Setup Game Request
 
-	void SetUpGame(const FString& InGameId, const FString& InToken, FOnApiResponseReceived Callback);
+	void SetUpGame(const FString& InGameId, const FString& InToken, const FApiCallback& Callback);
 
 	//> Action Requests
 
-	void SendPasswordResetEmail(const FString& Email, int GameID, FString Token, FOnApiResponseReceived Callback);
+	void SendPasswordResetEmail(const FString& Email, int GameID, const FString& Token, const FApiCallback& Callback);
 
-	void FetchLeaderboardEntries(int Limit, bool bOnePerUser, const FString& LeaderboardName, int GameId, const FString& UserAuthenticationToken, FOnApiResponseReceived Callback);
+	void FetchLeaderboardEntries(int Limit, bool bOnePerUser, const FString& LeaderboardName, int GameId, const FString& UserAuthenticationToken, const FApiCallback& Callback);
 
-	void FetchGameVariables(int GameID, FString Token, FOnApiResponseReceived Callback);
+	void FetchGameVariables(int GameID, const FString& Token, const FApiCallback& Callback);
 
-	void FetchStoreItems(int GameID, FString Token, FOnApiResponseReceived Callback);
+	void FetchStoreItems(int GameID, const FString& Token, const FApiCallback& Callback);
 
 	// UFUNCTION()
 	// void OnHTTPResponseManager(bool bSuccess, FString ResponseContent, FString RequestId);

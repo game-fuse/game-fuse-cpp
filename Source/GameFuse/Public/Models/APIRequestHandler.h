@@ -3,12 +3,22 @@
 #include "CoreMinimal.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Delegates/Delegate.h"
+#include "Library/GameFuseStructLibrary.h"
 #include "ApiRequestHandler.generated.h"
 
 /**
  * Delegate to handle API request responses
  */
-DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnApiResponseReceived, bool, bSuccess, FString, ResponseContent, FString, RequestId);
+
+/*
+ * BP Specific Callback Delegate
+ */
+DECLARE_DYNAMIC_DELEGATE_OneParam(FBP_ApiCallback, FGFAPIResponse, ResponseData);
+
+/*
+ * CPP Multicast Delegate wraps the BP_ApiCallback and is bindable anywhere in CPP
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FApiCallback, FGFAPIResponse, ResponseData);
 
 /**
  * UAPIRequestHandler - Centralized class to manage API requests
@@ -20,8 +30,10 @@ class GAMEFUSE_API UAPIRequestHandler : public UObject
 
 public:
 
+	static FApiCallback WrapBlueprintCallback(const FBP_ApiCallback& BPCallback);
+
 	// Sends an HTTP Request, returns unique Request ID
-	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, FOnApiResponseReceived OnResponseReceived = FOnApiResponseReceived());
+	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FApiCallback& OnResponseReceived);
 
 	// Handles the response received for the HTTP request
 	void HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
@@ -42,9 +54,10 @@ private:
 	// Generates a unique Request ID
 	static FGuid GenerateRequestId();
 
+
 	// Map to store active requests and their data by Request ID
 	TMap<FGuid, FHttpRequestPtr> ActiveRequests;
 
 	// Map to store response delegates by Request ID
-	TMap<FGuid, FOnApiResponseReceived> ResponseDelegates;
+	TMap<FGuid, FApiCallback> ResponseDelegates;
 };

@@ -78,28 +78,28 @@ public:
 
 	/*
 	 * Registers the GameFuseManager with the GameFuse API.
-	 * @param GameId The GameFuse ID of the game.
-	 * @param Token The GameFuse API Token of the game.
+	 * GameId The GameFuse ID of the game.
+	 * Token The GameFuse API Token of the game.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void SetUpGame(const FString& GameId, const FString& Token, FOnApiResponseReceived Callback);
+	void SetUpGame(const FString& GameId, const FString& Token, const FBP_ApiCallback& Callback);
 
 	//> Action Requests
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void SendPasswordResetEmail(const FString& Email, FOnApiResponseReceived Callback);
+	void SendPasswordResetEmail(const FString& Email, const FBP_ApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void FetchGameVariables(FOnApiResponseReceived Callback);
+	void FetchGameVariables(const FBP_ApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FOnApiResponseReceived Callback);
+	void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, const FBP_ApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void FetchStoreItems(FOnApiResponseReceived Callback);
+	void FetchStoreItems(const FBP_ApiCallback& Callback);
 
 	UFUNCTION()
-	void InternalResponseManager(bool bSuccess, FString ResponseStr, FString RequestID);
+	void InternalResponseManager(FGFAPIResponse ResponseData);
 
 private:
 
