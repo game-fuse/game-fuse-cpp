@@ -11,7 +11,7 @@ UTestSuiteAPIManager::UTestSuiteAPIManager()
 	RequestManager->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 }
 
-void UTestSuiteAPIManager::LogRequestInfo(TSharedRef<IHttpRequest> HttpRequest)
+void UTestSuiteAPIManager::LogRequestInfo(const TSharedRef<IHttpRequest>& HttpRequest)
 {
 
 	UE_LOG(LogGameFuse, Log, TEXT("=========   URL   ========= \n %s"), *RequestManager->GetURL());
@@ -23,12 +23,18 @@ void UTestSuiteAPIManager::LogRequestInfo(TSharedRef<IHttpRequest> HttpRequest)
 
 void UTestSuiteAPIManager::LogRequestInfo(const FHttpRequestPtr& HttpRequest)
 {
+	LogRequestInfo(HttpRequest.ToSharedRef());
+}
 
-	UE_LOG(LogGameFuse, Log, TEXT("=========   URL   ========= \n %s"), *RequestManager->GetURL());
-	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
-	for (const FString& currHeader : HttpRequest->GetAllHeaders()) {
-		UE_LOG(LogGameFuse, Log, TEXT("%s"), *currHeader);
-	}
+void UTestSuiteAPIManager::LogResponseInfo(const TSharedRef<IHttpResponse>& Response)
+{
+	UE_LOG(LogGameFuse, Log, TEXT("======== RESPONSE ========="))
+	UE_LOG(LogGameFuse, Log, TEXT("%s"), *Response->GetContentAsString());
+}
+
+void UTestSuiteAPIManager::LogResponseInfo(const FHttpResponsePtr& Response)
+{
+	LogResponseInfo(Response.ToSharedRef());
 }
 
 void UTestSuiteAPIManager::CreateGame(FDefaultCallback Callback)

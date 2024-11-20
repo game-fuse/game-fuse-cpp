@@ -101,6 +101,13 @@ struct FGFStoreItem
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString IconUrl = "";
 
+	bool operator==(const FGFStoreItem& Other) const
+	{
+		return Name == Other.Name && Category == Other.Category &&
+		Description == Other.Description && Cost == Other.Cost &&
+		Id == Other.Id && IconUrl == Other.IconUrl;
+	}
+
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|LeaderboardItem")
@@ -128,6 +135,12 @@ struct FGFLeaderboardEntry
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|LeaderboardItem")
 	FString DateTime = "";
 
+	bool operator==(const FGFLeaderboardEntry& Other) const
+	{
+		return LeaderboardName == Other.LeaderboardName && Username == Other.Username &&
+		Score == Other.Score && GameUserId == Other.GameUserId &&
+		ExtraAttributes == Other.ExtraAttributes && DateTime == Other.DateTime;
+	}
 };
 
 /**

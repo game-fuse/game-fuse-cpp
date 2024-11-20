@@ -1,9 +1,5 @@
-#pragma once
-
-#include "CoreMinimal.h"
 #include "Library/GameFuseStructLibrary.h"
 #include "Models/APIResponseManager.h"
-
 #include "TestSuiteAPIManager.generated.h"
 
 using FDefaultCallback = TFunction<void(FHttpRequestPtr, FHttpResponsePtr, bool)>;

@@ -48,7 +48,7 @@ void UTestSession::Initialize(FDoneDelegate OnInitialized)
 {
 	TestAPIManager->CreateGame([this, OnInitialized](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
 		if (!CheckValidResponse(Request, Response, bWasSuccessful)) {
-			UE_LOG(LogTemp, Warning, TEXT("Failed to initialize TestSession."));
+			UE_LOG(LogTemp, Warning, TEXT("Bad Response for create game."));
 			OnInitialized.ExecuteIfBound();
 			return false;
 		}
@@ -56,6 +56,7 @@ void UTestSession::Initialize(FDoneDelegate OnInitialized)
 		if (Response->GetResponseCode() < 200 || Response->GetResponseCode() >= 300) {
 			UE_LOG(LogTemp, Warning, TEXT("Failed to initialize TestSession."));
 			UTestSuiteAPIManager::LogRequestInfo(Request);
+			UTestSuiteAPIManager::LogResponseInfo(Response);
 			OnInitialized.ExecuteIfBound();
 			return false;
 		}
@@ -83,20 +84,20 @@ bool UTestSession::CheckValidResponse(FHttpRequestPtr Request, FHttpResponsePtr 
 }
 
 
-void UTestSession::Cleanup(FDoneDelegate OnCleanupComplete)
+void UTestSession::Cleanup(const FGameCleanupDelegate& Callback)
 {
 	if (!TestAPIManager) {
 		UE_LOG(LogTemp, Warning, TEXT("Test API is null. Nothing to clean up."));
-		OnCleanupComplete.ExecuteIfBound();
+		Callback.ExecuteIfBound(0);
 		return;
 	}
 
 	UE_LOG(LogTemp, Display, TEXT("Cleaning up test data for GameId : %i"), GameData.Id);
-	TestAPIManager->CleanUpTestData(GameData.Id, [this, OnCleanupComplete](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
+	TestAPIManager->CleanUpTestData(GameData.Id, [this, Callback](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
 		if (!CheckValidResponse(Request, Response, bWasSuccessful)) {
 			UE_LOG(LogTemp, Warning, TEXT("Failed to cleanup TestSession."));
 		}
-		OnCleanupComplete.ExecuteIfBound();
+		Callback.ExecuteIfBound(Response->GetResponseCode());
 	});
 }
 

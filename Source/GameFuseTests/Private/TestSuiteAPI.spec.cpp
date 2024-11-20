@@ -17,6 +17,12 @@ void TestSuiteAPI::Define()
 				TestSession = CreatedSession;
 				TestNotNull("Test Session was created", TestSession.Get());
 				TestTrue("Test Session has a valid ID", TestSession->GetGameData().Id != 0);
+
+				TestSession->Cleanup(FGameCleanupDelegate::CreateLambda([this, Done](const uint8 ResponseCode) {
+					TestTrue("Test Session was cleaned up successfully", ResponseCode == 200);
+					Done.ExecuteIfBound();
+				}));
+
 				Done.ExecuteIfBound();
 			}));
 		});
@@ -51,10 +57,45 @@ void TestSuiteAPI::Define()
 
 		LatentAfterEach([this](const FDoneDelegate& Done) {
 			if (TestSession) {
-				TestSession->Cleanup(Done);
+				TestSession->Cleanup(FGameCleanupDelegate::CreateLambda([this, Done](const uint8 ResponseCode) {
+					TestTrue("Test Session was cleaned up successfully", ResponseCode == 200);
+					AddErrorIfFalse(ResponseCode == 200, "Test Session was not cleaned up successfully. GameID : " + FString::FromInt(GameData.Id));
+					Done.ExecuteIfBound();
+				}));
 			} else {
 				Done.ExecuteIfBound();
 			}
+		});
+	});
+
+	Describe("Store Item Operations", [this]() {
+		LatentBeforeEach([this](const FDoneDelegate& Done) {
+			UTestSession::CreateTestSession(FGameCreatedDelegate::CreateLambda([this, Done](UTestSession* CreatedSession) {
+				TestSession = CreatedSession;
+				GameData = CreatedSession->GetGameData();
+				Done.ExecuteIfBound();
+			}));
+		});
+
+		LatentAfterEach([this](const FDoneDelegate& Done) {
+			if (TestSession) {
+				TestSession->Cleanup(FGameCleanupDelegate::CreateLambda([this, Done](const uint8 ResponseCode) {
+					TestTrue("Test Session was cleaned up successfully", ResponseCode == 200);
+					AddErrorIfFalse(ResponseCode == 200, "Test Session was not cleaned up successfully. GameID : " + FString::FromInt(GameData.Id));
+					Done.ExecuteIfBound();
+				}));
+			} else {
+				Done.ExecuteIfBound();
+			}
+		});
+
+		LatentIt("Creates a Store Item", [this](const FDoneDelegate& Done) {
+			TestNotNull("Test Session exists", TestSession.Get());
+			TestSession->CreateTestStoreItem(GameData.Id, TEXT("Test Item"), TEXT("Test Description"), TEXT("Test Category"), 100, FStoreItemCreatedDelegate::CreateLambda([this, Done](const FGFStoreItem& NewItem, const uint8 ResponseCode) {
+				TestEqual("Response code should be 200", ResponseCode, 200);
+				TestNotEqual("Store Item is not default", NewItem, FGFStoreItem());
+				Done.ExecuteIfBound();
+			}));
 		});
 	});
 }
