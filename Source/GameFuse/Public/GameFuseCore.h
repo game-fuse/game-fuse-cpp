@@ -35,36 +35,36 @@ class GAMEFUSE_API UGameFuseCore : public UBlueprintAsyncActionBase
 
 public:
 
-	UPROPERTY(BlueprintAssignable, meta=(GAMEFUSE_CORE_DEPRECATED))
+	UPROPERTY(BlueprintAssignable, meta=(DeprecatedFunction, DeprecationMessage="GameFuseCore is deprecated. Please use GameFuseManager instead."))
 	FGameFuseCallback OnSuccess;
 
 	UPROPERTY(BlueprintAssignable)
 	FGameFuseCallback OnError;
 
 	//> Getters
-	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(GAMEFUSE_CORE_DEPRECATED))
+	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(DeprecatedFunction, DeprecationMessage="GameFuseCore is deprecated. Please use GameFuseManager instead."))
 	static const FGFGameData& GetGameData();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(GAMEFUSE_CORE_DEPRECATED))
+	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(DeprecatedFunction, DeprecationMessage="GameFuseCore is deprecated. Please use GameFuseManager instead."))
 	static int32 GetGameId();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(GAMEFUSE_CORE_DEPRECATED))
+	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(DeprecatedFunction, DeprecationMessage="GameFuseCore is deprecated. Please use GameFuseManager instead."))
 	static FString GetGameName();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(GAMEFUSE_CORE_DEPRECATED))
+	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(DeprecatedFunction, DeprecationMessage="GameFuseCore is deprecated. Please use GameFuseManager instead."))
 	static FString GetGameDescription();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(GAMEFUSE_CORE_DEPRECATED))
+	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(DeprecatedFunction, DeprecationMessage="GameFuseCore is deprecated. Please use GameFuseManager instead."))
 	static FString GetGameToken();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(GAMEFUSE_CORE_DEPRECATED))
+	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(DeprecatedFunction, DeprecationMessage="GameFuseCore is deprecated. Please use GameFuseManager instead."))
 	static const TMap<FString, FString>& GetGameVariables();
 
-	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(GAMEFUSE_CORE_DEPRECATED))
+	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(DeprecatedFunction, DeprecationMessage="GameFuseCore is deprecated. Please use GameFuseManager instead."))
 	static const TArray<FGFStoreItem>& GetGameStoreItems();
 
 	/** Returns a TMap of all leaderboards that have been fetched from GameFuse */
-	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(GAMEFUSE_CORE_DEPRECATED))
+	UFUNCTION(BlueprintPure, Category = "GameFuse", meta=(DeprecatedFunction, DeprecationMessage="GameFuseCore is deprecated. Please use GameFuseManager instead."))
 	static const TMap<FString, FGFLeaderboard>& GetLeaderboards();
 
 	/** Returns a TArray of all leaderboard entries that have been fetched from GameFuse.
