@@ -6,22 +6,21 @@
 #include "Library/GameFuseStructLibrary.h"
 #include "ApiRequestHandler.generated.h"
 
-/**
- * Delegate to handle API request responses
- */
 
-/*
- * BP Specific Callback Delegate
+/**
+ * @brief BP Specific Callback Delegate. Only bound to the Delegate pin on a given node.
+ * @param RepsonseData - The response data from the API request. See @FGFAPIResponse for response details.
  */
 DECLARE_DYNAMIC_DELEGATE_OneParam(FBP_ApiCallback, FGFAPIResponse, ResponseData);
 
-/*
- * CPP Multicast Delegate wraps the BP_ApiCallback and is bindable anywhere in CPP
+/**
+ * @brief CPP Multicast Delegate wraps the BP_ApiCallback and is bindable anywhere in CPP
+ * @param RepsonseData - The response data from the API request. See @FGFAPIResponse for response details.
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FApiCallback, FGFAPIResponse, ResponseData);
 
 /**
- * UAPIRequestHandler - Centralized class to manage API requests
+ * @brief UAPIRequestHandler - Centralized class to manage API requests
  */
 UCLASS()
 class GAMEFUSE_API UAPIRequestHandler : public UObject
@@ -29,8 +28,6 @@ class GAMEFUSE_API UAPIRequestHandler : public UObject
 	GENERATED_BODY()
 
 public:
-
-	static FApiCallback WrapBlueprintCallback(const FBP_ApiCallback& BPCallback);
 
 	// Sends an HTTP Request, returns unique Request ID
 	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FApiCallback& OnResponseReceived);

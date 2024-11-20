@@ -95,11 +95,3 @@ FGuid UAPIRequestHandler::GenerateRequestId()
 {
 	return FGuid::NewGuid();
 }
-
-FApiCallback UAPIRequestHandler::WrapBlueprintCallback(const FBP_ApiCallback& BPCallback)
-{
-	FApiCallback WrapperCallback;
-	WrapperCallback.Add(BPCallback);
-
-	return WrapperCallback;
-}

@@ -34,11 +34,10 @@ class GAMEFUSE_API UGameFuseManager : public UGameInstanceSubsystem
 
 public:
 
-	//> Subsystem Initialization and Deinitialization
-
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
-	//> Getters
+
+
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
 	const FGFGameData& GetGameData();
 
@@ -76,30 +75,62 @@ public:
 	bool SetupCheck();
 
 
-	/*
-	 * Registers the GameFuseManager with the GameFuse API.
-	 * GameId The GameFuse ID of the game.
-	 * Token The GameFuse API Token of the game.
+
+	/**
+	 * DO NOT USE FROM C++
+	 * @brief Registers the GameFuseManager with the GameFuse API.
+	 * @param GameId The GameFuse ID of the game.
+	 * @param Token The GameFuse API Token of the game.
+	 * @param Callback The blueprint delegate to be called when the request is complete. Only bound to the node's delegate pin.
+	 */
+	UFUNCTION(BlueprintCallable, DisplayName="Set Up Game", Category = "GameFuse | Manager")
+	void BP_SetUpGame(const FString& GameId, const FString& Token, const FBP_ApiCallback& Callback);
+
+
+	/**
+	 * @brief CPP implementation. Registers the GameFuseManager with the GameFuse API.
+	 * @param GameId The GameFuse ID of the game.
+	 * @param Token The GameFuse API Token of the game.
+	 * @param Callback The cpp multicast delegate to be called when the request is complete. Can be bound many times.
+	 */
+	UFUNCTION()
+	void SetUpGame(const FString& GameId, const FString& Token, FApiCallback Callback);
+
+	/**
+	 * DO NOT USE FROM C++
+	 * Sends a password reset email to the specified email address.
+	 * @param Email Address to send the password reset email to.
+	 * @param Callback Blueprint Dynamic Delegate
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void SetUpGame(const FString& GameId, const FString& Token, const FBP_ApiCallback& Callback);
+	void BP_SendPasswordResetEmail(const FString& Email, const FBP_ApiCallback& Callback);
 
-	//> Action Requests
-
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void SendPasswordResetEmail(const FString& Email, const FBP_ApiCallback& Callback);
-
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void FetchGameVariables(const FBP_ApiCallback& Callback);
-
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, const FBP_ApiCallback& Callback);
-
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void FetchStoreItems(const FBP_ApiCallback& Callback);
-
+	/**
+	 * Sends a password reset email to the specified email address.
+	 * @param Email Address to send the password reset email to.
+	 * @param Callback Cpp Multicase Delegate
+	 */
 	UFUNCTION()
-	void InternalResponseManager(FGFAPIResponse ResponseData);
+	void SendPasswordResetEmail(const FString& Email, FApiCallback Callback);
+
+	/**
+	 * 
+	 * @param Callback 
+	 */
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
+	void BP_FetchGameVariables(const FBP_ApiCallback& Callback);
+	UFUNCTION()
+	void FetchGameVariables(FApiCallback Callback);
+
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
+	void BP_FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, const FBP_ApiCallback& Callback);
+	UFUNCTION()
+	void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FApiCallback Callback);
+
+	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
+	void BP_FetchStoreItems(const FBP_ApiCallback& Callback);
+	UFUNCTION()
+	void FetchStoreItems(FApiCallback Callback);
 
 private:
 
@@ -112,9 +143,22 @@ private:
 
 	TObjectPtr<UCoreAPIHandler> RequestHandler;
 
+
+	/**
+	 * Central response handling, determines internal setter from ResponseData
+	 * @param ResponseData
+	 */
+	UFUNCTION()
+	void InternalResponseManager(FGFAPIResponse ResponseData);
 	void SetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	void SetVariablesInternal(const FString& JsonStr);
 	void SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	void SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * @brief Binds BP_APICallback to InternalCallback to use as multicast delegate in CPP
+	 */
+	void WrapBlueprintCallback(const FBP_ApiCallback& Callback, FApiCallback& InternalCallback);
+
 
 };
