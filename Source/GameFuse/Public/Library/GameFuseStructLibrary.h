@@ -137,7 +137,7 @@ struct FGFLeaderboard
 	TArray<FGFLeaderboardEntry> Entries;
 };
 
-USTRUCT(BlueprintType, Category = "GameFuse| API", DisplayName = "API Response")
+USTRUCT(BlueprintType, Category = "GameFuse| API")
 struct FGFAPIResponse
 {
 	GENERATED_BODY()
@@ -149,10 +149,10 @@ struct FGFAPIResponse
 	FString ResponseStr = "";
 
 	UPROPERTY(BlueprintReadWrite)
-	FString RequestId;
+	FString RequestId = "";
 	FGFAPIResponse() = default;
 
-	FGFAPIResponse(bool _bSuccess, const FString& _Response, const FString& _RequestId)
+	FGFAPIResponse(bool _bSuccess, const FString& _Response, const FString& _RequestId = "")
 	{
 		bSuccess = _bSuccess;
 		ResponseStr = _Response;

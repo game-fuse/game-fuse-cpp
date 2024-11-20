@@ -1,7 +1,8 @@
-#include "Models/APIRequestHandler.h"
+#include "API/APIRequestHandler.h"
 #include "HttpModule.h"
+#include "Library/GameFuseLog.h"
 #include "Interfaces/IHttpResponse.h"
-#include "Models/APIResponseManager.h"
+
 
 UAPIRequestHandler::UAPIRequestHandler()
 {
@@ -11,7 +12,7 @@ UAPIRequestHandler::UAPIRequestHandler()
 }
 
 FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, /* const FString& RequestBody,*/
-                                      const FApiCallback& OnResponseReceived)
+                                      const FGFApiCallback& OnResponseReceived)
 {
 	// Generate unique ID for the request
 	FGuid RequestId = GenerateRequestId();
@@ -20,7 +21,7 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	FString URL = BaseUrl + Endpoint;
 
 	// Create HTTP Request
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
+	FHttpRequestPtr HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->SetURL(URL);
 	HttpRequest->SetVerb(HttpMethod);
 
@@ -35,7 +36,7 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 
 	// Bind to response callback using direct reference
 	HttpRequest->OnProcessRequestComplete().BindUObject(this, &UAPIRequestHandler::HandleResponse);
-	UE_LOG(LogGameFuse, Log, TEXT("Sending Request"));
+	UE_LOG(LogGameFuse, Log, TEXT("Sending Request to endpoint: %s"), *Endpoint);
 	// Add to ActiveRequests map
 	ActiveRequests.Add(RequestId, HttpRequest);
 
@@ -68,21 +69,38 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 	{
 		ActiveRequests.Remove(RequestId);
 	}
+	else
+	{
+		UE_LOG(LogGameFuse, Warning, TEXT("Request Id not found"));
+	}
+	bool bSuccessfulAndValid = bWasSuccessful && Response.IsValid();
+
+	int ResponseCode = Response->GetResponseCode();
+	bool bIsGoodResponse = ResponseCode >= 200 && ResponseCode < 300;
+
 
 	// Retrieve and execute the response delegate
 	if (ResponseDelegates.Contains(RequestId))
 	{
-		const FApiCallback& Delegate = ResponseDelegates[RequestId];
-		FString ResponseContent = bWasSuccessful && Response.IsValid() ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
+		const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
+		FString ResponseContent = bSuccessfulAndValid ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
 
-		Delegate.Broadcast(FGFAPIResponse(bWasSuccessful && Response.IsValid(), ResponseContent, RequestId.ToString()));
+		Delegate.Broadcast(FGFAPIResponse(bSuccessfulAndValid && bIsGoodResponse, ResponseContent, RequestId.ToString()));
 		ResponseDelegates.Remove(RequestId);
 	}
 
-	if (bWasSuccessful && Response.IsValid())
+	if (bSuccessfulAndValid)
 	{
-		// Handle success case here (e.g., call a delegate)
-		UE_LOG(LogTemp, Log, TEXT("Request %s succeeded: %s"), *RequestId.ToString(), *Response->GetContentAsString());
+
+		if (!bIsGoodResponse)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Request %s failed with response: %s"), *RequestId.ToString(), *Response->GetContentAsString());
+
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Request %s succeeded: %s"), *RequestId.ToString(), *Response->GetContentAsString());
+		}
 	}
 	else
 	{

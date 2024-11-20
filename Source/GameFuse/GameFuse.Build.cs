@@ -10,6 +10,7 @@ using UnrealBuildTool;
 
 public class GameFuse : ModuleRules {
 	public GameFuse(ReadOnlyTargetRules Target) : base(Target) {
+		PublicDependencyModuleNames.AddRange(new[] { "HTTP" });
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PrivateDependencyModuleNames.AddRange(

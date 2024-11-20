@@ -4,6 +4,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Delegates/Delegate.h"
 #include "Library/GameFuseStructLibrary.h"
+
 #include "ApiRequestHandler.generated.h"
 
 
@@ -11,13 +12,13 @@
  * @brief BP Specific Callback Delegate. Only bound to the Delegate pin on a given node.
  * @param RepsonseData - The response data from the API request. See @FGFAPIResponse for response details.
  */
-DECLARE_DYNAMIC_DELEGATE_OneParam(FBP_ApiCallback, FGFAPIResponse, ResponseData);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FBP_GFApiCallback, FGFAPIResponse, ResponseData);
 
 /**
  * @brief CPP Multicast Delegate wraps the BP_ApiCallback and is bindable anywhere in CPP
  * @param RepsonseData - The response data from the API request. See @FGFAPIResponse for response details.
  */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FApiCallback, FGFAPIResponse, ResponseData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGFApiCallback, FGFAPIResponse, ResponseData);
 
 /**
  * @brief UAPIRequestHandler - Centralized class to manage API requests
@@ -30,13 +31,13 @@ class GAMEFUSE_API UAPIRequestHandler : public UObject
 public:
 
 	// Sends an HTTP Request, returns unique Request ID
-	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FApiCallback& OnResponseReceived);
+	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived);
 
 	// Handles the response received for the HTTP request
 	void HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
 	// Base URL for the API
-	inline static FString BaseUrl = "https://gamefuse.co/api/v2";
+	inline static FString BaseUrl = "https://gamefuse.co/api/v3";
 
 protected:
 
@@ -56,5 +57,5 @@ private:
 	TMap<FGuid, FHttpRequestPtr> ActiveRequests;
 
 	// Map to store response delegates by Request ID
-	TMap<FGuid, FApiCallback> ResponseDelegates;
+	TMap<FGuid, FGFApiCallback> ResponseDelegates;
 };

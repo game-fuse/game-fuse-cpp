@@ -6,14 +6,12 @@
  *  https://github.com/game-fuse/game-fuse-cpp
  */
 
-#include "Models/CoreAPIHandler.h"
-
-
-#include "Models/APIResponseManager.h"
+#include "API/CoreAPIHandler.h"
+#include "Library/GameFuseLog.h"
 
 
 
-void UCoreAPIHandler::SetUpGame(const FString& InGameId, const FString& InToken, const FApiCallback& Callback)
+void UCoreAPIHandler::SetUpGame(const FString& InGameId, const FString& InToken, const FGFApiCallback& Callback)
 {
 	FString ApiEndpoint = FString::Printf(TEXT("/games/verify?client_from_library=cpp&game_id=%s&game_token=%s"), *InGameId, *InToken);
 
@@ -23,7 +21,7 @@ void UCoreAPIHandler::SetUpGame(const FString& InGameId, const FString& InToken,
 }
 
 
-void UCoreAPIHandler::FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const int GameId, const FString& UserAuthenticationToken, const FApiCallback& Callback)
+void UCoreAPIHandler::FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const int GameId, const FString& UserAuthenticationToken, const FGFApiCallback& Callback)
 {
 	const FString OnePerUserStr = (bOnePerUser) ? TEXT("true") : TEXT("false");
 	const FString ApiEndpoint = FString::Printf(
@@ -35,7 +33,7 @@ void UCoreAPIHandler::FetchLeaderboardEntries(const int Limit, bool bOnePerUser,
 
 }
 
-void UCoreAPIHandler::SendPasswordResetEmail(const FString& Email, const int GameID, const FString& Token, const FApiCallback& Callback)
+void UCoreAPIHandler::SendPasswordResetEmail(const FString& Email, const int GameID, const FString& Token, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/games/%d/forget_password?game_token=%s&game_id=%d&email=%s")
 	                                            , *BaseUrl, GameID, *Token, GameID, *Email);
@@ -45,7 +43,7 @@ void UCoreAPIHandler::SendPasswordResetEmail(const FString& Email, const int Gam
 
 }
 
-void UCoreAPIHandler::FetchGameVariables(const int GameID, const FString& Token, const FApiCallback& Callback)
+void UCoreAPIHandler::FetchGameVariables(const int GameID, const FString& Token, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(
 	TEXT("%s/games/fetch_game_variables.json?game_id=%d&game_token=%s"), *BaseUrl, GameID, *Token);
@@ -55,7 +53,7 @@ void UCoreAPIHandler::FetchGameVariables(const int GameID, const FString& Token,
 
 }
 
-void UCoreAPIHandler::FetchStoreItems(const int GameID, const FString& Token, const FApiCallback& Callback)
+void UCoreAPIHandler::FetchStoreItems(const int GameID, const FString& Token, const FGFApiCallback& Callback)
 {
 	FString ApiEndpoint = FString::Printf(TEXT("%s/games/store_items?game_id=%d&game_token=%s")
 	                                      , *BaseUrl, GameID, *Token);

@@ -9,7 +9,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFuseUser.h"
+#include "Subsystems/GameFuseUser.h"
 
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"

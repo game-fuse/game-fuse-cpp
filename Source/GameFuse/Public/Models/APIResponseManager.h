@@ -15,8 +15,6 @@
 // DECLARE_DELEGATE_TwoParams(FGameFuseAPIResponseCallback, bool /* bSuccess */, FString /* ResponseStr */);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FGameFuseAPIResponseCallback, bool, bSuccess, const FString&, ResponseString);
 
-//this was conveniently used in every class in the source, probably better to move to a dedicated GameFuseLog header
-DECLARE_LOG_CATEGORY_EXTERN(LogGameFuse, Log, All);
 
 
 UCLASS()

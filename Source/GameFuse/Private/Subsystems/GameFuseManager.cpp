@@ -7,12 +7,11 @@
  */
 
 
-#include "GameFuseManager.h"
+#include "Subsystems/GameFuseManager.h"
 
-#include "GameFuseUser.h"
 #include "JsonObjectConverter.h"
-#include "Models/CoreAPIManager.h"
-#include "Library/GameFuseStructLibrary.h"
+
+#include "Library/GameFuseLog.h"
 #include "Models/GameFuseUtilities.h"
 
 
@@ -89,44 +88,44 @@ const TArray<FGFLeaderboardEntry>& UGameFuseManager::GetLeaderboardEntries(const
 
 #pragma region Blueprint Delegate Wrappers
 
-void UGameFuseManager::WrapBlueprintCallback(const FBP_ApiCallback& Callback, FApiCallback& InternalCallback)
+void UGameFuseManager::WrapBlueprintCallback(const FBP_GFApiCallback& Callback, FGFApiCallback& InternalCallback)
 {
 	InternalCallback.AddUniqueDynamic(this, &UGameFuseManager::InternalResponseManager);
 	InternalCallback.Add(Callback);
 }
 
-void UGameFuseManager::BP_SetUpGame(const FString& GameId, const FString& Token, const FBP_ApiCallback& Callback = FBP_ApiCallback())
+void UGameFuseManager::BP_SetUpGame(const FString& GameId, const FString& Token, const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
-	FApiCallback InternalCallback;
+	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
 	SetUpGame(GameId, Token, InternalCallback);
 }
 
-void UGameFuseManager::BP_SendPasswordResetEmail(const FString& Email, const FBP_ApiCallback& Callback = FBP_ApiCallback())
+void UGameFuseManager::BP_SendPasswordResetEmail(const FString& Email, const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
-	FApiCallback InternalCallback;
+	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
 	SendPasswordResetEmail(Email, InternalCallback);
 }
 
-void UGameFuseManager::BP_FetchGameVariables(const FBP_ApiCallback& Callback = FBP_ApiCallback())
+void UGameFuseManager::BP_FetchGameVariables(const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
-	FApiCallback InternalCallback;
+	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
 	FetchGameVariables(InternalCallback);
 }
 
 
-void UGameFuseManager::BP_FetchStoreItems(const FBP_ApiCallback& Callback = FBP_ApiCallback())
+void UGameFuseManager::BP_FetchStoreItems(const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
-	FApiCallback InternalCallback;
+	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
 	FetchStoreItems(InternalCallback);
 }
 
-void UGameFuseManager::BP_FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit = 20, bool bOnePerUser = false, const FString& LeaderboardName = "", const FBP_ApiCallback& Callback = FBP_ApiCallback())
+void UGameFuseManager::BP_FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit = 20, bool bOnePerUser = false, const FString& LeaderboardName = "", const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
-	FApiCallback InternalCallback;
+	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
 	FetchLeaderboardEntries(GameFuseUser, Limit, bOnePerUser, LeaderboardName, InternalCallback);
 }
@@ -135,13 +134,13 @@ void UGameFuseManager::BP_FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, c
 
 #pragma region CPP Implementations
 
-void UGameFuseManager::SetUpGame(const FString& GameId, const FString& Token, FApiCallback Callback)
+void UGameFuseManager::SetUpGame(const FString& GameId, const FString& Token, FGFApiCallback Callback)
 {
 	Callback.AddUniqueDynamic(this, &UGameFuseManager::InternalResponseManager);
 	RequestHandler->SetUpGame(GameId, Token, Callback);
 }
 
-void UGameFuseManager::SendPasswordResetEmail(const FString& Email, FApiCallback Callback)
+void UGameFuseManager::SendPasswordResetEmail(const FString& Email, FGFApiCallback Callback)
 {
 	if (!SetupCheck())
 	{
@@ -154,7 +153,7 @@ void UGameFuseManager::SendPasswordResetEmail(const FString& Email, FApiCallback
 
 
 
-void UGameFuseManager::FetchGameVariables(FApiCallback Callback)
+void UGameFuseManager::FetchGameVariables(FGFApiCallback Callback)
 {
 	if (!SetupCheck())
 	{
@@ -166,7 +165,7 @@ void UGameFuseManager::FetchGameVariables(FApiCallback Callback)
 	RequestHandler->FetchGameVariables(GameData.Id, GameData.Token, Callback);
 }
 
-void UGameFuseManager::FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FApiCallback Callback)
+void UGameFuseManager::FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback)
 {
 	if (!SetupCheck())
 	{
@@ -178,7 +177,7 @@ void UGameFuseManager::FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, cons
 	RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, GameData.Token, Callback);
 }
 
-void UGameFuseManager::FetchStoreItems(FApiCallback Callback)
+void UGameFuseManager::FetchStoreItems(FGFApiCallback Callback)
 {
 	if (!SetupCheck())
 	{

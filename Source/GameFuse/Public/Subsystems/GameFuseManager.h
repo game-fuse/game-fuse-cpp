@@ -9,19 +9,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFuseCore.h"
-#include "GameFuseUser.h"
 
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
-
 #include "Kismet/BlueprintFunctionLibrary.h"
+
+
 #include "Library/GameFuseStructLibrary.h"
-#include "Models/CoreAPIHandler.h"
-#include "Objects/GameFuseAsyncAction.h"
+#include "API/CoreAPIHandler.h"
 
 #include "GameFuseManager.generated.h"
 
@@ -84,7 +82,7 @@ public:
 	 * @param Callback The blueprint delegate to be called when the request is complete. Only bound to the node's delegate pin.
 	 */
 	UFUNCTION(BlueprintCallable, DisplayName="Set Up Game", Category = "GameFuse | Manager")
-	void BP_SetUpGame(const FString& GameId, const FString& Token, const FBP_ApiCallback& Callback);
+	void BP_SetUpGame(const FString& GameId, const FString& Token, const FBP_GFApiCallback& Callback);
 
 
 	/**
@@ -94,7 +92,7 @@ public:
 	 * @param Callback The cpp multicast delegate to be called when the request is complete. Can be bound many times.
 	 */
 	UFUNCTION()
-	void SetUpGame(const FString& GameId, const FString& Token, FApiCallback Callback);
+	void SetUpGame(const FString& GameId, const FString& Token, FGFApiCallback Callback);
 
 	/**
 	 * DO NOT USE FROM C++
@@ -102,35 +100,68 @@ public:
 	 * @param Email Address to send the password reset email to.
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void BP_SendPasswordResetEmail(const FString& Email, const FBP_ApiCallback& Callback);
+	UFUNCTION(BlueprintCallable, DisplayName="Send Password Reset Email", Category = "GameFuse | Manager")
+	void BP_SendPasswordResetEmail(const FString& Email, const FBP_GFApiCallback& Callback);
 
 	/**
 	 * Sends a password reset email to the specified email address.
 	 * @param Email Address to send the password reset email to.
-	 * @param Callback Cpp Multicase Delegate
+	 * @param Callback Cpp Multicast Delegate
 	 */
 	UFUNCTION()
-	void SendPasswordResetEmail(const FString& Email, FApiCallback Callback);
+	void SendPasswordResetEmail(const FString& Email, FGFApiCallback Callback);
 
 	/**
-	 * 
-	 * @param Callback 
+	 * DO NOT USE FROM C++
+	 * Get GameVariables set in GameFuse Dashboard
+	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void BP_FetchGameVariables(const FBP_ApiCallback& Callback);
+	UFUNCTION(BlueprintCallable, DisplayName="Fetch Game Variables", Category = "GameFuse | Manager")
+	void BP_FetchGameVariables(const FBP_GFApiCallback& Callback);
+	/**
+	 * Get GameVariables set in GameFuse Dashboard
+	 * @param Callback CPP Multicast Delegate
+	 */
 	UFUNCTION()
-	void FetchGameVariables(FApiCallback Callback);
+	void FetchGameVariables(FGFApiCallback Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void BP_FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, const FBP_ApiCallback& Callback);
-	UFUNCTION()
-	void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FApiCallback Callback);
+	/**
+	 * DO NOT USE FROM C++
+	 * Fetches Leaderboard entries
+	 * @param GameFuseUser
+	 * @param Limit The number of entries to fetch.
+	 * @param bOnePerUser Whether to fetch one entry per user or not.
+	 * @param LeaderboardName The name of the leaderboard to fetch entries from.
+	 * @param Callback Blueprint Dynamic Delegate
+	 */
+	UFUNCTION(BlueprintCallable, DisplayName="Fetch Leaderboard Entries", Category = "GameFuse | Manager")
+	void BP_FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse | Manager")
-	void BP_FetchStoreItems(const FBP_ApiCallback& Callback);
+	/**
+	 * Fetches Leaderboard entries
+	 * @param GameFuseUser
+	 * @param Limit The number of entries to fetch.
+	 * @param bOnePerUser Whether to fetch one entry per user or not.
+	 * @param LeaderboardName The name of the leaderboard to fetch entries from.
+	 * @param Callback Blueprint Dynamic Delegate
+	 */
 	UFUNCTION()
-	void FetchStoreItems(FApiCallback Callback);
+	void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback);
+
+	/**
+	 * DO NOT USE FROM C++
+	 * Get Store items from GameFuse Dashboard
+	 * @param Callback Blueprint Dynamic Delegate
+	 */
+	UFUNCTION(BlueprintCallable, DisplayName="Fetch Store Items", Category = "GameFuse | Manager")
+	void BP_FetchStoreItems(const FBP_GFApiCallback& Callback);
+
+	/**
+	 * Get Store items from GameFuse Dashboard
+	 * @param Callback CPP Multicast Delegate
+	 */
+	UFUNCTION()
+	void FetchStoreItems(FGFApiCallback Callback);
 
 private:
 
@@ -141,6 +172,7 @@ private:
 	TArray<FGFLeaderboardEntry> EmptyEntries;
 	TMap<FString, FString> GameVariables;
 
+	UPROPERTY()
 	TObjectPtr<UCoreAPIHandler> RequestHandler;
 
 
@@ -158,7 +190,7 @@ private:
 	/**
 	 * @brief Binds BP_APICallback to InternalCallback to use as multicast delegate in CPP
 	 */
-	void WrapBlueprintCallback(const FBP_ApiCallback& Callback, FApiCallback& InternalCallback);
+	void WrapBlueprintCallback(const FBP_GFApiCallback& Callback, FGFApiCallback& InternalCallback);
 
 
 };
