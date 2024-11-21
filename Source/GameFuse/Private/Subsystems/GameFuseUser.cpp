@@ -21,18 +21,21 @@
 
 #pragma region Subsystem Overloads
 
+
+
 void UGameFuseUser::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-
+	RequestHandler = NewObject<UUserAPIHandler>();
 	if (const UGameFuseSaveData* LoadedSaveGame = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0)))
 	{
 
 		UserData = LoadedSaveGame->UserData;
+		// AddAuthenticationHeader();
 		UE_LOG(LogGameFuse, Log, TEXT("Game Fuse Subsystem Loaded"));
 	}
-	RequestHandler = NewObject<UUserAPIHandler>();
+
 
 	GameFuseManager = GetGameInstance()->GetSubsystem<UGameFuseManager>();
 }
@@ -293,6 +296,23 @@ void UGameFuseUser::SignIn(const FString& Email, const FString& Password, FGFApi
 	RequestHandler->SignIn(Email, Password, GameData.Id, GameData.Token, Callback);
 }
 
+void UGameFuseUser::LogOut()
+{
+	UE_LOG(LogGameFuse, Log, TEXT("User %i Logging Out"), UserData.Id);
+	UserData = FGFUserData();
+
+	bool bSuccess = UGameplayStatics::DeleteGameInSlot("GameFuseSaveSlot", 0);
+
+	if (bSuccess)
+	{
+		UE_LOG(LogGameFuse, Log, TEXT("User Logged Out"));
+	}
+	else
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("User Failed To Log Out"));
+	}
+}
+
 
 #pragma endregion
 
@@ -454,6 +474,7 @@ void UGameFuseUser::InternalResponseManager(FGFAPIResponse ResponseData)
 {
 	if (!ResponseData.bSuccess)
 	{
+		UE_LOG(LogGameFuse, Error, TEXT("API Response Failed: %s"), *ResponseData.ResponseStr);
 		return;
 	}
 
@@ -465,6 +486,7 @@ void UGameFuseUser::InternalResponseManager(FGFAPIResponse ResponseData)
 		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse JSON Response From API"));
 		return;
 	}
+
 	switch (GameFuseUtilities::DetermineUserAPIResponseType(JsonObject))
 	{
 		//switch on EGF_UserAPIResponse
@@ -505,12 +527,12 @@ void UGameFuseUser::SetLoginInternal(const TSharedPtr<FJsonObject>& JsonObject)
 		SaveGameInstance->UserData = UserData;
 
 		UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-
+		AddAuthenticationHeader();
 		UE_LOG(LogGameFuse, Log, TEXT("Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
 	}
 	else
 	{
-		UE_LOG(LogGameFuse, Error, TEXT("User Failed To Save SignIn Information !"));
+		UE_LOG(LogGameFuse, Error, TEXT("User Parse Login Response Failed !"));
 	}
 }
 
@@ -644,4 +666,9 @@ void UGameFuseUser::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
 	}
 	UE_LOG(LogGameFuse, Log, TEXT("Fetched User Leaderboard Entries. Amount : %d"), LeaderboardEntries.Num());
 
+}
+
+void UGameFuseUser::AddAuthenticationHeader()
+{
+	RequestHandler->AddCommonHeader("authentication-token", UserData.AuthenticationToken);
 }

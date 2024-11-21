@@ -34,15 +34,17 @@ public:
 	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived);
 
 	// Handles the response received for the HTTP request
-	void HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	void HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, const FGuid& RequestId);
 
 	// Base URL for the API
 	inline static FString BaseUrl = "https://gamefuse.co/api/v3";
 
+	void AddCommonHeader(const FString& Key, const FString& Value);
+
 protected:
 
 	// Common headers for all requests
-	TMap<FString, FString> DefaultHeaders;
+	TMap<FString, FString> CommonHeaders;
 
 	// Constructor to initialize default headers
 	UAPIRequestHandler();

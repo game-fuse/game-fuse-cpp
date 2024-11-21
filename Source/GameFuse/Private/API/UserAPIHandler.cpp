@@ -145,7 +145,7 @@ void UUserAPIHandler::RemoveAttribute(const FString& SetKey, const int Id, const
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Removing Attribute: %s"), *SetKey);
 
-	SendRequest(ApiEndpoint, "POST", Callback);
+	SendRequest(ApiEndpoint, "GET", Callback);
 	// RequestManager->SetURL(ApiEndpoint);
 	// RequestManager->SetVerb("GET");
 	//
@@ -172,12 +172,12 @@ void UUserAPIHandler::PurchaseStoreItem(const int StoreItemId, const int Id, con
 
 void UUserAPIHandler::RemoveStoreItem(const int StoreItemId, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/remove_game_user_store_item?authentication_token=%s&store_item_id=%d")
 	                                            , Id, *AuthenticationToken, StoreItemId);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Removing Store Item: %d"), StoreItemId);
 
-	SendRequest(ApiEndpoint, "POST", Callback);
+	SendRequest(ApiEndpoint, "GET", Callback);
 	// RequestManager->SetURL(ApiEndpoint);
 	// RequestManager->SetVerb("GET");
 	//
@@ -239,7 +239,7 @@ void UUserAPIHandler::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUse
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Fetching My Leaderboard : %d : %s"), Limit, *OnePerUserStr);
 
-	SendRequest(ApiEndpoint, "POST", Callback);
+	SendRequest(ApiEndpoint, "GET", Callback);
 	// RequestManager->SetURL(ApiEndpoint);
 	// RequestManager->SetVerb("GET");
 	//
@@ -256,7 +256,7 @@ void UUserAPIHandler::FetchAttributes(bool bChainedFromLogin, const int Id, cons
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Fetching Attributes"));
 
-	SendRequest(ApiEndpoint, "POST", Callback);
+	SendRequest(ApiEndpoint, "GET", Callback);
 	// RequestManager->SetURL(ApiEndpoint);
 	// RequestManager->SetVerb("GET");
 	//
@@ -272,7 +272,7 @@ void UUserAPIHandler::FetchPurchaseStoreItems(bool bChainedFromLogin, const int 
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Fetching Purchased Store Items"));
 
-	SendRequest(ApiEndpoint, "POST", Callback);
+	SendRequest(ApiEndpoint, "GET", Callback);
 	// RequestManager->SetURL(ApiEndpoint);
 	// RequestManager->SetVerb("GET");
 	//

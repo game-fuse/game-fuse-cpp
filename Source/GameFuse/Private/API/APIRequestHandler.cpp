@@ -2,13 +2,14 @@
 #include "HttpModule.h"
 #include "Library/GameFuseLog.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Models/GameFuseUtilities.h"
 
 
 UAPIRequestHandler::UAPIRequestHandler()
 {
 	// Initialize default headers
-	DefaultHeaders.Add(TEXT("Content-Type"), TEXT("application/json"));
-	DefaultHeaders.Add(TEXT("Accept"), TEXT("application/json"));
+	CommonHeaders.Add(TEXT("Content-Type"), TEXT("application/json"));
+	CommonHeaders.Add(TEXT("Accept"), TEXT("application/json"));
 }
 
 FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, /* const FString& RequestBody,*/
@@ -20,6 +21,9 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	// Construct full URL
 	FString URL = BaseUrl + Endpoint;
 
+	UE_LOG(LogGameFuse, Log, TEXT("RequestId: %s"), *RequestId.ToString());
+	UE_LOG(LogGameFuse, Log, TEXT("OnResponseReceived: %i"), OnResponseReceived.IsBound());
+
 	// Create HTTP Request
 	FHttpRequestPtr HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->SetURL(URL);
@@ -29,19 +33,33 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	// HttpRequest->SetContentAsString(RequestBody);
 
 	// Add Default Headers
-	for (const TPair<FString, FString>& Header : DefaultHeaders)
+	for (const TPair<FString, FString>& Header : CommonHeaders)
 	{
 		HttpRequest->SetHeader(Header.Key, Header.Value);
 	}
 
 	// Bind to response callback using direct reference
-	HttpRequest->OnProcessRequestComplete().BindUObject(this, &UAPIRequestHandler::HandleResponse);
+	// HttpRequest->OnProcessRequestComplete().BindUObject(this, &UAPIRequestHandler::HandleResponse);
+	//Capture request in the lambda to prevent collection before handle response is called.
+	HttpRequest->OnProcessRequestComplete().BindLambda([this, RequestId](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
+		HandleResponse(Request, Response, bWasSuccessful, RequestId);
+	});
+
+
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Request to endpoint: %s"), *Endpoint);
 	// Add to ActiveRequests map
 	ActiveRequests.Add(RequestId, HttpRequest);
 
 	// Store the response delegate
-	ResponseDelegates.Add(RequestId, OnResponseReceived);
+	if (RequestId.IsValid() && OnResponseReceived.IsBound())
+	{
+		ResponseDelegates.Add(RequestId, OnResponseReceived);
+	}
+	else
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid RequestId or OnResponseReceived callback, request not sent"));
+		return RequestId;
+	}
 
 	// Execute request asynchronously
 	HttpRequest->ProcessRequest();
@@ -49,30 +67,38 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	return RequestId;
 }
 
-void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, const bool bWasSuccessful, const FGuid& RequestId)
 {
 	UE_LOG(LogGameFuse, Log, TEXT("Response received"));
+	GameFuseUtilities::LogRequest(Request);
+	GameFuseUtilities::LogResponse(Response);
+	// FGuid RequestId;
+	// for (const auto& Pair : ActiveRequests)
+	// {
+	// 	if (Pair.Value == Request)
+	// 	{
+	// 		RequestId = Pair.Key;
+	// 		break;
+	// 	}
+	// }
 
-	FGuid RequestId;
-	for (const auto& Pair : ActiveRequests)
+	if (!ActiveRequests.Contains(RequestId))
 	{
-		if (Pair.Value == Request)
-		{
-			RequestId = Pair.Key;
-			break;
-		}
+		UE_LOG(LogGameFuse, Log, TEXT("Got response without an active request"));
+	}
+
+	if (!RequestId.IsValid())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Request Id not found"));
+
+
+		return;
 	}
 
 
 	// Remove from ActiveRequests map
-	if (RequestId.IsValid())
-	{
-		ActiveRequests.Remove(RequestId);
-	}
-	else
-	{
-		UE_LOG(LogGameFuse, Warning, TEXT("Request Id not found"));
-	}
+	ActiveRequests.Remove(RequestId);
+
 	bool bSuccessfulAndValid = bWasSuccessful && Response.IsValid();
 
 	int ResponseCode = Response->GetResponseCode();
@@ -94,8 +120,10 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 
 		if (!bIsGoodResponse)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Request %s failed with response: %s"), *RequestId.ToString(), *Response->GetContentAsString());
 
+			UE_LOG(LogTemp, Warning, TEXT("Request %s failed with response: %s"), *RequestId.ToString(), *Response->GetContentAsString());
+			// GameFuseUtilities::LogRequest(Request);
+			// GameFuseUtilities::LogResponse(Response);
 		}
 		else
 		{
@@ -106,7 +134,17 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 	{
 		// Handle failure case here
 		UE_LOG(LogTemp, Error, TEXT("Request %s failed"), *RequestId.ToString());
+		// GameFuseUtilities::LogRequest(Request);
 	}
+}
+
+void UAPIRequestHandler::AddCommonHeader(const FString& Key, const FString& Value)
+{
+	if (CommonHeaders.Contains(Key))
+	{
+		UE_LOG(LogGameFuse, Warning, TEXT("Header %s already exists. Overwriting."), *Key);
+	}
+	CommonHeaders.Add(Key, Value);
 }
 
 FGuid UAPIRequestHandler::GenerateRequestId()

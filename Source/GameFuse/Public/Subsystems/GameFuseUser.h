@@ -28,6 +28,7 @@ public:
 
 	//> Subsystem Initialization and Deinitialization
 
+
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
@@ -89,6 +90,14 @@ public:
 	UFUNCTION()
 	void SignIn(const FString& Email, const FString& Password, FGFApiCallback Callback);
 
+	/**
+	 * Log out the current user.
+	 *
+	 * This will clear the user's authentication token and reset the user data.
+	 *
+	 */
+	UFUNCTION(BlueprintCallable, DisplayName="Log Out", Category = "GameFuse|User")
+	void LogOut();
 	//> Action Requests
 
 	UFUNCTION(BlueprintCallable, DisplayName="Add Credits", Category = "GameFuse|User")
@@ -224,6 +233,9 @@ private:
 	void SetAttributesInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	void SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	void SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject);
+
+	// Util fns
+	void AddAuthenticationHeader();
 
 
 };
