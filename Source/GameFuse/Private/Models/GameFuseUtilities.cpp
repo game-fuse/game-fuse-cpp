@@ -217,7 +217,7 @@ EGFUserAPIResponseType GameFuseUtilities::DetermineUserAPIResponseType(const TSh
 
 void GameFuseUtilities::LogRequest(FHttpRequestPtr HttpRequest)
 {
-	UE_LOG(LogGameFuse, Log, TEXT("=========   URL   ========= \n %s"), *RequestManager->GetURL());
+	UE_LOG(LogGameFuse, Log, TEXT("=========   URL   ========= \n %s"), *(HttpRequest->GetURL()));
 	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
 	for (const FString& currHeader : HttpRequest->GetAllHeaders())
 	{
@@ -227,5 +227,8 @@ void GameFuseUtilities::LogRequest(FHttpRequestPtr HttpRequest)
 
 void GameFuseUtilities::LogResponse(FHttpResponsePtr HttpResponse)
 {
+	UE_LOG(LogGameFuse, Log, TEXT("======== RESPONSE ========="))
+	UE_LOG(LogGameFuse, Log, TEXT("=== ResponseCode : %i ===="), HttpResponse->GetResponseCode());
+	UE_LOG(LogGameFuse, Log, TEXT("%s"), *HttpResponse->GetContentAsString());
 
 }
