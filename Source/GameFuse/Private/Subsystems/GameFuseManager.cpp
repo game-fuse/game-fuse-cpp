@@ -13,6 +13,7 @@
 
 #include "Library/GameFuseLog.h"
 #include "Models/GameFuseUtilities.h"
+#include "Subsystems/GameFuseUser.h"
 
 
 #pragma region Subsystem Overloads
@@ -123,11 +124,11 @@ void UGameFuseManager::BP_FetchStoreItems(const FBP_GFApiCallback& Callback = FB
 	FetchStoreItems(InternalCallback);
 }
 
-void UGameFuseManager::BP_FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit = 20, bool bOnePerUser = false, const FString& LeaderboardName = "", const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
+void UGameFuseManager::BP_FetchLeaderboardEntries(const int Limit = 20, bool bOnePerUser = false, const FString& LeaderboardName = "", const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
 	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
-	FetchLeaderboardEntries(GameFuseUser, Limit, bOnePerUser, LeaderboardName, InternalCallback);
+	FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, InternalCallback);
 }
 
 #pragma endregion
@@ -165,16 +166,17 @@ void UGameFuseManager::FetchGameVariables(FGFApiCallback Callback)
 	RequestHandler->FetchGameVariables(GameData.Id, GameData.Token, Callback);
 }
 
-void UGameFuseManager::FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback)
+void UGameFuseManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback)
 {
 	if (!SetupCheck())
 	{
 		return;
 	}
+	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetUserData();
 
 	Callback.AddUniqueDynamic(this, &UGameFuseManager::InternalResponseManager);
 
-	RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, GameData.Token, Callback);
+	RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, UserData.AuthenticationToken, Callback);
 }
 
 void UGameFuseManager::FetchStoreItems(FGFApiCallback Callback)

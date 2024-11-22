@@ -135,7 +135,7 @@ public:
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
 	UFUNCTION(BlueprintCallable, DisplayName="Fetch Leaderboard Entries", Category = "GameFuse | Manager")
-	void BP_FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, const FBP_GFApiCallback& Callback);
+	void BP_FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const FBP_GFApiCallback& Callback);
 
 	/**
 	 * Fetches Leaderboard entries
@@ -146,7 +146,7 @@ public:
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
 	UFUNCTION()
-	void FetchLeaderboardEntries(UGameFuseUser* GameFuseUser, const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback);
+	void FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback);
 
 	/**
 	 * DO NOT USE FROM C++

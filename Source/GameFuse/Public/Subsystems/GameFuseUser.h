@@ -222,7 +222,9 @@ private:
 	TArray<FGFStoreItem> PurchasedStoreItems;
 	TArray<FGFLeaderboardEntry> LeaderboardEntries;
 
+	UPROPERTY()
 	TObjectPtr<UGameFuseManager> GameFuseManager;
+	UPROPERTY()
 	TObjectPtr<UUserAPIHandler> RequestHandler;
 
 	//> Setters
@@ -233,9 +235,5 @@ private:
 	void SetAttributesInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	void SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	void SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject);
-
-	// Util fns
-	void AddAuthenticationHeader();
-
 
 };

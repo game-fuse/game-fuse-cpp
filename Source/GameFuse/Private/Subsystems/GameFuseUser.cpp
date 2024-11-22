@@ -233,6 +233,13 @@ void UGameFuseUser::BP_AddLeaderboardEntry(const FString& LeaderboardName, const
 	AddLeaderboardEntry(LeaderboardName, Score, InternalCallback);
 }
 
+void UGameFuseUser::BP_AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int Score, TMap<FString, FString> ExtraAttributes, FBP_GFApiCallback Callback)
+{
+	FGFApiCallback InternalCallback;
+	WrapBlueprintCallback(Callback, InternalCallback);
+	AddLeaderboardEntryWithAttributes(LeaderboardName, Score, ExtraAttributes, InternalCallback);
+}
+
 void UGameFuseUser::BP_RemoveStoreItem(const FGFStoreItem& StoreItem, FBP_GFApiCallback Callback)
 {
 	FGFApiCallback InternalCallback;
@@ -247,12 +254,7 @@ void UGameFuseUser::BP_ClearLeaderboardEntry(const FString& LeaderboardName, FBP
 	ClearLeaderboardEntry(LeaderboardName, InternalCallback);
 }
 
-void UGameFuseUser::BP_AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int Score, TMap<FString, FString> ExtraAttributes, FBP_GFApiCallback Callback)
-{
-	FGFApiCallback InternalCallback;
-	WrapBlueprintCallback(Callback, InternalCallback);
-	AddLeaderboardEntryWithAttributes(LeaderboardName, Score, ExtraAttributes, InternalCallback);
-}
+
 
 void UGameFuseUser::BP_FetchAttributes(bool bChainedFromLogin, FBP_GFApiCallback Callback)
 {
@@ -527,7 +529,6 @@ void UGameFuseUser::SetLoginInternal(const TSharedPtr<FJsonObject>& JsonObject)
 		SaveGameInstance->UserData = UserData;
 
 		UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-		AddAuthenticationHeader();
 		UE_LOG(LogGameFuse, Log, TEXT("Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
 	}
 	else
@@ -666,9 +667,4 @@ void UGameFuseUser::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
 	}
 	UE_LOG(LogGameFuse, Log, TEXT("Fetched User Leaderboard Entries. Amount : %d"), LeaderboardEntries.Num());
 
-}
-
-void UGameFuseUser::AddAuthenticationHeader()
-{
-	RequestHandler->AddCommonHeader("authentication-token", UserData.AuthenticationToken);
 }

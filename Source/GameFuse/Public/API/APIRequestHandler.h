@@ -30,6 +30,11 @@ class GAMEFUSE_API UAPIRequestHandler : public UObject
 
 public:
 
+	// Constructor to initialize default headers
+	UAPIRequestHandler();
+
+
+	UFUNCTION()
 	// Sends an HTTP Request, returns unique Request ID
 	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived);
 
@@ -39,15 +44,11 @@ public:
 	// Base URL for the API
 	inline static FString BaseUrl = "https://gamefuse.co/api/v3";
 
-	void AddCommonHeader(const FString& Key, const FString& Value);
-
-protected:
+	void AddCommonHeaders(FHttpRequestPtr HttpRequest);
 
 	// Common headers for all requests
+	UPROPERTY()
 	TMap<FString, FString> CommonHeaders;
-
-	// Constructor to initialize default headers
-	UAPIRequestHandler();
 
 private:
 
@@ -56,7 +57,7 @@ private:
 
 
 	// Map to store active requests and their data by Request ID
-	TMap<FGuid, FHttpRequestPtr> ActiveRequests;
+	TMap<FGuid, TSharedPtr<IHttpRequest, ESPMode::ThreadSafe>> ActiveRequests;
 
 	// Map to store response delegates by Request ID
 	TMap<FGuid, FGFApiCallback> ResponseDelegates;

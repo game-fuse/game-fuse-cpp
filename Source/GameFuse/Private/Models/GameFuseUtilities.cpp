@@ -232,3 +232,12 @@ void GameFuseUtilities::LogResponse(FHttpResponsePtr HttpResponse)
 	UE_LOG(LogGameFuse, Log, TEXT("%s"), *HttpResponse->GetContentAsString());
 
 }
+
+void GameFuseUtilities::LogHeaders(const TMap<FString, FString>& Headers)
+{
+	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
+	for (const auto& Pair : Headers)
+	{
+		UE_LOG(LogGameFuse, Log, TEXT("%s : %s"), *Pair.Key, *Pair.Value);
+	}
+}

@@ -42,4 +42,5 @@ public:
 
 	static void LogRequest(FHttpRequestPtr HttpRequest);
 	static void LogResponse(FHttpResponsePtr HttpResponse);
+	static void LogHeaders(const TMap<FString, FString>& Headers);
 };
