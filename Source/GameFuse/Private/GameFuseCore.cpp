@@ -9,11 +9,14 @@
 
 #include "GameFuseCore.h"
 
-#include "GameFuseUser.h"
+#include "Subsystems/GameFuseUser.h"
 #include "Models/CoreAPIManager.h"
 #include "Kismet/KismetStringLibrary.h"
+#include "Library/GameFuseLog.h"
 #include "Library/GameFuseStructLibrary.h"
 #include "Models/GameFuseUtilities.h"
+
+
 
 
 
@@ -27,7 +30,8 @@ TMap<FString, FString> UGameFuseCore::GameVariables;
 
 // > Region Instance Getters
 
-const FGFGameData& UGameFuseCore::GetGameData() {
+const FGFGameData& UGameFuseCore::GetGameData()
+{
 	return GameData;
 }
 

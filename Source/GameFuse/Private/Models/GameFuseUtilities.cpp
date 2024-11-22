@@ -8,6 +8,7 @@
 
 #include "Models/GameFuseUtilities.h"
 
+#include "Library/GameFuseLog.h"
 #include "Models/APIResponseManager.h"
 
 
@@ -212,4 +213,31 @@ EGFUserAPIResponseType GameFuseUtilities::DetermineUserAPIResponseType(const TSh
 		return EGFUserAPIResponseType::Score;
 	}
 	return EGFUserAPIResponseType::None;
+}
+
+void GameFuseUtilities::LogRequest(FHttpRequestPtr HttpRequest)
+{
+	UE_LOG(LogGameFuse, Log, TEXT("=========   URL   ========= \n %s"), *(HttpRequest->GetURL()));
+	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
+	for (const FString& currHeader : HttpRequest->GetAllHeaders())
+	{
+		UE_LOG(LogGameFuse, Log, TEXT("%s"), *currHeader);
+	}
+}
+
+void GameFuseUtilities::LogResponse(FHttpResponsePtr HttpResponse)
+{
+	UE_LOG(LogGameFuse, Log, TEXT("======== RESPONSE ========="))
+	UE_LOG(LogGameFuse, Log, TEXT("=== ResponseCode : %i ===="), HttpResponse->GetResponseCode());
+	UE_LOG(LogGameFuse, Log, TEXT("%s"), *HttpResponse->GetContentAsString());
+
+}
+
+void GameFuseUtilities::LogHeaders(const TMap<FString, FString>& Headers)
+{
+	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
+	for (const auto& Pair : Headers)
+	{
+		UE_LOG(LogGameFuse, Log, TEXT("%s : %s"), *Pair.Key, *Pair.Value);
+	}
 }

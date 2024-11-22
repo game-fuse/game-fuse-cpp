@@ -136,3 +136,26 @@ struct FGFLeaderboard
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FGFLeaderboardEntry> Entries;
 };
+
+USTRUCT(BlueprintType, Category = "GameFuse| API")
+struct FGFAPIResponse
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite)
+	bool bSuccess = false;
+
+	UPROPERTY(BlueprintReadWrite)
+	FString ResponseStr = "";
+
+	UPROPERTY(BlueprintReadWrite)
+	FString RequestId = "";
+	FGFAPIResponse() = default;
+
+	FGFAPIResponse(bool _bSuccess, const FString& _Response, const FString& _RequestId = "")
+	{
+		bSuccess = _bSuccess;
+		ResponseStr = _Response;
+		RequestId = _RequestId;
+	}
+};
