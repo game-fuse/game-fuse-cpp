@@ -1,28 +1,28 @@
 {
-	"FileVersion": 3,
-	"Version": "2.2.6",
-	"VersionName": "2.2.6",
-	"FriendlyName": "GameFuse",
-	"Description": "GameFuse is a web service for game developers. Add authentication, user data, leaderboards, in-game-store and more, all without setting up servers or managing API calls.",
-	"Category": "CodePlugins",
-	"CreatedBy": "GameFuse",
-	"CreatedByURL": "https://gamefuse.co/",
-	"DocsURL": "https://gamefuse.co/pages/docs?language=cpp",
-	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/6214da75e30c4ba5a713596d735589d8",
-	"SupportURL": "https://gamefuse.co/pages/faq",
-	"EngineVersion": "5.4.0",
-	"CanContainContent": true,
-	"Installed": false,
-	"Modules": [
-		{
-			"Name": "GameFuse",
-			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"PlatformAllowList": [
-				"Win64",
-				"Linux",
-				"Mac"
-			]
-		}
-	]
+  "FileVersion": 3,
+  "Version": "0209000",
+  "VersionName": "2.9.0",
+  "FriendlyName": "GameFuse",
+  "Description": "GameFuse is a web service for game developers. Add authentication, user data, leaderboards, in-game-store and more, all without setting up servers or managing API calls.",
+  "Category": "CodePlugins",
+  "CreatedBy": "GameFuse",
+  "CreatedByURL": "https://gamefuse.co/",
+  "DocsURL": "https://gamefuse.co/pages/docs?language=cpp",
+  "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/6214da75e30c4ba5a713596d735589d8",
+  "SupportURL": "https://gamefuse.co/pages/faq",
+  "EngineVersion": "5.4",
+  "CanContainContent": true,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "GameFuse",
+      "Type": "Runtime",
+      "LoadingPhase": "Default",
+      "PlatformAllowList": [
+        "Win64",
+        "Linux",
+        "Mac"
+      ]
+    }
+  ]
 }

@@ -7,7 +7,7 @@
  */
 
 #include "Models/CoreAPIManager.h"
-
+#include "Library/GameFuseLog.h"
 
 void UCoreAPIManager::SetUpGame(const FString& InGameId, const FString& InToken)
 {

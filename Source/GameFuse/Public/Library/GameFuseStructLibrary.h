@@ -17,16 +17,16 @@ struct FGFGameData
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	int32 Id = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Token = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Name = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Description = "";
 
 };
@@ -36,28 +36,28 @@ struct FGFUserData
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 Id = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	FString Username = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	bool bSignedIn = false;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 NumberOfLogins = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	FString AuthenticationToken = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 Score = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 Credits = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	FString LastLogin = "0000-00-00";
 
 };
@@ -69,22 +69,22 @@ struct FGFStoreItem
 	GENERATED_BODY()
 	FGFStoreItem() = default;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Name = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Category = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Description = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	int32 Cost = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	int32 Id = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString IconUrl = "";
 
 };
@@ -96,22 +96,22 @@ struct FGFLeaderboardEntry
 
 	FGFLeaderboardEntry() = default;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString LeaderboardName = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString Username = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	int32 Score = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	int32 GameUserId = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString ExtraAttributes = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString DateTime = "";
 
 };
@@ -130,10 +130,10 @@ struct FGFLeaderboard
 	}
 
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString Name = "";
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	TArray<FGFLeaderboardEntry> Entries;
 };
 
@@ -142,13 +142,13 @@ struct FGFAPIResponse
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
 	bool bSuccess = false;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
 	FString ResponseStr = "";
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
 	FString RequestId = "";
 	FGFAPIResponse() = default;
 

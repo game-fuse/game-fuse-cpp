@@ -298,12 +298,13 @@ void UGameFuseUser::SignIn(const FString& Email, const FString& Password, FGFApi
 	RequestHandler->SignIn(Email, Password, GameData.Id, GameData.Token, Callback);
 }
 
-void UGameFuseUser::LogOut()
+void UGameFuseUser::LogOut(const FString& SaveSlotName = TEXT(""))
 {
 	UE_LOG(LogGameFuse, Log, TEXT("User %i Logging Out"), UserData.Id);
 	UserData = FGFUserData();
 
-	bool bSuccess = UGameplayStatics::DeleteGameInSlot("GameFuseSaveSlot", 0);
+
+	bool bSuccess = !SaveSlotName.IsEmpty() && UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
 
 	if (bSuccess)
 	{

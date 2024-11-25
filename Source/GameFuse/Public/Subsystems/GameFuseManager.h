@@ -9,6 +9,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Subsystems/GameInstanceSubsystem.h"
+#include "Engine/GameInstance.h"
 
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
@@ -191,6 +193,5 @@ private:
 	 * @brief Binds BP_APICallback to InternalCallback to use as multicast delegate in CPP
 	 */
 	void WrapBlueprintCallback(const FBP_GFApiCallback& Callback, FGFApiCallback& InternalCallback);
-
 
 };

@@ -91,13 +91,19 @@ public:
 	void SignIn(const FString& Email, const FString& Password, FGFApiCallback Callback);
 
 	/**
-	 * Log out the current user.
+	 * Logs out the current user and optionally clears saved data.
 	 *
-	 * This will clear the user's authentication token and reset the user data.
+	 * This function will clear the user's authentication token and reset the user data.
+	 * If a save slot name is provided, it will also attempt to delete the saved game data
+	 * associated with that slot.
 	 *
+	 * @param SaveSlotName The name of the save slot to clear. If empty, no save data will be deleted.
+	 *
+	 * @note This function is callable from Blueprints and is categorized under "GameFuse|User".
 	 */
 	UFUNCTION(BlueprintCallable, DisplayName="Log Out", Category = "GameFuse|User")
-	void LogOut();
+	void LogOut(const FString& SaveSlotName);
+
 	//> Action Requests
 
 	UFUNCTION(BlueprintCallable, DisplayName="Add Credits", Category = "GameFuse|User")
