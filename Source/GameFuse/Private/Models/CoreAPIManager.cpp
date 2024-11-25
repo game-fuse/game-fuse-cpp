@@ -12,8 +12,8 @@
 void UCoreAPIManager::SetUpGame(const FString& InGameId, const FString& InToken)
 {
 	FString ApiEndpoint = FString::Printf(TEXT("%s/games/verify?client_from_library=cpp&game_id=%s&game_token=%s")
-		, *BaseURL, *InGameId, *InToken);
-    
+	                                      , *BaseURL, *InGameId, *InToken);
+
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Setting Up Game : %s"), *ApiEndpoint);
 
 	RequestManager->SetURL(ApiEndpoint);
@@ -28,8 +28,8 @@ void UCoreAPIManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUser,
 {
 	const FString OnePerUserStr = (bOnePerUser) ? TEXT("true") : TEXT("false");
 	const FString ApiEndpoint = FString::Printf(
-		TEXT("%s/games/%d/leaderboard_entries?authentication_token=%s&leaderboard_name=%s&limit=%d&one_per_user=%s")
-		, *BaseURL, GameId, *UserAuthenticationToken, *LeaderboardName, Limit, *OnePerUserStr);
+	TEXT("%s/games/%d/leaderboard_entries?authentication_token=%s&leaderboard_name=%s&limit=%d&one_per_user=%s")
+	, *BaseURL, GameId, *UserAuthenticationToken, *LeaderboardName, Limit, *OnePerUserStr);
 
 	UE_LOG(LogGameFuse, Log, TEXT("Fetching Leaderboard : %s : %d"), *LeaderboardName, Limit);
 
@@ -43,7 +43,7 @@ void UCoreAPIManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUser,
 void UCoreAPIManager::SendPasswordResetEmail(const FString& Email, const int GameID, const FString Token)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("%s/games/%d/forget_password?game_token=%s&game_id=%d&email=%s")
-	   , *BaseURL, GameID, *Token, GameID,*Email);
+	                                            , *BaseURL, GameID, *Token, GameID, *Email);
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Password Reset Email - %s "), *ApiEndpoint);
 
@@ -57,7 +57,7 @@ void UCoreAPIManager::SendPasswordResetEmail(const FString& Email, const int Gam
 void UCoreAPIManager::FetchGameVariables(const int GameID, const FString Token)
 {
 	const FString ApiEndpoint = FString::Printf(
-	   TEXT("%s/games/fetch_game_variables.json?game_id=%d&game_token=%s"), *BaseURL, GameID, *Token);
+	TEXT("%s/games/fetch_game_variables.json?game_id=%d&game_token=%s"), *BaseURL, GameID, *Token);
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Fetching Game Variables: %s"), *ApiEndpoint);
 
@@ -71,7 +71,7 @@ void UCoreAPIManager::FetchGameVariables(const int GameID, const FString Token)
 void UCoreAPIManager::FetchStoreItems(const int GameID, const FString Token)
 {
 	FString ApiEndpoint = FString::Printf(TEXT("%s/games/store_items?game_id=%d&game_token=%s")
-		, *BaseURL, GameID, *Token);
+	                                      , *BaseURL, GameID, *Token);
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Static Request - Fetching Store Items"));
 
