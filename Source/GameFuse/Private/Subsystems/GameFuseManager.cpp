@@ -11,9 +11,9 @@
 
 #include "JsonObjectConverter.h"
 
-#include "Library/GameFuseLog.h"
-#include "Models/GameFuseUtilities.h"
 #include "Subsystems/GameFuseUser.h"
+#include "Library/GameFuseLog.h"
+#include "Library/GameFuseUtilities.h"
 
 
 #pragma region Subsystem Overloads

@@ -3,7 +3,7 @@
 
 #include "API/UserAPIHandler.h"
 #include "Library/GameFuseLog.h"
-#include "Models/GameFuseUtilities.h"
+#include "Library/GameFuseUtilities.h"
 
 void UUserAPIHandler::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, const int InGameId, const FString& InToken, const FGFApiCallback& Callback)
 {

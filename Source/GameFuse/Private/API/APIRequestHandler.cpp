@@ -1,8 +1,10 @@
 #include "API/APIRequestHandler.h"
-#include "HttpModule.h"
-#include "Library/GameFuseLog.h"
+
 #include "Interfaces/IHttpResponse.h"
-#include "Models/GameFuseUtilities.h"
+#include "HttpModule.h"
+
+#include "Library/GameFuseLog.h"
+#include "Library/GameFuseUtilities.h"
 
 
 UAPIRequestHandler::UAPIRequestHandler()

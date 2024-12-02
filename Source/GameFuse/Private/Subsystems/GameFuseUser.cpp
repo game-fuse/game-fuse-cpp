@@ -13,8 +13,8 @@
 #include "Kismet/KismetStringLibrary.h"
 
 #include "Library/GameFuseLog.h"
+#include "Library/GameFuseUtilities.h"
 #include "Objects/GameFuseSignData.h"
-#include "Models/GameFuseUtilities.h"
 #include "Subsystems/GameFuseManager.h"
 
 

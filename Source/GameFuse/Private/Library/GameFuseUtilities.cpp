@@ -6,10 +6,8 @@
  *  https://github.com/game-fuse/game-fuse-cpp
  */
 
-#include "Models/GameFuseUtilities.h"
-
+#include "Library/GameFuseUtilities.h"
 #include "Library/GameFuseLog.h"
-#include "Models/APIResponseManager.h"
 
 
 
