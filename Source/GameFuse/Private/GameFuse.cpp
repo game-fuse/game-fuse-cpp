@@ -7,15 +7,16 @@
  */
 
 #include "GameFuse.h"
+#include "Library/GameFuseLog.h"
 
 #define LOCTEXT_NAMESPACE "FGameFuseModule"
 
-
+DEFINE_LOG_CATEGORY(LogGameFuse);
 
 void FGameFuseModule::StartupModule()
 {
 	UE_LOG(LogCore, Display, TEXT("GameFuse ====> StartupModule"));
-	
+
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 }
 
@@ -27,5 +28,5 @@ void FGameFuseModule::ShutdownModule()
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+
 IMPLEMENT_MODULE(FGameFuseModule, GameFuse)

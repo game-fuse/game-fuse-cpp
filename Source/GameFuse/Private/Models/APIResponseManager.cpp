@@ -7,14 +7,17 @@
  */
 
 #include "Models/APIResponseManager.h"
+// moved to GameFuse.cpp
+// DEFINE_LOG_CATEGORY(LogGameFuse);
 
-DEFINE_LOG_CATEGORY(LogGameFuse);
-
-void UHTTPResponseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful) {
-	if (!bWasSuccessful || !Response.IsValid()) {
+void UHTTPResponseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request, const FHttpResponsePtr Response, bool bWasSuccessful)
+{
+	if (!bWasSuccessful || !Response.IsValid())
+	{
 		const FString RequestStr = Request->GetURL();
 		UE_LOG(LogGameFuse, Error, TEXT("HTTP Request Failed : %s"), *RequestStr);
-		if (CompletionCallback.IsBound()) {
+		if (CompletionCallback.IsBound())
+		{
 			CompletionCallback.Execute(false, "Game Fuse HTTP Request Failed");
 		}
 		return;
@@ -24,14 +27,19 @@ void UHTTPResponseManager::OnHttpResponseReceivedManager(FHttpRequestPtr Request
 	const FString ResponseStr = Response->GetContentAsString();
 
 
-	if (ResponseCode == 200) {
+	if (ResponseCode == 200)
+	{
 		UE_LOG(LogGameFuse, Log, TEXT("HTTP Request Succeed"));
 
-		if (CompletionCallback.IsBound()) {
+		if (CompletionCallback.IsBound())
+		{
 			CompletionCallback.Execute(true, ResponseStr);
 		}
-	} else {
-		if (CompletionCallback.IsBound()) {
+	}
+	else
+	{
+		if (CompletionCallback.IsBound())
+		{
 			CompletionCallback.Execute(false, ResponseStr);
 		}
 		UE_LOG(LogGameFuse, Error, TEXT("HTTP Request Returned Status Code %d"), ResponseCode);
