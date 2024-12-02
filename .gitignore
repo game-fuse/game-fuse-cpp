@@ -6,3 +6,8 @@ Intermediate/*
 # IDE Configs
 .idea/*
 .vs/*
+*.sln.*
+
+#Unreal Engine Tool
+.uet/*
+*.bak

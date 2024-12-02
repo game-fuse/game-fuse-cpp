@@ -14,6 +14,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
+#include "Interfaces/IHttpRequest.h"
 #include "Library/GameFuseEnumLibrary.h"
 #include "Library/GameFuseStructLibrary.h"
 
@@ -39,4 +40,7 @@ public:
 
 	static EGFUserAPIResponseType DetermineUserAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject);
 
+	static void LogRequest(FHttpRequestPtr HttpRequest);
+	static void LogResponse(FHttpResponsePtr HttpResponse);
+	static void LogHeaders(const TMap<FString, FString>& Headers);
 };
