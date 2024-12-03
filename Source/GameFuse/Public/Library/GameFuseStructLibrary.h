@@ -1,4 +1,4 @@
-﻿/**
+/**
  *  Copyright (c) 2024-09-30 GameFuse
  *  All rights reserved.
  *
@@ -60,6 +60,10 @@ struct FGFUserData
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	FString LastLogin = "0000-00-00";
 
+	bool operator==(const FGFUserData& Other) const
+	{
+		return Id == Other.Id && Username == Other.Username;
+	}
 };
 
 
@@ -87,6 +91,14 @@ struct FGFStoreItem
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString IconUrl = "";
 
+	bool operator==(const FGFStoreItem& Other) const
+	{
+		return Name == Other.Name &&
+			Category == Other.Category &&
+			Description == Other.Description &&
+			Cost == Other.Cost &&
+			Id == Other.Id;
+	}
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|LeaderboardItem")

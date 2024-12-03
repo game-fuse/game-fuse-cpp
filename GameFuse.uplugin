@@ -23,6 +23,16 @@
         "Linux",
         "Mac"
       ]
+    },
+    {
+      "Name": "GameFuseTests",
+      "Type": "DeveloperTool",
+      "LoadingPhase": "Default",
+      "PlatformAllowList": [
+        "Win64",
+        "Linux",
+        "Mac"
+      ]
     }
   ]
 }

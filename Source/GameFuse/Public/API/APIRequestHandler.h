@@ -44,7 +44,7 @@ public:
 	// Base URL for the API
 	inline static FString BaseUrl = "https://gamefuse.co/api/v3";
 
-	void AddCommonHeaders(FHttpRequestPtr HttpRequest);
+protected:
 
 	// Common headers for all requests
 	UPROPERTY()
@@ -55,6 +55,8 @@ private:
 	// Generates a unique Request ID
 	static FGuid GenerateRequestId();
 
+	//Applies CommonHeaders Map to the HTTP Request
+	void AddCommonHeaders(FHttpRequestPtr HttpRequest);
 
 	// Map to store active requests and their data by Request ID
 	TMap<FGuid, TSharedPtr<IHttpRequest, ESPMode::ThreadSafe>> ActiveRequests;
