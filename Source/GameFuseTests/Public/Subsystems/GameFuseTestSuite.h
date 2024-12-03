@@ -6,8 +6,6 @@
 #include "Library/GameFuseStructLibrary.h"
 #include "GameFuseTestSuite.generated.h"
 
-DECLARE_DELEGATE_OneParam(FGameCreatedDelegate, const FGFGameData&);
-
 /**
  * Subsystem to handle GameFuse test suite functionality
  */
@@ -23,12 +21,11 @@ public:
 	virtual void Deinitialize() override;
 
 	// Test game management
-	void CreateTestSession(const FGameCreatedDelegate& OnCreated);
-	void CleanupTestSession(const FDoneDelegate& Done);
+	FGuid CreateTestSession(const FGFApiCallback& Callback);
+	FGuid CleanupTestSession(const FGFApiCallback& Callback);
 
-	void CreateTestUser(const FDoneDelegate& Done);
-	void CreateTestStoreItem(const FDoneDelegate& Done);
-	void CreateInvalidTestUser(const FDoneDelegate& Done);
+	FGuid CreateTestUser(const FGFApiCallback& Callback);
+	FGuid CreateTestStoreItem(const FGFApiCallback& Callback);
 
 	// Getters
 	const FGFGameData& GetTestSession() const
@@ -45,9 +42,14 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UTestAPIHandler> APIHandler;
+
+public:
+
+	TObjectPtr<UTestAPIHandler> GetRequestHandler() const;
+
+private:
+
 	FGFGameData GameData;
-	FDoneDelegate PendingDone;
-	FGameCreatedDelegate PendingGameCreated;
 
 	// Response handlers
 	UFUNCTION()
@@ -58,9 +60,6 @@ private:
 
 	UFUNCTION()
 	void HandleUserCreated(FGFAPIResponse Response);
-
-	UFUNCTION()
-	void HandleInvalidUserCreated(FGFAPIResponse Response);
 
 	UFUNCTION()
 	void HandleStoreItemCreated(FGFAPIResponse Response);

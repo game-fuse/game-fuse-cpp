@@ -33,13 +33,18 @@ public:
 	// Constructor to initialize default headers
 	UAPIRequestHandler();
 
-
 	UFUNCTION()
 	// Sends an HTTP Request, returns unique Request ID
 	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived);
 
 	// Handles the response received for the HTTP request
 	void HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, const FGuid& RequestId);
+
+	// Check if a request is still active
+	bool IsRequestActive(const FGuid& RequestId) const
+	{
+		return ActiveRequests.Contains(RequestId);
+	}
 
 	// Base URL for the API
 	inline static FString BaseUrl = "https://gamefuse.co/api/v3";
