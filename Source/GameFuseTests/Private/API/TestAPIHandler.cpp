@@ -1,5 +1,7 @@
 #include "API/TestAPIHandler.h"
-
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
 
 UTestAPIHandler::UTestAPIHandler()
 {
@@ -10,32 +12,27 @@ UTestAPIHandler::UTestAPIHandler()
 	CommonHeaders.Add(TEXT("service-key-name"), *ServiceKeyName);
 }
 
-
 FGuid UTestAPIHandler::CreateGame(const FGFApiCallback& Callback)
 {
-	return SendRequest(TEXT("/create_game"), "POST", Callback);
+	return SendRequest(TEXT("/test_suite/create_game"), TEXT("POST"), Callback);
 }
 
 FGuid UTestAPIHandler::CreateUser(int32 GameId, const FString& Username, const FString& Email, const FGFApiCallback& Callback)
 {
-	FString ApiEndpoint = FString::Printf(TEXT("/create_user?game_id=%i&username=%s&email=%s"), GameId, *Username, *Email);
-	return SendRequest(ApiEndpoint, "POST", Callback);
+	const FString ApiEndpoint = FString::Printf(TEXT("/test_suite/create_user?game_id=%d&username=%s&email=%s"),
+	                                            GameId, *Username, *Email);
+	return SendRequest(ApiEndpoint, TEXT("POST"), Callback);
 }
 
-FGuid UTestAPIHandler::CreateStoreItem(int32 GameId, const FString& Name, const FString& Description, const FString& Category, int32 Cost, const FGFApiCallback& Callback)
+FGuid UTestAPIHandler::CreateStoreItem(int32 GameId, const FGFStoreItem& Item, const FGFApiCallback& Callback)
 {
-	FString ApiEndpoint = FString::Printf(TEXT("/create_store_item?game_id=%i&name=%s&description=%s&category=%s&cost=%i"), GameId, *Name, *Description, *Category, Cost);
-	return SendRequest(ApiEndpoint, "POST", Callback);
+	const FString ApiEndpoint = FString::Printf(TEXT("/test_suite/create_store_item?game_id=%d&name=%s&description=%s&category=%s&cost=%d"),
+	                                            GameId, *Item.Name, *Item.Description, *Item.Category, Item.Cost);
+	return SendRequest(ApiEndpoint, TEXT("POST"), Callback);
 }
 
-FGuid UTestAPIHandler::CreateStoreItem(int32 GameId, const FGFStoreItem& StoreItem, const FGFApiCallback& Callback)
+FGuid UTestAPIHandler::CleanupGame(int32 GameId, const FGFApiCallback& Callback)
 {
-	return CreateStoreItem(GameId, StoreItem.Name, StoreItem.Description, StoreItem.Category, StoreItem.Cost, Callback);
-}
-
-FGuid UTestAPIHandler::CleanUpTestData(int32 GameId, const FGFApiCallback& Callback)
-{
-	FString ApiEndpoint = FString::Printf(TEXT("/clean_up_test?game_id=%i"), GameId);
-	return SendRequest(ApiEndpoint, "DELETE", Callback);
-
+	const FString ApiEndpoint = FString::Printf(TEXT("/test_suite/clean_up_test?game_id=%d"), GameId);
+	return SendRequest(ApiEndpoint, TEXT("DELETE"), Callback);
 }

@@ -6,7 +6,11 @@ public class GameFuseTests : ModuleRules {
 
 		PublicDependencyModuleNames.AddRange(
 			new[] {
-				"Core", "GameFuse", "Json", "JsonUtilities"
+				"Core", 
+				"GameFuse", 
+				"Json", 
+				"JsonUtilities",
+				"HTTP"
 			}
 		);
 
@@ -15,8 +19,13 @@ public class GameFuseTests : ModuleRules {
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore"
+				"SlateCore",
+				"FunctionalTesting"
 			}
 		);
+
+		// This is required for automation tests
+		bTreatAsEngineModule = true;
+		bUseUnity = false;
 	}
 }

@@ -1,29 +1,45 @@
-#include "Kismet/GameplayStatics.h"
+#include "API/TestAPIHandler.h"
+#include "Commands/TestSuiteCommands.h"
 #include "Misc/AutomationTest.h"
+#include "Tests/AutomationCommon.h"
 
-#include "Library/GameFuseLog.h"
-#include "Subsystems/GameFuseTestSuite.h"
-#include "Commands/WaitForFGFResponse.h"
+BEGIN_DEFINE_SPEC(FGameFuseSpec, "GameFuseTests.TestSuite",
+                  EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(GameFuseTestSuiteTest, "GameFuseTests.GameFuseTestSuiteTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+	UTestAPIHandler* APIHandler;
+	FGFGameData GameData;
+	bool bCleanupSuccess;
 
-bool GameFuseTestSuiteTest::RunTest(const FString& Parameters)
+END_DEFINE_SPEC(FGameFuseSpec)
+
+void FGameFuseSpec::Define()
 {
-	UGameInstance* GameInstance = NewObject<UGameInstance>();
-	GameInstance->Init();
-	UGameFuseTestSuite* GameFuseTestSuite = GameInstance->GetSubsystem<UGameFuseTestSuite>();
+	BeforeEach([this]() {
+		APIHandler = NewObject<UTestAPIHandler>();
+		TestTrue("API Handler should be valid", APIHandler != nullptr);
+		bCleanupSuccess = false;
+	});
 
-	if (!GameFuseTestSuite) {
-		UE_LOG(LogGameFuse, Error, TEXT("No GameFuseTestSuite found"));
-		return false;
-	}
+	Describe("Game Creation", [this]() {
+		LatentIt("Should create and cleanup game", EAsyncExecution::TaskGraph, [this](const FDoneDelegate& Done) {
+			// Create game and validate
+			ADD_LATENT_AUTOMATION_COMMAND(FCreateGameLatentCommand(APIHandler, GameData));
+			TestTrue("Game ID should be valid", GameData.Id != 0);
+			// // Create user and validate
+			// FGFUserData UserData;
+			// ADD_LATENT_AUTOMATION_COMMAND(FCreateUserLatentCommand(APIHandler, GameData, UserData));
+			// TestTrue(TEXT("User ID should be valid"), UserData.Id != 0);
 
-	// Example of using the WaitForFGFResponse command
-	FGFAPIResponse Response;
-	FGFApiCallback Callback;
-	FGuid RequestId = GameFuseTestSuite->CreateTestSession(Callback);
+			// // Create store item and validate
+			// FGFStoreItem StoreItem;
+			// ADD_LATENT_AUTOMATION_COMMAND(FCreateStoreItemLatentCommand(APIHandler, GameData, StoreItem));
+			// TestTrue(TEXT("Store Item ID should be valid"), StoreItem.Id != 0);
 
-	ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseTestSuite->GetRequestHandler(), RequestId, Response));
+			// Cleanup and validate
+			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGameLatentCommand(APIHandler, GameData, bCleanupSuccess));
+			TestTrue("Game cleanup should succeed", GameData.Id == 0);
 
-	return true;
+			Done.Execute();
+		});
+	});
 }
