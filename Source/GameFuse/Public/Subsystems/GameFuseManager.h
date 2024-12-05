@@ -86,14 +86,12 @@ public:
 	UFUNCTION(BlueprintCallable, DisplayName="Set Up Game", Category = "GameFuse | Manager")
 	void BP_SetUpGame(const FString& GameId, const FString& Token, const FBP_GFApiCallback& Callback);
 
-
 	/**
 	 * @brief CPP implementation. Registers the GameFuseManager with the GameFuse API.
 	 * @param GameId The GameFuse ID of the game.
 	 * @param Token The GameFuse API Token of the game.
 	 * @param Callback The cpp multicast delegate to be called when the request is complete. Can be bound many times.
 	 */
-	UFUNCTION()
 	void SetUpGame(const FString& GameId, const FString& Token, FGFApiCallback Callback);
 
 	/**
@@ -110,7 +108,6 @@ public:
 	 * @param Email Address to send the password reset email to.
 	 * @param Callback Cpp Multicast Delegate
 	 */
-	UFUNCTION()
 	void SendPasswordResetEmail(const FString& Email, FGFApiCallback Callback);
 
 	/**
@@ -120,11 +117,11 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, DisplayName="Fetch Game Variables", Category = "GameFuse | Manager")
 	void BP_FetchGameVariables(const FBP_GFApiCallback& Callback);
+
 	/**
 	 * Get GameVariables set in GameFuse Dashboard
 	 * @param Callback CPP Multicast Delegate
 	 */
-	UFUNCTION()
 	void FetchGameVariables(FGFApiCallback Callback);
 
 	/**
@@ -147,7 +144,6 @@ public:
 	 * @param LeaderboardName The name of the leaderboard to fetch entries from.
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION()
 	void FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback);
 
 	/**
@@ -162,7 +158,6 @@ public:
 	 * Get Store items from GameFuse Dashboard
 	 * @param Callback CPP Multicast Delegate
 	 */
-	UFUNCTION()
 	void FetchStoreItems(FGFApiCallback Callback);
 
 private:
@@ -182,7 +177,6 @@ private:
 	 * Central response handling, determines internal setter from ResponseData
 	 * @param ResponseData
 	 */
-	UFUNCTION()
 	void InternalResponseManager(FGFAPIResponse ResponseData);
 	void SetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject);
 	void SetVariablesInternal(const FString& JsonStr);

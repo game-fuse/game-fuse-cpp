@@ -129,8 +129,10 @@ FString UGameFuseUser::GetAuthenticationToken() const
 
 void UGameFuseUser::WrapBlueprintCallback(const FBP_GFApiCallback& Callback, FGFApiCallback& InternalCallback)
 {
-	InternalCallback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
-	InternalCallback.Add(Callback);
+	InternalCallback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
+	InternalCallback.AddLambda([Callback](const FGFAPIResponse& ResponseData) {
+		Callback.ExecuteIfBound(ResponseData);
+	});
 }
 
 void UGameFuseUser::BP_SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FBP_GFApiCallback Callback)
@@ -285,7 +287,7 @@ void UGameFuseUser::BP_SyncLocalAttributes(FBP_GFApiCallback Callback)
 
 void UGameFuseUser::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& OurUsername, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 	const FGFGameData& GameData = GameFuseManager->GetGameData();
 	RequestHandler->SignUp(Email, Password, PasswordConfirmation, OurUsername, GameData.Id, GameData.Token, Callback);
 }
@@ -293,7 +295,7 @@ void UGameFuseUser::SignUp(const FString& Email, const FString& Password, const 
 
 void UGameFuseUser::SignIn(const FString& Email, const FString& Password, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 	const FGFGameData& GameData = GameFuseManager->GetGameData();
 	RequestHandler->SignIn(Email, Password, GameData.Id, GameData.Token, Callback);
 }
@@ -323,7 +325,7 @@ void UGameFuseUser::LogOut(const FString& SaveSlotName = TEXT(""))
 
 void UGameFuseUser::AddCredits(const int AddCredits, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->AddCredits(AddCredits, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -331,7 +333,7 @@ void UGameFuseUser::AddCredits(const int AddCredits, FGFApiCallback Callback)
 
 void UGameFuseUser::SetCredits(const int SetCredits, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->SetCredits(SetCredits, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -339,7 +341,7 @@ void UGameFuseUser::SetCredits(const int SetCredits, FGFApiCallback Callback)
 
 void UGameFuseUser::AddScore(const int AddScore, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->AddScore(AddScore, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -347,7 +349,7 @@ void UGameFuseUser::AddScore(const int AddScore, FGFApiCallback Callback)
 
 void UGameFuseUser::SetScore(const int SetScore, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->SetScore(SetScore, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -355,7 +357,7 @@ void UGameFuseUser::SetScore(const int SetScore, FGFApiCallback Callback)
 
 void UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->SetAttribute(SetKey, SetValue, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -375,7 +377,7 @@ void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetV
 
 void UGameFuseUser::SyncLocalAttributes(FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->SyncLocalAttributes(DirtyAttributes, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -383,7 +385,7 @@ void UGameFuseUser::SyncLocalAttributes(FGFApiCallback Callback)
 
 void UGameFuseUser::RemoveAttribute(const FString& SetKey, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->RemoveAttribute(SetKey, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -391,7 +393,7 @@ void UGameFuseUser::RemoveAttribute(const FString& SetKey, FGFApiCallback Callba
 
 void UGameFuseUser::PurchaseStoreItem(const FGFStoreItem& StoreItem, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->PurchaseStoreItem(StoreItem.Id, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -399,7 +401,7 @@ void UGameFuseUser::PurchaseStoreItem(const FGFStoreItem& StoreItem, FGFApiCallb
 
 void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->PurchaseStoreItem(StoreItemId, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -407,7 +409,7 @@ void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FGFApiCallbac
 
 void UGameFuseUser::RemoveStoreItem(const FGFStoreItem& StoreItem, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->RemoveStoreItem(StoreItem.Id, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -415,7 +417,7 @@ void UGameFuseUser::RemoveStoreItem(const FGFStoreItem& StoreItem, FGFApiCallbac
 
 void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->RemoveStoreItem(StoreItemId, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -423,7 +425,7 @@ void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FGFApiCallback 
 
 void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, TMap<FString, FString> ExtraAttributes, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -431,7 +433,7 @@ void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& Leaderboard
 
 void UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -439,7 +441,7 @@ void UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const in
 
 void UGameFuseUser::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->FetchMyLeaderboardEntries(Limit, bOnePerUser, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -447,7 +449,7 @@ void UGameFuseUser::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser,
 
 void UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->ClearLeaderboardEntry(LeaderboardName, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -456,7 +458,7 @@ void UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGFApi
 
 void UGameFuseUser::FetchAttributes(bool bChainedFromLogin, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->FetchAttributes(bChainedFromLogin, UserData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -464,7 +466,7 @@ void UGameFuseUser::FetchAttributes(bool bChainedFromLogin, FGFApiCallback Callb
 
 void UGameFuseUser::FetchPurchasedStoreItems(const bool bChainedFromLogin, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseUser::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
 	RequestHandler->FetchPurchaseStoreItems(bChainedFromLogin, UserData.Id, UserData.AuthenticationToken, Callback);
 }

@@ -16,8 +16,7 @@ UAPIRequestHandler::UAPIRequestHandler()
 
 
 
-FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, /* const FString& RequestBody,*/
-                                      const FGFApiCallback& OnResponseReceived)
+FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived)
 {
 
 	// Error Checking
