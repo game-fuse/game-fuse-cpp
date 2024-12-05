@@ -91,8 +91,10 @@ const TArray<FGFLeaderboardEntry>& UGameFuseManager::GetLeaderboardEntries(const
 
 void UGameFuseManager::WrapBlueprintCallback(const FBP_GFApiCallback& Callback, FGFApiCallback& InternalCallback)
 {
-	InternalCallback.AddUniqueDynamic(this, &UGameFuseManager::InternalResponseManager);
-	InternalCallback.Add(Callback);
+	InternalCallback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
+	InternalCallback.AddLambda([Callback](const FGFAPIResponse& ResponseData) {
+		Callback.ExecuteIfBound(ResponseData);
+	});
 }
 
 void UGameFuseManager::BP_SetUpGame(const FString& GameId, const FString& Token, const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
@@ -137,7 +139,7 @@ void UGameFuseManager::BP_FetchLeaderboardEntries(const int Limit = 20, bool bOn
 
 void UGameFuseManager::SetUpGame(const FString& GameId, const FString& Token, FGFApiCallback Callback)
 {
-	Callback.AddUniqueDynamic(this, &UGameFuseManager::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
 	RequestHandler->SetUpGame(GameId, Token, Callback);
 }
 
@@ -148,7 +150,7 @@ void UGameFuseManager::SendPasswordResetEmail(const FString& Email, FGFApiCallba
 		return;
 	}
 
-	Callback.AddUniqueDynamic(this, &UGameFuseManager::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
 	RequestHandler->SendPasswordResetEmail(Email, GameData.Id, GameData.Token, Callback);
 }
 
@@ -161,7 +163,7 @@ void UGameFuseManager::FetchGameVariables(FGFApiCallback Callback)
 		return;
 	}
 
-	Callback.AddUniqueDynamic(this, &UGameFuseManager::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
 
 	RequestHandler->FetchGameVariables(GameData.Id, GameData.Token, Callback);
 }
@@ -174,7 +176,7 @@ void UGameFuseManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUser
 	}
 	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetUserData();
 
-	Callback.AddUniqueDynamic(this, &UGameFuseManager::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
 
 	RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, UserData.AuthenticationToken, Callback);
 }
@@ -186,7 +188,7 @@ void UGameFuseManager::FetchStoreItems(FGFApiCallback Callback)
 		return;
 	}
 
-	Callback.AddUniqueDynamic(this, &UGameFuseManager::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
 
 	RequestHandler->FetchStoreItems(GameData.Id, GameData.Token, Callback);
 }

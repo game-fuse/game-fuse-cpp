@@ -10,19 +10,20 @@
 
 /**
  * @brief BP Specific Callback Delegate. Only bound to the Delegate pin on a given node.
- * @param RepsonseData - The response data from the API request. See @FGFAPIResponse for response details.
+ * @param ResponseData - The response data from the API request. See @FGFAPIResponse for response details.
  */
 DECLARE_DYNAMIC_DELEGATE_OneParam(FBP_GFApiCallback, FGFAPIResponse, ResponseData);
 
 /**
  * @brief CPP Multicast Delegate wraps the BP_ApiCallback and is bindable anywhere in CPP
- * @param RepsonseData - The response data from the API request. See @FGFAPIResponse for response details.
+ * @param ResponseData - The response data from the API request. See @FGFAPIResponse for response details.
  */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGFApiCallback, FGFAPIResponse, ResponseData);
+DECLARE_MULTICAST_DELEGATE_OneParam(FGFApiCallback, FGFAPIResponse);
 
 /**
  * @brief UAPIRequestHandler - Centralized class to manage API requests
  */
+
 UCLASS()
 class GAMEFUSE_API UAPIRequestHandler : public UObject
 {
@@ -33,23 +34,16 @@ public:
 	// Constructor to initialize default headers
 	UAPIRequestHandler();
 
-	UFUNCTION()
 	// Sends an HTTP Request, returns unique Request ID
 	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived);
 
 	// Handles the response received for the HTTP request
 	void HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, const FGuid& RequestId);
 
-	// Check if a request is still active
-	bool IsRequestActive(const FGuid& RequestId) const
-	{
-		return ActiveRequests.Contains(RequestId);
-	}
-
 	// Base URL for the API
 	inline static FString BaseUrl = "https://gamefuse.co/api/v3";
 
-protected:
+	void AddCommonHeaders(FHttpRequestPtr HttpRequest);
 
 	// Common headers for all requests
 	UPROPERTY()
@@ -59,9 +53,6 @@ private:
 
 	// Generates a unique Request ID
 	static FGuid GenerateRequestId();
-
-	//Applies CommonHeaders Map to the HTTP Request
-	void AddCommonHeaders(FHttpRequestPtr HttpRequest);
 
 	// Map to store active requests and their data by Request ID
 	TMap<FGuid, TSharedPtr<IHttpRequest, ESPMode::ThreadSafe>> ActiveRequests;
