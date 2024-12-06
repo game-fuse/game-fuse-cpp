@@ -7,107 +7,130 @@
 #include "JsonObjectConverter.h"
 #include "Library/GameFuseLog.h"
 
-DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(
-FCreateGameLatentCommand,
+DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
+FCreateGame,
 UTestAPIHandler*, APIHandler,
-FGFGameData&, GameData);
+TSharedPtr<FGFGameData>, GameData,
+FAutomationTestBase*, Test,
+FGuid, RequestId);
 
-bool FCreateGameLatentCommand::Update()
+bool FCreateGame::Update()
 {
-	static FGuid RequestId;
-	if (!RequestId.IsValid()) {
-		FGFApiCallback Callback;
-		FGFGameData* GameDataPtr = &GameData;
-		Callback.AddLambda([this, GameDataPtr](const FGFAPIResponse& Response) {
-			if (Response.bSuccess) {
-				UE_LOG(LogTemp, Log, TEXT("Response String: %s"), *Response.ResponseStr);
 
-				//check game data valid
-				ensure(GameDataPtr);
-				FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameDataPtr);
-			}
-		});
-		RequestId = APIHandler->CreateGame(Callback);
-		return false;
+	if (RequestId.IsValid()) {
+		return !APIHandler->IsRequestActive(RequestId);
 	}
 
-	return !APIHandler->IsResponseActive(RequestId);
+
+	FGFApiCallback Callback;
+	Callback.AddLambda([this](const FGFAPIResponse& Response) {
+		Test->AddErrorIfFalse(Response.bSuccess, FString::Printf(TEXT("Request failed. Response: %s"), *Response.ResponseStr));
+
+		FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameData.Get());
+
+		Test->TestTrue("Game ID should be valid", GameData->Id != 0);
+		Test->AddErrorIfFalse(GameData->Id != 0, TEXT("Game was not initialized"));
+	});
+
+	RequestId = APIHandler->CreateGame(Callback);
+	return false;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_THREE_PARAMETER(
-FCreateUserLatentCommand,
+DEFINE_LATENT_AUTOMATION_COMMAND_FIVE_PARAMETER(
+FCreateUser,
 UTestAPIHandler*, APIHandler,
-const FGFGameData&, GameData,
-FGFUserData&, UserData);
+TSharedPtr<FGFGameData>, GameData,
+FGFUserData&, UserData,
+FAutomationTestBase*, Test,
+FGuid, RequestId);
 
-bool FCreateUserLatentCommand::Update()
+bool FCreateUser::Update()
 {
-	static FGuid RequestId;
-	if (!RequestId.IsValid()) {
-		FGFApiCallback Callback;
-		FGFUserData* UserDataPtr = &UserData;
-		Callback.AddLambda([UserDataPtr](const FGFAPIResponse& Response) {
-			if (Response.bSuccess) {
-				UE_LOG(LogTemp, Log, TEXT("Response String: %s"), *Response.ResponseStr);
-				FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, UserDataPtr, 0, 0);
-			}
-		});
-		RequestId = APIHandler->CreateUser(GameData.Id, TEXT("TestUser"), TEXT("test@example.com"), Callback);
-		return false;
+
+	if (RequestId.IsValid()) {
+		return !APIHandler->IsRequestActive(RequestId);
 	}
 
-	return !APIHandler->IsResponseActive(RequestId);
+
+	FGFApiCallback Callback;
+	Callback.AddLambda([this](const FGFAPIResponse& Response) {
+		Test->AddErrorIfFalse(Response.bSuccess, FString::Printf(TEXT("Request failed. Response: %s"), *Response.ResponseStr));
+
+		FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, &UserData);
+
+		Test->TestTrue("User ID should be valid", UserData.Id != 0);
+		Test->AddErrorIfFalse(UserData.Id != 0, TEXT("User was not initialized"));
+	});
+
+	RequestId = APIHandler->CreateUser(GameData->Id, TEXT("TestUser"), TEXT("test@example.com"), Callback);
+	return false;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_THREE_PARAMETER(
-FCreateStoreItemLatentCommand,
+DEFINE_LATENT_AUTOMATION_COMMAND_FIVE_PARAMETER(
+FCreateStoreItem,
 UTestAPIHandler*, APIHandler,
 const FGFGameData&, GameData,
-FGFStoreItem&, StoreItem);
+FGFStoreItem&, StoreItem,
+FAutomationTestBase*, Test,
+FGuid, RequestId);
 
-bool FCreateStoreItemLatentCommand::Update()
+bool FCreateStoreItem::Update()
 {
-	static FGuid RequestId;
-	if (!RequestId.IsValid()) {
-		FGFStoreItem NewItem;
-		NewItem.Name = TEXT("TestItem");
-		NewItem.Description = TEXT("Test Item Description");
-		NewItem.Cost = 100;
 
-		FGFApiCallback Callback;
-		FGFStoreItem* StoreItemPtr = &StoreItem;
-		Callback.AddLambda([StoreItemPtr](const FGFAPIResponse& Response) {
-			if (Response.bSuccess) {
-				UE_LOG(LogTemp, Log, TEXT("Response String: %s"), *Response.ResponseStr);
-				FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, StoreItemPtr, 0, 0);
-			}
-		});
-		RequestId = APIHandler->CreateStoreItem(GameData.Id, NewItem, Callback);
-		return false;
+	if (RequestId.IsValid()) {
+		return !APIHandler->IsRequestActive(RequestId);
 	}
 
-	return !APIHandler->IsResponseActive(RequestId);
+	FGFStoreItem NewItem;
+	NewItem.Name = TEXT("TestItem");
+	NewItem.Description = TEXT("Test Item Description");
+	NewItem.Cost = 100;
+
+	FGFApiCallback Callback;
+	Callback.AddLambda([this](const FGFAPIResponse& Response) {
+		Test->AddInfo(FString::Printf(TEXT("FCreateStoreItem::Update - Callback invoked, Success: %d"), Response.bSuccess));
+		Test->AddErrorIfFalse(Response.bSuccess, FString::Printf(TEXT("Request failed. Response: %s"), *Response.ResponseStr));
+
+		FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, &StoreItem);
+
+		Test->TestTrue("Store Item ID should be valid", StoreItem.Id != 0);
+		Test->AddErrorIfFalse(StoreItem.Id != 0, TEXT("Store Item was not initialized"));
+	});
+
+	RequestId = APIHandler->CreateStoreItem(GameData.Id, NewItem, Callback);
+	return false;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_THREE_PARAMETER(
-FCleanupGameLatentCommand,
+DEFINE_LATENT_AUTOMATION_COMMAND_FIVE_PARAMETER(
+FCleanupGame,
 UTestAPIHandler*, APIHandler,
-const FGFGameData&, GameData,
-bool&, bSuccess);
+FGFGameData&, GameData,
+bool&, bSuccess,
+FAutomationTestBase*, Test,
+FGuid, RequestId);
 
-bool FCleanupGameLatentCommand::Update()
+bool FCleanupGame::Update()
 {
-	static FGuid RequestId;
-	if (!RequestId.IsValid()) {
-		FGFApiCallback Callback;
-		bool* SuccessPtr = &bSuccess;
-		Callback.AddLambda([SuccessPtr](const FGFAPIResponse& Response) {
-			*SuccessPtr = Response.bSuccess;
-			UE_LOG(LogTemp, Log, TEXT("Cleanup Response String: %s"), *Response.ResponseStr);
-		});
-		RequestId = APIHandler->CleanupGame(GameData.Id, Callback);
-		return false;
+	if (RequestId.IsValid()) {
+		return !APIHandler->IsRequestActive(RequestId);
 	}
 
-	return !APIHandler->IsResponseActive(RequestId);
+
+	FGFApiCallback Callback;
+	Callback.AddLambda([this](const FGFAPIResponse& Response) {
+		Test->AddInfo(FString::Printf(TEXT("FCleanupGame::Update - Callback invoked, Success: %d"), Response.bSuccess));
+		Test->AddErrorIfFalse(Response.bSuccess, FString::Printf(TEXT("Request failed. Response: %s"), *Response.ResponseStr));
+
+		if (Response.bSuccess) {
+			bSuccess = Response.bSuccess;
+			GameData = FGFGameData();
+		}
+
+		Test->TestTrue("Game cleanup should succeed", bSuccess);
+		Test->TestTrue("Game ID should be reset", GameData.Id == 0);
+		Test->AddErrorIfFalse(bSuccess, TEXT("Game cleanup failed"));
+	});
+
+	RequestId = APIHandler->CleanupGame(GameData.Id, Callback);
+	return false;
 }

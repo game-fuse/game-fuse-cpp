@@ -7,17 +7,16 @@
 UCLASS()
 class GAMEFUSETESTS_API UTestAPIHandler : public UAPIRequestHandler
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    UTestAPIHandler();
 
-    // C++ API methods
-    FGuid CreateGame(const FGFApiCallback& Callback);
-    FGuid CreateUser(int32 GameId, const FString& Username, const FString& Email, const FGFApiCallback& Callback);
-    FGuid CreateStoreItem(int32 GameId, const FGFStoreItem& Item, const FGFApiCallback& Callback);
-    FGuid CleanupGame(int32 GameId, const FGFApiCallback& Callback);
+	UTestAPIHandler();
 
-private:
-    TSet<FGuid> ActiveRequests;
+	// C++ API methods
+	FGuid CreateGame(const FGFApiCallback& Callback);
+	FGuid CreateUser(int32 GameId, const FString& Username, const FString& Email, const FGFApiCallback& Callback);
+	FGuid CreateStoreItem(int32 GameId, const FGFStoreItem& Item, const FGFApiCallback& Callback);
+	FGuid CleanupGame(int32 GameId, const FGFApiCallback& Callback);
+
 };

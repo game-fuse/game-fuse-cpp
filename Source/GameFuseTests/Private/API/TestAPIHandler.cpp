@@ -1,7 +1,9 @@
 #include "API/TestAPIHandler.h"
 #include "Dom/JsonObject.h"
+#include "HttpModule.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
+#include "GenericPlatform/GenericPlatformHttp.h"
 
 UTestAPIHandler::UTestAPIHandler()
 {
@@ -26,8 +28,11 @@ FGuid UTestAPIHandler::CreateUser(int32 GameId, const FString& Username, const F
 
 FGuid UTestAPIHandler::CreateStoreItem(int32 GameId, const FGFStoreItem& Item, const FGFApiCallback& Callback)
 {
+	const FString EncodedName = FGenericPlatformHttp::UrlEncode(Item.Name);
+	const FString EncodedDescription = FGenericPlatformHttp::UrlEncode(Item.Description);
+	const FString EncodedCategory = FGenericPlatformHttp::UrlEncode(Item.Category);
 	const FString ApiEndpoint = FString::Printf(TEXT("/test_suite/create_store_item?game_id=%d&name=%s&description=%s&category=%s&cost=%d"),
-	                                            GameId, *Item.Name, *Item.Description, *Item.Category, Item.Cost);
+	                                            GameId, *EncodedName, *EncodedDescription, *EncodedCategory, Item.Cost);
 	return SendRequest(ApiEndpoint, TEXT("POST"), Callback);
 }
 

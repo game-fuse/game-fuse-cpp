@@ -41,9 +41,13 @@ public:
 	TMap<FString, FString> CommonHeaders;
 
 	// Checks if a request is still active
-	bool IsResponseActive(const FGuid& RequestId) const { return ActiveRequests.Contains(RequestId); }
+	bool IsRequestActive(const FGuid& RequestId) const
+	{
+		return ActiveRequests.Contains(RequestId);
+	}
 
 protected:
+
 	// Sends an HTTP Request, returns unique Request ID
 	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived);
 
