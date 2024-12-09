@@ -11,9 +11,9 @@
 
 
 
-void UCoreAPIHandler::SetUpGame(const FString& InGameId, const FString& InToken, const FGFApiCallback& Callback)
+void UCoreAPIHandler::SetUpGame(const int GameId, const FString& InToken, const FGFApiCallback& Callback)
 {
-	FString ApiEndpoint = FString::Printf(TEXT("/games/verify?client_from_library=cpp&game_id=%s&game_token=%s"), *InGameId, *InToken);
+	FString ApiEndpoint = FString::Printf(TEXT("/games/verify?client_from_library=cpp&game_id=%i&game_token=%s"), GameId, *InToken);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Sending Static Request - Setting Up Game : %s"), *ApiEndpoint);
 

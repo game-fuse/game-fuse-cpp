@@ -101,7 +101,7 @@ void UGameFuseManager::BP_SetUpGame(const FString& GameId, const FString& Token,
 {
 	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
-	SetUpGame(GameId, Token, InternalCallback);
+	SetUpGame(FCString::Atoi(*GameId), Token, InternalCallback);
 }
 
 void UGameFuseManager::BP_SendPasswordResetEmail(const FString& Email, const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
@@ -137,7 +137,7 @@ void UGameFuseManager::BP_FetchLeaderboardEntries(const int Limit = 20, bool bOn
 
 #pragma region CPP Implementations
 
-void UGameFuseManager::SetUpGame(const FString& GameId, const FString& Token, FGFApiCallback Callback)
+void UGameFuseManager::SetUpGame(int GameId, const FString& Token, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
 	RequestHandler->SetUpGame(GameId, Token, Callback);

@@ -92,7 +92,7 @@ public:
 	 * @param Token The GameFuse API Token of the game.
 	 * @param Callback The cpp multicast delegate to be called when the request is complete. Can be bound many times.
 	 */
-	void SetUpGame(const FString& GameId, const FString& Token, FGFApiCallback Callback);
+	void SetUpGame(const int GameId, const FString& Token, FGFApiCallback Callback);
 
 	/**
 	 * DO NOT USE FROM C++

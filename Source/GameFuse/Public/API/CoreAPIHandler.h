@@ -28,7 +28,7 @@ public:
 
 	//> Setup Game Request
 
-	void SetUpGame(const FString& InGameId, const FString& InToken, const FGFApiCallback& Callback);
+	void SetUpGame(const int InGameId, const FString& InToken, const FGFApiCallback& Callback);
 
 	//> Action Requests
 
