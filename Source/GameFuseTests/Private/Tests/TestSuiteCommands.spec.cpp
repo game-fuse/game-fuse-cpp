@@ -1,7 +1,7 @@
 #include "Misc/AutomationTest.h"
 #include "Commands/TestSuiteCommands.h"
 
-BEGIN_DEFINE_SPEC(FGameFuseTestSpec, "GameFuseTests.TestSpec", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+BEGIN_DEFINE_SPEC(FGameFuseTestSpec, "GameFuseTests.TestSuiteCommands", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 	UTestAPIHandler* APIHandler;
 	TSharedPtr<FGFGameData> GameData;
 	FGFUserData UserData;
@@ -20,7 +20,9 @@ void FGameFuseTestSpec::Define()
 
 		ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(APIHandler, GameData, UserData, this, FGuid()));
 
-		ADD_LATENT_AUTOMATION_COMMAND(FCreateStoreItem(APIHandler, *GameData, StoreItem, this, FGuid()));
+		// Endpoint does not exist currently
+		// ADD_LATENT_AUTOMATION_COMMAND(FCreateStoreItem(APIHandler, *GameData, StoreItem, this, FGuid()));
+		AddWarning("CreateStoreItem endpoint isn't working yet");
 
 		ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(APIHandler, *GameData, bCleanupSuccess, this, FGuid()));
 
