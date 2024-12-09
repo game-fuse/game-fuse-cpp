@@ -29,6 +29,11 @@ struct FGFGameData
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Description = "";
 
+	bool operator==(const FGFGameData& Other) const
+	{
+		return Id == Other.Id && Token == Other.Token && Name == Other.Name && Description == Other.Description;
+	}
+
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|UserData")
@@ -94,10 +99,10 @@ struct FGFStoreItem
 	bool operator==(const FGFStoreItem& Other) const
 	{
 		return Name == Other.Name &&
-			Category == Other.Category &&
-			Description == Other.Description &&
-			Cost == Other.Cost &&
-			Id == Other.Id;
+		Category == Other.Category &&
+		Description == Other.Description &&
+		Cost == Other.Cost &&
+		Id == Other.Id;
 	}
 };
 

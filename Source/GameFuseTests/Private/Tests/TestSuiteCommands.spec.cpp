@@ -1,3 +1,4 @@
+#if WITH_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
 #include "Commands/TestSuiteCommands.h"
 
@@ -30,3 +31,4 @@ void FGameFuseTestSpec::Define()
 
 
 }
+#endif
