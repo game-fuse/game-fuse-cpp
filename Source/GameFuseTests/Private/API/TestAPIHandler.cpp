@@ -1,9 +1,7 @@
 #include "API/TestAPIHandler.h"
 #include "Dom/JsonObject.h"
-#include "HttpModule.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
-#include "GenericPlatform/GenericPlatformHttp.h"
 
 UTestAPIHandler::UTestAPIHandler()
 {
@@ -28,12 +26,15 @@ FGuid UTestAPIHandler::CreateUser(int32 GameId, const FString& Username, const F
 
 FGuid UTestAPIHandler::CreateStoreItem(int32 GameId, const FGFStoreItem& Item, const FGFApiCallback& Callback)
 {
-	const FString EncodedName = FGenericPlatformHttp::UrlEncode(Item.Name);
-	const FString EncodedDescription = FGenericPlatformHttp::UrlEncode(Item.Description);
-	const FString EncodedCategory = FGenericPlatformHttp::UrlEncode(Item.Category);
-	const FString ApiEndpoint = FString::Printf(TEXT("/test_suite/create_store_item?game_id=%d&name=%s&description=%s&category=%s&cost=%d"),
-	                                            GameId, *EncodedName, *EncodedDescription, *EncodedCategory, Item.Cost);
-	return SendRequest(ApiEndpoint, TEXT("POST"), Callback);
+
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetStringField(TEXT("name"), Item.Name);
+	JsonObject->SetStringField(TEXT("description"), Item.Description);
+	JsonObject->SetStringField(TEXT("category"), Item.Category);
+	JsonObject->SetNumberField(TEXT("cost"), Item.Cost);
+
+	const FString ApiEndpoint = FString::Printf(TEXT("/test_suite/create_store_item?game_id=%d"), GameId);
+	return SendRequest(ApiEndpoint, TEXT("POST"), Callback, JsonObject);
 }
 
 FGuid UTestAPIHandler::CleanupGame(int32 GameId, const FGFApiCallback& Callback)

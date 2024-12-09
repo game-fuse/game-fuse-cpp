@@ -5,7 +5,6 @@
 
 #include "Library/GameFuseLog.h"
 #include "Library/GameFuseUtilities.h"
-#include "GenericPlatform/GenericPlatformHttp.h"
 
 
 UAPIRequestHandler::UAPIRequestHandler()
@@ -16,8 +15,7 @@ UAPIRequestHandler::UAPIRequestHandler()
 }
 
 
-
-FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived)
+FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject>& Body)
 {
 
 	// Error Checking
@@ -50,8 +48,13 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	HttpRequest->SetURL(URL);
 	HttpRequest->SetVerb(HttpMethod);
 
-	// Request Body not used for Gamefuse API
-	// HttpRequest->SetContentAsString(RequestBody);
+	// Serialize JSON object and set as request body if provided
+	if (Body.IsValid()) {
+		FString RequestBody;
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
+		FJsonSerializer::Serialize(Body.ToSharedRef(), Writer);
+		HttpRequest->SetContentAsString(RequestBody);
+	}
 
 	// Add Default Headers
 	AddCommonHeaders(HttpRequest);
