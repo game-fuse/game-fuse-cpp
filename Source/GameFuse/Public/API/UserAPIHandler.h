@@ -21,35 +21,35 @@ public:
 
 	//> User Requests
 
-	void AddCredits(const int AddCredits, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void AddCredits(const int AddCredits, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void SetCredits(const int SetCredits, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void SetCredits(const int SetCredits, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void AddScore(const int AddScore, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void AddScore(const int AddScore, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void SetScore(const int SetScore, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void SetScore(const int SetScore, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void SetAttribute(const FString& SetKey, const FString& SetValue, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void SetAttribute(const FString& SetKey, const FString& SetValue, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void SyncLocalAttributes(const TMap<FString, FString>& DirtyAttributes, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void SyncLocalAttributes(const TMap<FString, FString>& DirtyAttributes, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void RemoveAttribute(const FString& SetKey, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void RemoveAttribute(const FString& SetKey, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void PurchaseStoreItem(const int StoreItemId, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void PurchaseStoreItem(const int StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void RemoveStoreItem(const int StoreItemId, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void RemoveStoreItem(const int StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, TMap<FString, FString>* ExtraAttributes, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, TMap<FString, FString>* ExtraAttributes, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void ClearLeaderboardEntry(const FString& LeaderboardName, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void ClearLeaderboardEntry(const FString& LeaderboardName, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	//> Action Requests
 
-	void FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void FetchAttributes(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void FetchAttributes(const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	void FetchPurchaseStoreItems(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback);
+	void FetchPurchaseStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 
 	//> Helper Functions

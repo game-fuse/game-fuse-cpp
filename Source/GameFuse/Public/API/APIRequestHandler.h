@@ -46,6 +46,11 @@ public:
 		return ActiveRequests.Contains(RequestId);
 	}
 
+	int GetNumActiveRequests() const
+	{
+		return ActiveRequests.Num();
+	}
+
 protected:
 
 	// Sends an HTTP Request, optionally with a JSON object as the body, returns unique Request ID

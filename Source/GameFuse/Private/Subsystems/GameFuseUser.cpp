@@ -28,8 +28,7 @@ void UGameFuseUser::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	RequestHandler = NewObject<UUserAPIHandler>();
-	if (const UGameFuseSaveData* LoadedSaveGame = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0)))
-	{
+	if (const UGameFuseSaveData* LoadedSaveGame = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0))) {
 
 		UserData = LoadedSaveGame->UserData;
 		// AddAuthenticationHeader();
@@ -198,11 +197,11 @@ void UGameFuseUser::BP_RemoveAttribute(const FString& Key, FBP_GFApiCallback Cal
 	RemoveAttribute(Key, InternalCallback);
 }
 
-void UGameFuseUser::BP_FetchPurchasedStoreItems(bool bChainedFromLogin, FBP_GFApiCallback Callback)
+void UGameFuseUser::BP_FetchPurchasedStoreItems(FBP_GFApiCallback Callback)
 {
 	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
-	FetchPurchasedStoreItems(bChainedFromLogin, InternalCallback);
+	FetchPurchasedStoreItems(InternalCallback);
 }
 
 
@@ -258,11 +257,11 @@ void UGameFuseUser::BP_ClearLeaderboardEntry(const FString& LeaderboardName, FBP
 
 
 
-void UGameFuseUser::BP_FetchAttributes(bool bChainedFromLogin, FBP_GFApiCallback Callback)
+void UGameFuseUser::BP_FetchAttributes(FBP_GFApiCallback Callback)
 {
 	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
-	FetchAttributes(bChainedFromLogin, InternalCallback);
+	FetchAttributes(InternalCallback);
 }
 
 void UGameFuseUser::BP_FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FBP_GFApiCallback Callback)
@@ -308,13 +307,10 @@ void UGameFuseUser::LogOut(const FString& SaveSlotName = TEXT(""))
 
 	bool bSuccess = !SaveSlotName.IsEmpty() && UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
 
-	if (bSuccess)
-	{
+	if (bSuccess) {
 		UE_LOG(LogGameFuse, Log, TEXT("User Logged Out"));
-	}
-	else
-	{
-		UE_LOG(LogGameFuse, Error, TEXT("User Failed To Log Out"));
+	} else {
+		UE_LOG(LogGameFuse, Error, TEXT("User Failed To Log Out, user data was cleared"));
 	}
 }
 
@@ -326,8 +322,7 @@ void UGameFuseUser::LogOut(const FString& SaveSlotName = TEXT(""))
 void UGameFuseUser::AddCredits(const int AddCredits, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
-
-	RequestHandler->AddCredits(AddCredits, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->AddCredits(AddCredits, UserData, Callback);
 }
 
 
@@ -335,7 +330,7 @@ void UGameFuseUser::SetCredits(const int SetCredits, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->SetCredits(SetCredits, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->SetCredits(SetCredits, UserData, Callback);
 }
 
 
@@ -343,7 +338,7 @@ void UGameFuseUser::AddScore(const int AddScore, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->AddScore(AddScore, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->AddScore(AddScore, UserData, Callback);
 }
 
 
@@ -351,7 +346,7 @@ void UGameFuseUser::SetScore(const int SetScore, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->SetScore(SetScore, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->SetScore(SetScore, UserData, Callback);
 }
 
 
@@ -359,7 +354,7 @@ void UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue,
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->SetAttribute(SetKey, SetValue, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->SetAttribute(SetKey, SetValue, UserData, Callback);
 }
 
 
@@ -379,7 +374,7 @@ void UGameFuseUser::SyncLocalAttributes(FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->SyncLocalAttributes(DirtyAttributes, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->SyncLocalAttributes(DirtyAttributes, UserData, Callback);
 }
 
 
@@ -387,7 +382,7 @@ void UGameFuseUser::RemoveAttribute(const FString& SetKey, FGFApiCallback Callba
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->RemoveAttribute(SetKey, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->RemoveAttribute(SetKey, UserData, Callback);
 }
 
 
@@ -395,7 +390,7 @@ void UGameFuseUser::PurchaseStoreItem(const FGFStoreItem& StoreItem, FGFApiCallb
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->PurchaseStoreItem(StoreItem.Id, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->PurchaseStoreItem(StoreItem.Id, UserData, Callback);
 }
 
 
@@ -403,7 +398,7 @@ void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FGFApiCallbac
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->PurchaseStoreItem(StoreItemId, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->PurchaseStoreItem(StoreItemId, UserData, Callback);
 }
 
 
@@ -411,7 +406,7 @@ void UGameFuseUser::RemoveStoreItem(const FGFStoreItem& StoreItem, FGFApiCallbac
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->RemoveStoreItem(StoreItem.Id, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->RemoveStoreItem(StoreItem.Id, UserData, Callback);
 }
 
 
@@ -419,7 +414,7 @@ void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FGFApiCallback 
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->RemoveStoreItem(StoreItemId, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->RemoveStoreItem(StoreItemId, UserData, Callback);
 }
 
 
@@ -427,7 +422,7 @@ void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& Leaderboard
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, UserData, Callback);
 }
 
 
@@ -435,7 +430,7 @@ void UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const in
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, UserData, Callback);
 }
 
 
@@ -443,7 +438,7 @@ void UGameFuseUser::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser,
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->FetchMyLeaderboardEntries(Limit, bOnePerUser, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->FetchMyLeaderboardEntries(Limit, bOnePerUser, UserData, Callback);
 }
 
 
@@ -451,24 +446,24 @@ void UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGFApi
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->ClearLeaderboardEntry(LeaderboardName, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->ClearLeaderboardEntry(LeaderboardName, UserData, Callback);
 }
 
 
 
-void UGameFuseUser::FetchAttributes(bool bChainedFromLogin, FGFApiCallback Callback)
+void UGameFuseUser::FetchAttributes(FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->FetchAttributes(bChainedFromLogin, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->FetchAttributes(UserData, Callback);
 }
 
 
-void UGameFuseUser::FetchPurchasedStoreItems(const bool bChainedFromLogin, FGFApiCallback Callback)
+void UGameFuseUser::FetchPurchasedStoreItems(FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->FetchPurchaseStoreItems(bChainedFromLogin, UserData.Id, UserData.AuthenticationToken, Callback);
+	RequestHandler->FetchPurchaseStoreItems(UserData, Callback);
 }
 
 
@@ -477,8 +472,7 @@ void UGameFuseUser::FetchPurchasedStoreItems(const bool bChainedFromLogin, FGFAp
 
 void UGameFuseUser::InternalResponseManager(FGFAPIResponse ResponseData)
 {
-	if (!ResponseData.bSuccess)
-	{
+	if (!ResponseData.bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("API Response Failed: %s"), *ResponseData.ResponseStr);
 		return;
 	}
@@ -486,14 +480,12 @@ void UGameFuseUser::InternalResponseManager(FGFAPIResponse ResponseData)
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseData.ResponseStr);
 	TSharedPtr<FJsonObject> JsonObject;
 
-	if (!FJsonSerializer::Deserialize(Reader, JsonObject))
-	{
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse JSON Response From API"));
 		return;
 	}
 
-	switch (GameFuseUtilities::DetermineUserAPIResponseType(JsonObject))
-	{
+	switch (GameFuseUtilities::DetermineUserAPIResponseType(JsonObject)) {
 		//switch on EGF_UserAPIResponse
 		case (EGFUserAPIResponseType::Login):
 			SetLoginInternal(JsonObject);
@@ -522,10 +514,10 @@ void UGameFuseUser::InternalResponseManager(FGFAPIResponse ResponseData)
 
 void UGameFuseUser::SetLoginInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
+	UE_LOG(LogGameFuse, Warning, TEXT("User Log in Token Response: %s"), *JsonObject->GetStringField(TEXT("authentication_token")));
 	const bool bSuccess = GameFuseUtilities::ConvertJsonToUserData(UserData, JsonObject);
 
-	if (bSuccess)
-	{
+	if (bSuccess) {
 		UserData.bSignedIn = true;
 
 		UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::CreateSaveGameObject(UGameFuseSaveData::StaticClass()));
@@ -533,9 +525,7 @@ void UGameFuseUser::SetLoginInternal(const TSharedPtr<FJsonObject>& JsonObject)
 
 		UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
 		UE_LOG(LogGameFuse, Log, TEXT("Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
-	}
-	else
-	{
+	} else {
 		UE_LOG(LogGameFuse, Error, TEXT("User Parse Login Response Failed !"));
 	}
 }
@@ -544,15 +534,12 @@ void UGameFuseUser::SetCreditsInternal(const TSharedPtr<FJsonObject>& JsonObject
 {
 	const int32 NewCredits = UKismetStringLibrary::Conv_StringToInt(JsonObject->GetStringField(TEXT("credits")));
 
-	if (UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0)))
-	{
+	if (UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0))) {
 		UserData.Credits = NewCredits;
 		SaveGameInstance->UserData.Credits = NewCredits;
 		UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
 		UE_LOG(LogGameFuse, Log, TEXT("Updated The Credits Into SlotName:GameFuseSaveSlot UserIndex:0"));
-	}
-	else
-	{
+	} else {
 		UE_LOG(LogGameFuse, Error, TEXT("User Failed To Update Credits !"));
 	}
 }
@@ -561,15 +548,12 @@ void UGameFuseUser::SetScoresInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
 	const int32 NewScores = UKismetStringLibrary::Conv_StringToInt(JsonObject->GetStringField(TEXT("score")));
 
-	if (UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0)))
-	{
+	if (UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0))) {
 		UserData.Score = NewScores;
 		SaveGameInstance->UserData.Score = NewScores;
 		UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
 		UE_LOG(LogGameFuse, Log, TEXT("Updated The Scores Into SlotName:GameFuseSaveSlot UserIndex:0"));
-	}
-	else
-	{
+	} else {
 		UE_LOG(LogGameFuse, Error, TEXT("User Failed To Update Scores !"));
 	}
 }
@@ -579,12 +563,9 @@ void UGameFuseUser::SetAttributesInternal(const TSharedPtr<FJsonObject>& JsonObj
 {
 	Attributes.Empty();
 
-	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("game_user_attributes"), AttributeArray))
-	{
-		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray)
-		{
-			if (AttributeValue->Type == EJson::Object)
-			{
+	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("game_user_attributes"), AttributeArray)) {
+		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray) {
+			if (AttributeValue->Type == EJson::Object) {
 				const TSharedPtr<FJsonObject> AttributeObject = AttributeValue->AsObject();
 				FString Key = "";
 				FString Value = "";
@@ -596,17 +577,13 @@ void UGameFuseUser::SetAttributesInternal(const TSharedPtr<FJsonObject>& JsonObj
 				// Add to the attribute map
 				Attributes.Add(Key, Value);
 				UE_LOG(LogGameFuse, Log, TEXT("User SetAttributes : %s : %s"), *Key, *Value);
-			}
-			else
-			{
+			} else {
 				UE_LOG(LogGameFuse, Error, TEXT("User Failed to parse JSON"));
 				return;
 			}
 		}
 		UE_LOG(LogGameFuse, Log, TEXT("User Attributes Updated : %i"), Attributes.Num());
-	}
-	else
-	{
+	} else {
 		UE_LOG(LogGameFuse, Error, TEXT("User Failed To Parse JSON"));
 	}
 }
@@ -615,24 +592,19 @@ void UGameFuseUser::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
 {
 	PurchasedStoreItems.Empty();
 
-	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("game_user_store_items"), AttributeArray))
-	{
+	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("game_user_store_items"), AttributeArray)) {
 		PurchasedStoreItems.Reserve(AttributeArray->Num());
-		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray)
-		{
+		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray) {
 			size_t newIndex = PurchasedStoreItems.AddDefaulted();
 
 			bool bSuccess = GameFuseUtilities::ConvertJsonToStoreItem(PurchasedStoreItems[newIndex], AttributeValue);
 
-			if (!bSuccess)
-			{
+			if (!bSuccess) {
 				PurchasedStoreItems.RemoveAt(newIndex);
 			}
 		}
 		UE_LOG(LogGameFuse, Log, TEXT("User Store Items Updated : %i"), Attributes.Num());
-	}
-	else
-	{
+	} else {
 		UE_LOG(LogGameFuse, Error, TEXT("User Failed To Parse JSON"));
 	}
 }
@@ -641,15 +613,13 @@ void UGameFuseUser::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
 void UGameFuseUser::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
 	LeaderboardEntries.Empty();
-	if (!JsonObject->HasField(TEXT("leaderboard_entries")))
-	{
+	if (!JsonObject->HasField(TEXT("leaderboard_entries"))) {
 		UE_LOG(LogGameFuse, Error, TEXT("Fetching Users Leaderboard Entries Failed to parse JSON"));
 		return;
 	}
 
 	const TArray<TSharedPtr<FJsonValue>>& AttributeArray = JsonObject->GetArrayField(TEXT("leaderboard_entries"));
-	if (AttributeArray.Num() == 0)
-	{
+	if (AttributeArray.Num() == 0) {
 		return;
 	}
 
@@ -657,13 +627,11 @@ void UGameFuseUser::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
 	LeaderboardEntries.Reserve(AttributeArray.Num());
 
 
-	for (const TSharedPtr<FJsonValue>& AttributeValue : AttributeArray)
-	{
+	for (const TSharedPtr<FJsonValue>& AttributeValue : AttributeArray) {
 		size_t newIndex = LeaderboardEntries.AddDefaulted();
 		const bool bSuccess = GameFuseUtilities::ConvertJsonToLeaderboardItem(LeaderboardEntries[newIndex], AttributeValue);
 
-		if (!bSuccess)
-		{
+		if (!bSuccess) {
 			LeaderboardEntries.RemoveAt(newIndex);
 		}
 

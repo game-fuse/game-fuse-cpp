@@ -17,22 +17,22 @@ DEFINE_LATENT_AUTOMATION_COMMAND_FIVE_PARAMETER(
 FCreateUser,
 UTestAPIHandler*, APIHandler,
 TSharedPtr<FGFGameData>, GameData,
-FGFUserData&, UserData,
+TSharedPtr<FGFUserData>, UserData,
 FAutomationTestBase*, Test,
 FGuid, RequestId);
 
 DEFINE_LATENT_AUTOMATION_COMMAND_FIVE_PARAMETER(
 FCreateStoreItem,
 UTestAPIHandler*, APIHandler,
-const FGFGameData&, GameData,
-FGFStoreItem&, StoreItem,
+TSharedPtr<FGFGameData>, GameData,
+TSharedPtr<FGFStoreItem>, StoreItem,
 FAutomationTestBase*, Test,
 FGuid, RequestId);
 
 DEFINE_LATENT_AUTOMATION_COMMAND_FIVE_PARAMETER(
 FCleanupGame,
 UTestAPIHandler*, APIHandler,
-FGFGameData&, GameData,
+TSharedPtr<FGFGameData>, GameData,
 bool&, bCleanupSuccess,
 FAutomationTestBase*, Test,
 FGuid, RequestId);

@@ -181,9 +181,9 @@ public:
 	void FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FGFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName="Fetch Attributes", Category = "GameFuse|User")
-	void BP_FetchAttributes(bool bChainedFromLogin, FBP_GFApiCallback Callback);
+	void BP_FetchAttributes(FBP_GFApiCallback Callback);
 
-	void FetchAttributes(bool bChainedFromLogin, FGFApiCallback Callback);
+	void FetchAttributes(FGFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName="Sync Local Attributes", Category = "GameFuse|User")
 	void BP_SyncLocalAttributes(FBP_GFApiCallback Callback);
@@ -191,9 +191,9 @@ public:
 	void SyncLocalAttributes(FGFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName="Fetch Purchased Store Items", Category = "GameFuse|User")
-	void BP_FetchPurchasedStoreItems(bool bChainedFromLogin, FBP_GFApiCallback Callback);
+	void BP_FetchPurchasedStoreItems(FBP_GFApiCallback Callback);
 
-	void FetchPurchasedStoreItems(bool bChainedFromLogin, FGFApiCallback Callback);
+	void FetchPurchasedStoreItems(FGFApiCallback Callback);
 
 	void InternalResponseManager(FGFAPIResponse ResponseData);
 
