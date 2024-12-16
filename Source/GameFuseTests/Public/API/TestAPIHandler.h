@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "API/APIRequestHandler.h"
+#include "Subsystems/GameFuseManager.h"
+#include "Subsystems/GameFuseUser.h"
 #include "TestAPIHandler.generated.h"
 
 UCLASS()

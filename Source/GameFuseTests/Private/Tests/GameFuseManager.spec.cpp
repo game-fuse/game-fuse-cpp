@@ -3,10 +3,11 @@
 #include "Subsystems/GameFuseManager.h"
 #include "Commands/TestSuiteCommands.h"
 
-BEGIN_DEFINE_SPEC(GameFuseManagerSpec, "GameFuseTests.GameFuseManager", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-	UGameFuseManager* GameFuseManager;
-	UGameInstance* GameInstance;
-	UTestAPIHandler* TestAPIHandler;
+BEGIN_DEFINE_SPEC(GameFuseManagerSpec, "GameFuseTests.GameFuseManager",
+                  EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+	UGameFuseManager *GameFuseManager;
+	UGameInstance *GameInstance;
+	UTestAPIHandler *TestAPIHandler;
 	TSharedPtr<FGFGameData> GameData;
 	// Declare Variables Here (basically a header)
 
@@ -35,21 +36,21 @@ void GameFuseManagerSpec::Define()
 			FGFApiCallback Callback = FGFApiCallback();
 			Callback.AddLambda([this](const FGFAPIResponse& Response) {
 				TestTrue("setup game should be successful", Response.bSuccess);
-				TestTrue("GameFuseManager should be set up", GameFuseManager->SetupCheck());
+
 				});
 
 			// Call the SetUpGame function
 			GameFuseManager->SetUpGame(GameData->Id, GameData->Token, Callback);
 
 			// Return true to indicate the command has completed
-			return true;
+			return GameFuseManager->IsSetUp();
 			}));
 		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() -> bool {
-			TestTrue("has correct GameData", GameFuseManager->GetGameData() == GameData.ToSharedRef().Get());
+			TestTrue("GameFuseManager should be set up", GameFuseManager->SetupCheck());
+			TestTrue("has correct GameData", GameFuseManager->GetGameData() == *GameData);
 			return true;
 			}));
 	});
-
 
 }
 

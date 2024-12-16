@@ -59,6 +59,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
 	const TArray<FGFStoreItem>& GetGameStoreItems();
 
+	/**
+	 * CPP only usage
+	 * @return A reference to the RequestHandler
+	 */
+	TObjectPtr<UAPIRequestHandler> GetRequestHandler() { return RequestHandler; }
+
 	/** Returns a TMap of all leaderboards that have been fetched from GameFuse */
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
 	const TMap<FString, FGFLeaderboard>& GetLeaderboards();
@@ -73,6 +79,8 @@ public:
 
 	UFUNCTION(NotBlueprintable, Category = "GameFuse | Manager")
 	bool SetupCheck();
+
+
 
 
 
@@ -92,7 +100,7 @@ public:
 	 * @param Token The GameFuse API Token of the game.
 	 * @param Callback The cpp multicast delegate to be called when the request is complete. Can be bound many times.
 	 */
-	void SetUpGame(const int GameId, const FString& Token, FGFApiCallback Callback);
+	FGuid SetUpGame(const int GameId, const FString& Token, FGFApiCallback Callback);
 
 	/**
 	 * DO NOT USE FROM C++
@@ -108,7 +116,7 @@ public:
 	 * @param Email Address to send the password reset email to.
 	 * @param Callback Cpp Multicast Delegate
 	 */
-	void SendPasswordResetEmail(const FString& Email, FGFApiCallback Callback);
+	FGuid SendPasswordResetEmail(const FString& Email, FGFApiCallback Callback);
 
 	/**
 	 * DO NOT USE FROM C++
@@ -122,7 +130,7 @@ public:
 	 * Get GameVariables set in GameFuse Dashboard
 	 * @param Callback CPP Multicast Delegate
 	 */
-	void FetchGameVariables(FGFApiCallback Callback);
+	FGuid FetchGameVariables(FGFApiCallback Callback);
 
 	/**
 	 * DO NOT USE FROM C++
@@ -144,7 +152,7 @@ public:
 	 * @param LeaderboardName The name of the leaderboard to fetch entries from.
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	void FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback);
+	FGuid FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback);
 
 	/**
 	 * DO NOT USE FROM C++
@@ -158,7 +166,7 @@ public:
 	 * Get Store items from GameFuse Dashboard
 	 * @param Callback CPP Multicast Delegate
 	 */
-	void FetchStoreItems(FGFApiCallback Callback);
+	FGuid FetchStoreItems(FGFApiCallback Callback);
 
 private:
 

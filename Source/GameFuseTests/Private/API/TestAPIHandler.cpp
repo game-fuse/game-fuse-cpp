@@ -1,5 +1,6 @@
 #include "API/TestAPIHandler.h"
 #include "Dom/JsonObject.h"
+#include "Library/GameFuseLog.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
 
@@ -19,6 +20,10 @@ FGuid UTestAPIHandler::CreateGame(const FGFApiCallback& Callback)
 
 FGuid UTestAPIHandler::CreateUser(int32 GameId, const FString& Username, const FString& Email, const FGFApiCallback& Callback)
 {
+	if (GameId == 0) {
+		UE_LOG(LogGameFuse, Error, TEXT("GameId is required"));
+		return FGuid();
+	}
 	const FString ApiEndpoint = FString::Printf(TEXT("/test_suite/create_user?game_id=%d&username=%s&email=%s"),
 	                                            GameId, *Username, *Email);
 	return SendRequest(ApiEndpoint, TEXT("POST"), Callback);

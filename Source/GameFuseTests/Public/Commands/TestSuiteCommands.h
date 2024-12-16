@@ -36,3 +36,8 @@ TSharedPtr<FGFGameData>, GameData,
 bool&, bCleanupSuccess,
 FAutomationTestBase*, Test,
 FGuid, RequestId);
+
+DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(
+FWaitForFGFResponse,
+TObjectPtr<UAPIRequestHandler>, APIHandler,
+FGuid, RequestId);
