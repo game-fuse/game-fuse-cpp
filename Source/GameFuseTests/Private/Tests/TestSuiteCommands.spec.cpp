@@ -2,20 +2,21 @@
 #include "Misc/AutomationTest.h"
 #include "Commands/TestSuiteCommands.h"
 
-BEGIN_DEFINE_SPEC(FGameFuseTestSpec, "GameFuseTests.TestSuiteCommands", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+BEGIN_DEFINE_SPEC(FTestSuiteCommandsSpec, "GameFuseTests.TestSuiteCommands", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 	UTestAPIHandler* APIHandler;
 	TSharedPtr<FGFGameData> GameData;
 	TSharedPtr<FGFUserData> UserData;
 	TSharedPtr<FGFStoreItem> StoreItem;
 	bool bCleanupSuccess;
-END_DEFINE_SPEC(FGameFuseTestSpec)
+END_DEFINE_SPEC(FTestSuiteCommandsSpec)
 
-void FGameFuseTestSpec::Define()
+void FTestSuiteCommandsSpec::Define()
 {
 	APIHandler = NewObject<UTestAPIHandler>();
 	TestTrue(TEXT("API Handler should be valid"), APIHandler != nullptr);
 	GameData = MakeShared<FGFGameData>();
 	UserData = MakeShared<FGFUserData>();
+	StoreItem = MakeShared<FGFStoreItem>();
 
 	It("creates a game and cleans it up", [this]() {
 
@@ -28,10 +29,18 @@ void FGameFuseTestSpec::Define()
 
 	});
 
-	It("creates a user and cleans it up", [this]() {
+	It("creates a user", [this]() {
 		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(APIHandler, GameData, this, FGuid()));
 
 		ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(APIHandler, GameData, UserData, this, FGuid()));
+
+		ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(APIHandler, GameData, bCleanupSuccess, this, FGuid()));
+	});
+
+	It("creates a store item", [this]() {
+		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(APIHandler, GameData, this, FGuid()));
+
+		ADD_LATENT_AUTOMATION_COMMAND(FCreateStoreItem(APIHandler, GameData, StoreItem, this, FGuid()));
 
 		ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(APIHandler, GameData, bCleanupSuccess, this, FGuid()));
 	});
@@ -40,7 +49,8 @@ void FGameFuseTestSpec::Define()
 		// Create a game and capture its request ID
 		FGuid RequestId;
 		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(APIHandler, GameData, this, RequestId));
-		
+
+
 		// Wait for the response using our new command
 		ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(APIHandler, RequestId));
 		

@@ -1,3 +1,4 @@
+#include "Library/GameFuseLog.h"
 #if WITH_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
 #include "Subsystems/GameFuseManager.h"
@@ -9,8 +10,6 @@ BEGIN_DEFINE_SPEC(GameFuseManagerSpec, "GameFuseTests.GameFuseManager",
 	UGameInstance *GameInstance;
 	UTestAPIHandler *TestAPIHandler;
 	TSharedPtr<FGFGameData> GameData;
-	// Declare Variables Here (basically a header)
-
 END_DEFINE_SPEC(GameFuseManagerSpec);
 
 void GameFuseManagerSpec::Define()
@@ -27,31 +26,35 @@ void GameFuseManagerSpec::Define()
 	});
 
 	It("Sets up GameFuse", [this]() {
-		// Create the game first
-		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(TestAPIHandler, GameData, this, FGuid()));
+		// Create the game first and capture its request ID
+		FGuid CreateGameRequestId;
+		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(TestAPIHandler, GameData, this, CreateGameRequestId));
+		ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, CreateGameRequestId));
 
-		// Delay function to wait for create game command completion
-		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() -> bool {
-			// Define the callback
-			FGFApiCallback Callback = FGFApiCallback();
-			Callback.AddLambda([this](const FGFAPIResponse& Response) {
-				TestTrue("setup game should be successful", Response.bSuccess);
-
+		FGuid SetupRequestId;
+		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, &SetupRequestId]() -> bool {
+			FGFApiCallback SetUpCallback;
+			SetUpCallback.AddLambda(
+				[this](const FGFAPIResponse& Response) {
+					UE_LOG(LogGameFuse, Log, TEXT("Setup Game Responded: %s"), *Response.ResponseStr);
+					TestTrue("setup game should be successful", Response.bSuccess);
 				});
 
-			// Call the SetUpGame function
-			GameFuseManager->SetUpGame(GameData->Id, GameData->Token, Callback);
+			// Set up the game and capture its request ID
+			SetupRequestId = GameFuseManager->SetUpGame(GameData->Id, GameData->Token, SetUpCallback);
+			return true;
+		}));
 
-			// Return true to indicate the command has completed
-			return GameFuseManager->IsSetUp();
-			}));
+		// Wait for setup to complete
+		ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseManager->GetRequestHandler(), SetupRequestId));
+
+		// Verify final state
 		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() -> bool {
 			TestTrue("GameFuseManager should be set up", GameFuseManager->SetupCheck());
 			TestTrue("has correct GameData", GameFuseManager->GetGameData() == *GameData);
 			return true;
-			}));
+		}));
 	});
-
 }
 
 #endif

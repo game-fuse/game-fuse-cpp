@@ -38,7 +38,7 @@ FGuid UTestAPIHandler::CreateStoreItem(int32 GameId, const FGFStoreItem& Item, c
 	JsonObject->SetStringField(TEXT("category"), Item.Category);
 	JsonObject->SetNumberField(TEXT("cost"), Item.Cost);
 
-	const FString ApiEndpoint = FString::Printf(TEXT("/test_suite/create_store_item?game_id=%d"), GameId);
+	const FString ApiEndpoint = FString::Printf(TEXT("/test_suite/create_store_items?game_id=%d"), GameId);
 	return SendRequest(ApiEndpoint, TEXT("POST"), Callback, JsonObject);
 }
 
