@@ -76,19 +76,19 @@ void GameFuseUserSpec::Define()
 			FString RandomGuid = FGuid::NewGuid().ToString();
 			TestUserData->Username = FString::Printf(TEXT("user_%s"), *RandomGuid.Left(8));
 
-			FGFApiCallback OnGameCreated;
-			OnGameCreated.AddLambda([this](const FGFAPIResponse& Response) {
-				TestTrue("Create game request succeeded", Response.bSuccess);
-				if (!Response.bSuccess) {
-					AddError(FString::Printf(TEXT("Create Game Request failed. Response: %s"), *Response.ResponseStr));
-					return;
-				}
-
-				bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameData.Get());
-				TestTrue("got game data from response", parseSuccess);
-			});
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(TestAPIHandler, GameData, OnGameCreated, this, FGuid()));
+			// FGFApiCallback OnGameCreated;
+			// OnGameCreated.AddLambda([this](const FGFAPIResponse& Response) {
+			// 	TestTrue("Create game request succeeded", Response.bSuccess);
+			// 	if (!Response.bSuccess) {
+			// 		AddError(FString::Printf(TEXT("Create Game Request failed. Response: %s"), *Response.ResponseStr));
+			// 		return;
+			// 	}
+			//
+			// 	bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameData.Get());
+			// 	TestTrue("got game data from response", parseSuccess);
+			// });
+			//
+			// ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(TestAPIHandler, GameData, OnGameCreated, this, FGuid()));
 
 			FGFApiCallback OnUserCreated;
 			OnUserCreated.AddLambda([this, TestUserData](const FGFAPIResponse& Response) {

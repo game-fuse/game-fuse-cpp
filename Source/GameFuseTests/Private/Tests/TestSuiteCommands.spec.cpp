@@ -86,6 +86,7 @@ void FTestSuiteCommandsSpec::Define()
 	});
 
 	It("creates a store item", [this]() {
+
 		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(APIHandler, GameData, FGFApiCallback(), this, FGuid()));
 
 		ADD_LATENT_AUTOMATION_COMMAND(FCreateStoreItem(APIHandler, GameData, StoreItem, this, FGuid()));

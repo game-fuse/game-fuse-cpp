@@ -81,11 +81,16 @@ bool FCreateStoreItem::Update()
         }
     });
 
-    // Create a store item object with the provided data
-    FGFStoreItem Item;
-    Item.Name = StoreItem->Name;
-    Item.Description = StoreItem->Description;
-    Item.Cost = StoreItem->Cost;
+	// Generate random store item name and description
+	FString RandomGuid = FGuid::NewGuid().ToString();
+	FString StoreItemName = FString::Printf(TEXT("Item_%s"), *RandomGuid.Left(8));
+	FString StoreItemDescription = FString::Printf(TEXT("This is a description for item %s"), *StoreItemName);
+
+	// Create a store item object with the provided data
+	FGFStoreItem Item;
+	Item.Name = StoreItemName;
+	Item.Description = StoreItemDescription;
+	Item.Cost = 10;
 
     RequestId = APIHandler->CreateStoreItem(GameData->Id, Item, Callback);
     return false;
