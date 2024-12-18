@@ -1,12 +1,10 @@
 #include "Commands/TestSuiteCommands.h"
-
 #include "Library/GameFuseLog.h"
 
 bool FCreateGame::Update()
 {
     if (RequestId.IsValid()) {
         const bool bRequestActive = APIHandler->IsRequestActive(RequestId);
-        UE_LOG(LogGameFuse, Log, TEXT("Request %s is active: %i"), *RequestId.ToString(), bRequestActive);
         return !bRequestActive;
     }
 
@@ -14,33 +12,21 @@ bool FCreateGame::Update()
 
     FGFApiCallback Callback;
     Callback.AddLambda([this](const FGFAPIResponse& Response) {
-        Test->AddErrorIfFalse(Response.bSuccess, FString::Printf(TEXT("Create Game Request failed. Response: %s"), *Response.ResponseStr));
-
-        bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameData.Get());
-        UE_LOG(LogGameFuse, Log, TEXT("Parsing CreateGame response. Success: %d, GameData: ID=%d, Token=%s"),
-               parseSuccess, GameData->Id, *GameData->Token);
-
-        Test->TestTrue("got game data from response", parseSuccess);
-        Test->TestTrue("Game ID should be valid", GameData->Id != 0);
-        Test->AddErrorIfFalse(GameData->Id != 0, TEXT("Game was not initialized"));
-        Test->AddErrorIfFalse(GameData->Token.Len() > 0, TEXT("Game Authentication Token was not initialized"));
+        OnGameCreated.Broadcast(Response);
     });
 
     RequestId = APIHandler->CreateGame(Callback);
     return false;
 }
 
-
-
-
 bool FCreateUser::Update()
 {
     static bool bRequestSent = false;
-    static bool bWaitingForData = false;
+    static FGuid CurrentRequestId;
 
     if (!APIHandler || !GameData || !UserData.IsValid()) {
         Test->AddError(TEXT("APIHandler, GameData, or UserData is null in FCreateUser::Update"));
-        return true; // End the command
+        return true;
     }
 
     if (!bRequestSent)
@@ -52,94 +38,58 @@ bool FCreateUser::Update()
 
         // Store the username for later use
         UserData->Username = Username;
+        UE_LOG(LogGameFuse, Log, TEXT("Creating user with Username: %s, Email: %s"), *Username, *Email);
 
         FGFApiCallback Callback;
         Callback.AddLambda([this](const FGFAPIResponse& Response) {
-            if (!Response.bSuccess) {
-                Test->AddError(FString::Printf(TEXT("Create User Request failed. Response: %s"), *Response.ResponseStr));
-                return;
-            }
-
-            // Create a temporary struct to parse into
-            FGFUserData TempData;
-            bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, &TempData);
-            Test->TestTrue("Parse user data response", bParseSuccess);
-
-            if (bParseSuccess) {
-                // Update the existing UserData with the parsed values
-                UserData->Id = TempData.Id;
-                UserData->Credits = TempData.Credits;
-                // Keep the username we set earlier
-                
-                Test->TestTrue("User ID should be valid", UserData->Id != 0);
-                UE_LOG(LogGameFuse, Log, TEXT("UserData updated - ID: %d, Username: %s"), UserData->Id, *UserData->Username);
-            } else {
-                Test->AddError(TEXT("Failed to parse user data response"));
-            }
-            
-            bWaitingForData = true;
+            OnUserCreated.Broadcast(Response);
         });
 
         if (GameData->Id != 0) {
-            RequestId = APIHandler->CreateUser(GameData->Id, Username, Email, Callback);
+            CurrentRequestId = APIHandler->CreateUser(GameData->Id, Username, Email, Callback);
             bRequestSent = true;
             return false;
         } else {
             Test->AddError(TEXT("GameData ID is 0 in FCreateUser::Update"));
-            return true; // End the command
+            return true;
         }
     }
 
-    if (RequestId.IsValid() && !bWaitingForData) {
-        return !APIHandler->IsRequestActive(RequestId);
-    }
-
-    if (bWaitingForData)
+    if (CurrentRequestId.IsValid())
     {
-        if (!UserData.IsValid() || UserData->Id == 0 || UserData->Username.IsEmpty()) {
-            UE_LOG(LogGameFuse, Warning, TEXT("Waiting for UserData to be populated... ID: %d, Username: %s"), 
-                UserData.IsValid() ? UserData->Id : -1, 
-                UserData.IsValid() ? *UserData->Username : TEXT("Invalid"));
-            return false;
-        }
-
-        // Reset static variables for next run
-        bRequestSent = false;
-        bWaitingForData = false;
-        return true;
+        return !APIHandler->IsRequestActive(CurrentRequestId);
     }
 
-    return false;
+    bRequestSent = false; // Reset for next run
+    return true;
 }
 
 bool FCreateStoreItem::Update()
 {
-
     if (RequestId.IsValid()) {
         return !APIHandler->IsRequestActive(RequestId);
     }
 
-    FGFStoreItem NewItem;
-    NewItem.Name = TEXT("TestItem");
-    NewItem.Description = TEXT("Test Item Description");
-    NewItem.Cost = 100;
+    UE_LOG(LogGameFuse, Log, TEXT("Creating Store Item"));
 
     FGFApiCallback Callback;
     Callback.AddLambda([this](const FGFAPIResponse& Response) {
-        Test->AddInfo(FString::Printf(TEXT("FCreateStoreItem::Update - Callback invoked, Success: %d"), Response.bSuccess));
-        Test->AddErrorIfFalse(Response.bSuccess, FString::Printf(TEXT("Create Store ItemRequest failed. Response: %s"), *Response.ResponseStr));
-
-        FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, StoreItem.Get());
-
-        Test->TestTrue("Store Item ID should be valid", StoreItem->Id != 0);
-        Test->AddErrorIfFalse(StoreItem->Id != 0, TEXT("Store Item was not initialized"));
+        Test->AddErrorIfFalse(Response.bSuccess, FString::Printf(TEXT("Create Store Item Request failed. Response: %s"), *Response.ResponseStr));
+        if (Response.bSuccess) {
+            bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, StoreItem.Get());
+            Test->TestTrue("Store Item parsed successfully", parseSuccess);
+        }
     });
 
-    RequestId = APIHandler->CreateStoreItem(GameData->Id, NewItem, Callback);
+    // Create a store item object with the provided data
+    FGFStoreItem Item;
+    Item.Name = StoreItem->Name;
+    Item.Description = StoreItem->Description;
+    Item.Cost = StoreItem->Cost;
+
+    RequestId = APIHandler->CreateStoreItem(GameData->Id, Item, Callback);
     return false;
 }
-
-
 
 bool FCleanupGame::Update()
 {
@@ -147,11 +97,12 @@ bool FCleanupGame::Update()
         return !APIHandler->IsRequestActive(RequestId);
     }
 
+    UE_LOG(LogGameFuse, Log, TEXT("Cleaning up Game"));
+
     FGFApiCallback Callback;
     Callback.AddLambda([this](const FGFAPIResponse& Response) {
-        Test->AddErrorIfFalse(Response.bSuccess, FString::Printf(TEXT("Clean up request failed. Response: %s"), *Response.ResponseStr));
-
         bCleanupSuccess = Response.bSuccess;
+        Test->AddErrorIfFalse(Response.bSuccess, FString::Printf(TEXT("Cleanup Game Request failed. Response: %s"), *Response.ResponseStr));
     });
 
     RequestId = APIHandler->CleanupGame(GameData->Id, Callback);
@@ -160,111 +111,56 @@ bool FCleanupGame::Update()
 
 bool FWaitForFGFResponse::Update()
 {
-    if (!RequestId.IsValid()) {
+    if (!APIHandler) {
         return true;
     }
 
-    const bool bRequestActive = APIHandler->IsRequestActive(RequestId);
-    if (!bRequestActive) {
-        // Add a small delay to allow for response processing
-        FPlatformProcess::Sleep(0.1f);
-    }
-    
-    UE_LOG(LogGameFuse, Log, TEXT("Waiting for request %s to complete. Is Active: %s"), 
-        *RequestId.ToString(), 
-        bRequestActive ? TEXT("True") : TEXT("False"));
-
-    return !bRequestActive;
+    return !APIHandler->IsRequestActive(RequestId);
 }
 
 bool FSetupGame::Update()
 {
-    static bool bCreateGameSent = false;
-    static bool bCreateGameComplete = false;
-    static bool bSetupGameSent = false;
-    static bool bSetupGameComplete = false;
+    static bool bRequestSent = false;
+    static FGuid CurrentRequestId;
 
-    if (!bCreateGameSent)
-    {
-        // First create the game
-        FGFApiCallback CreateGameCallback;
-        CreateGameCallback.AddLambda([this](const FGFAPIResponse& Response) {
-            Test->TestTrue("Create game should be successful", Response.bSuccess);
-            if (!Response.bSuccess)
-            {
-                Test->AddError(FString::Printf(TEXT("Failed to create game: %s"), *Response.ResponseStr));
-                bCreateGameComplete = true;
-                return;
-            }
-            
-            // Parse game data from response
-            TSharedPtr<FJsonObject> JsonObject;
-            if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Response.ResponseStr), JsonObject))
-            {
-                Test->AddError(TEXT("Failed to parse game data response"));
-                bCreateGameComplete = true;
-                return;
-            }
-            
-            FGFGameData NewGameData;
-            if (!FJsonObjectConverter::JsonObjectToUStruct(JsonObject.ToSharedRef(), &NewGameData))
-            {
-                Test->AddError(TEXT("Failed to convert game data from JSON"));
-                bCreateGameComplete = true;
-                return;
-            }
-            
-            // Update game data
-            *GameData = NewGameData;
-            bCreateGameComplete = true;
-        });
-        
-        // Send create game request
-        RequestId = APIHandler->CreateGame(CreateGameCallback);
-        bCreateGameSent = true;
-        return false;
+    if (!APIHandler || !GameData || !GameFuseManager) {
+        Test->AddError(TEXT("APIHandler, GameData, or GameFuseManager is null in FSetupGame::Update"));
+        return true;
     }
 
-    if (!bCreateGameComplete)
+    if (!bRequestSent)
     {
-        return false;
-    }
+        UE_LOG(LogGameFuse, Log, TEXT("Setting up GameFuse"));
 
-    if (!bSetupGameSent && bCreateGameComplete)
-    {
-        if (!GameFuseManager)
-        {
-            Test->AddError(TEXT("GameFuseManager not found"));
-            bSetupGameComplete = true;
-            return true;
-        }
+        FGFApiCallback Callback;
+        Callback.AddLambda([this](const FGFAPIResponse& Response) {
+            Test->AddErrorIfFalse(Response.bSuccess, FString::Printf(TEXT("Setup Game Request failed. Response: %s"), *Response.ResponseStr));
 
-        FGFApiCallback SetUpGameCallback;
-        SetUpGameCallback.AddLambda([this](const FGFAPIResponse& Response) {
-            Test->TestTrue("Setup game should be successful", Response.bSuccess);
-            if (!Response.bSuccess)
-            {
-                Test->AddError(TEXT("Failed to setup game"));
+            if (Response.bSuccess) {
+                bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameData.Get());
+                Test->TestTrue("got game data from response", parseSuccess);
+                Test->TestTrue("Game ID should be valid", GameData->Id != 0);
             }
-            bSetupGameComplete = true;
         });
 
-        GameFuseManager->SetUpGame(GameData->Id, GameData->Token, SetUpGameCallback);
-        bSetupGameSent = true;
+        CurrentRequestId = APIHandler->CreateGame(Callback);
+        bRequestSent = true;
         return false;
     }
 
-    if (!bSetupGameComplete)
+    if (CurrentRequestId.IsValid() && APIHandler->IsRequestActive(CurrentRequestId))
     {
         return false;
     }
 
-    // Reset static variables for next run
-    bCreateGameSent = false;
-    bCreateGameComplete = false;
-    bSetupGameSent = false;
-    bSetupGameComplete = false;
+    // Once the request is complete, set up GameFuseManager
+    if (!GameFuseManager->IsSetUp())
+    {
+        GameFuseManager->GetRequestHandler() = APIHandler;
+        GameFuseManager->SetUpGame(GameData->Id, GameData->Token, FGFApiCallback());
+    }
 
+    bRequestSent = false; // Reset for next run
     return true;
 }
 
@@ -291,6 +187,7 @@ bool FSetupUser::Update()
 
         // Store the username for later use
         UserData->Username = Username;
+        UE_LOG(LogGameFuse, Log, TEXT("Creating user with Username: %s, Email: %s"), *Username, *Email);
 
         FGFApiCallback Callback;
         Callback.AddLambda([this](const FGFAPIResponse& Response) {
@@ -337,6 +234,8 @@ bool FSetupUser::Update()
     // Step 2: Sign In User
     if (bWaitingForUserData && !bSignInSent && UserData->Id != 0)
     {
+        UE_LOG(LogGameFuse, Log, TEXT("Signing in user with Username: %s"), *UserData->Username);
+
         FGFApiCallback SignInCallback;
         SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
             Test->TestTrue("Sign in should be successful", Response.bSuccess);

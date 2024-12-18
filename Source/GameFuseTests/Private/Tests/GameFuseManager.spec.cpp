@@ -26,10 +26,26 @@ void GameFuseManagerSpec::Define()
 	});
 
 	It("Sets up GameFuse", [this]() {
-		// Create the game first and capture its request ID
-		FGuid CreateGameRequestId;
-		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(TestAPIHandler, GameData, this, CreateGameRequestId));
-		ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, CreateGameRequestId));
+		// Create game with callback
+		FGFApiCallback OnGameCreated;
+		OnGameCreated.AddLambda([this](const FGFAPIResponse& Response) {
+			TestTrue("Create game request succeeded", Response.bSuccess);
+			if (!Response.bSuccess) {
+				AddError(FString::Printf(TEXT("Create Game Request failed. Response: %s"), *Response.ResponseStr));
+				return;
+			}
+
+			bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameData.Get());
+			UE_LOG(LogGameFuse, Log, TEXT("Parsing CreateGame response. Success: %d, GameData: ID=%d, Token=%s"),
+				   parseSuccess, GameData->Id, *GameData->Token);
+
+			TestTrue("got game data from response", parseSuccess);
+			TestTrue("Game ID should be valid", GameData->Id != 0);
+			AddErrorIfFalse(GameData->Id != 0, TEXT("Game was not initialized"));
+			AddErrorIfFalse(GameData->Token.Len() > 0, TEXT("Game Authentication Token was not initialized"));
+		});
+
+		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(TestAPIHandler, GameData, OnGameCreated, this, FGuid()));
 
 		FGuid SetupRequestId;
 		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, &SetupRequestId]() -> bool {
