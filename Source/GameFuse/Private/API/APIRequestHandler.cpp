@@ -126,7 +126,7 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 			GameFuseUtilities::LogResponse(Response);
 		} else {
 
-			UE_LOG(LogTemp, Warning, TEXT("Request %s failed"), *RequestId.ToString());
+			UE_LOG(LogTemp, Error, TEXT("Request %s failed"), *RequestId.ToString());
 			GameFuseUtilities::LogRequest(Request);
 			GameFuseUtilities::LogResponse(Response);
 		}

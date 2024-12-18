@@ -139,8 +139,28 @@ void UGameFuseManager::BP_FetchLeaderboardEntries(const int Limit = 20, bool bOn
 
 FGuid UGameFuseManager::SetUpGame(int GameId, const FString& Token, FGFApiCallback Callback)
 {
-	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
-	return RequestHandler->SetUpGame(GameId, Token, Callback);
+    if (GameId <= 0)
+    {
+        UE_LOG(LogGameFuse, Error, TEXT("Invalid Game ID: %d. Game ID must be greater than 0"), GameId);
+        FGFAPIResponse ErrorResponse;
+        ErrorResponse.bSuccess = false;
+        ErrorResponse.ResponseStr = TEXT("Invalid Game ID. Game ID must be greater than 0");
+        Callback.Broadcast(ErrorResponse);
+        return FGuid();
+    }
+
+    if (Token.IsEmpty())
+    {
+        UE_LOG(LogGameFuse, Error, TEXT("Invalid Token: Token cannot be empty"));
+        FGFAPIResponse ErrorResponse;
+        ErrorResponse.bSuccess = false;
+        ErrorResponse.ResponseStr = TEXT("Invalid Token. Token cannot be empty");
+        Callback.Broadcast(ErrorResponse);
+        return FGuid();
+    }
+
+    Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
+    return RequestHandler->SetUpGame(GameId, Token, Callback);
 }
 
 FGuid UGameFuseManager::SendPasswordResetEmail(const FString& Email, FGFApiCallback Callback)

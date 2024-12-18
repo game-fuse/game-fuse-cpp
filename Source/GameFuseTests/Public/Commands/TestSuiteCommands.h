@@ -41,3 +41,27 @@ DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(
 FWaitForFGFResponse,
 TObjectPtr<UAPIRequestHandler>, APIHandler,
 FGuid, RequestId);
+
+/**
+ * FSetupGame
+ * Sets up the GameFuseManager with the APIHandler, creating a test suite game
+ */
+DEFINE_LATENT_AUTOMATION_COMMAND_FIVE_PARAMETER(
+FSetupGame,
+UTestAPIHandler*, APIHandler,
+TSharedPtr<FGFGameData>, GameData,
+TObjectPtr<UGameFuseManager>, GameFuseManager,
+FAutomationTestBase*, Test,
+FGuid, RequestId);
+
+/**
+ * FSetupUser
+ * Creates a test user and signs them in using the GameFuseUser subsystem
+ */
+DEFINE_LATENT_AUTOMATION_COMMAND_FIVE_PARAMETER(
+FSetupUser,
+UTestAPIHandler*, APIHandler,
+TSharedPtr<FGFGameData>, GameData,
+TSharedPtr<FGFUserData>, UserData,
+TObjectPtr<UGameFuseUser>, GameFuseUser,
+FAutomationTestBase*, Test);

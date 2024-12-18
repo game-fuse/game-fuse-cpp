@@ -284,34 +284,33 @@ void UGameFuseUser::BP_SyncLocalAttributes(FBP_GFApiCallback Callback)
 
 
 
-void UGameFuseUser::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& OurUsername, FGFApiCallback Callback)
+FGuid UGameFuseUser::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& OurUsername, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 	const FGFGameData& GameData = GameFuseManager->GetGameData();
-	RequestHandler->SignUp(Email, Password, PasswordConfirmation, OurUsername, GameData.Id, GameData.Token, Callback);
+	return RequestHandler->SignUp(Email, Password, PasswordConfirmation, OurUsername, GameData.Id, GameData.Token, Callback);
 }
 
 
-void UGameFuseUser::SignIn(const FString& Email, const FString& Password, FGFApiCallback Callback)
+FGuid UGameFuseUser::SignIn(const FString& Email, const FString& Password, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 	const FGFGameData& GameData = GameFuseManager->GetGameData();
-	RequestHandler->SignIn(Email, Password, GameData.Id, GameData.Token, Callback);
+	return RequestHandler->SignIn(Email, Password, GameData.Id, GameData.Token, Callback);
 }
 
-void UGameFuseUser::LogOut(const FString& SaveSlotName = TEXT(""))
+void UGameFuseUser::LogOut(const FString& SaveSlotName)
 {
 	UE_LOG(LogGameFuse, Log, TEXT("User %i Logging Out"), UserData.Id);
 	UserData = FGFUserData();
 
-
-	bool bSuccess = !SaveSlotName.IsEmpty() && UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
-
-	if (bSuccess) {
-		UE_LOG(LogGameFuse, Log, TEXT("User Logged Out"));
+	if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0)) {
+		UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
+		UE_LOG(LogGameFuse, Log, TEXT("User Logged Out Successfully"), UserData.Id);
 	} else {
-		UE_LOG(LogGameFuse, Error, TEXT("User Failed To Log Out, user data was cleared"));
+		UE_LOG(LogGameFuse, Warning, TEXT("Save slot %s does not exist"), *SaveSlotName);
 	}
+
 }
 
 
@@ -319,42 +318,42 @@ void UGameFuseUser::LogOut(const FString& SaveSlotName = TEXT(""))
 
 #pragma region Game Fuse User Sending Requests
 
-void UGameFuseUser::AddCredits(const int AddCredits, FGFApiCallback Callback)
+FGuid UGameFuseUser::AddCredits(const int AddCredits, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
-	RequestHandler->AddCredits(AddCredits, UserData, Callback);
+	return RequestHandler->AddCredits(AddCredits, UserData, Callback);
 }
 
 
-void UGameFuseUser::SetCredits(const int SetCredits, FGFApiCallback Callback)
+FGuid UGameFuseUser::SetCredits(const int SetCredits, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->SetCredits(SetCredits, UserData, Callback);
+	return RequestHandler->SetCredits(SetCredits, UserData, Callback);
 }
 
 
-void UGameFuseUser::AddScore(const int AddScore, FGFApiCallback Callback)
+FGuid UGameFuseUser::AddScore(const int AddScore, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->AddScore(AddScore, UserData, Callback);
+	return RequestHandler->AddScore(AddScore, UserData, Callback);
 }
 
 
-void UGameFuseUser::SetScore(const int SetScore, FGFApiCallback Callback)
+FGuid UGameFuseUser::SetScore(const int SetScore, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->SetScore(SetScore, UserData, Callback);
+	return RequestHandler->SetScore(SetScore, UserData, Callback);
 }
 
 
-void UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue, FGFApiCallback Callback)
+FGuid UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->SetAttribute(SetKey, SetValue, UserData, Callback);
+	return RequestHandler->SetAttribute(SetKey, SetValue, UserData, Callback);
 }
 
 
@@ -370,100 +369,100 @@ void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetV
 }
 
 
-void UGameFuseUser::SyncLocalAttributes(FGFApiCallback Callback)
+FGuid UGameFuseUser::SyncLocalAttributes(FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->SyncLocalAttributes(DirtyAttributes, UserData, Callback);
+	return RequestHandler->SyncLocalAttributes(DirtyAttributes, UserData, Callback);
 }
 
 
-void UGameFuseUser::RemoveAttribute(const FString& SetKey, FGFApiCallback Callback)
+FGuid UGameFuseUser::RemoveAttribute(const FString& SetKey, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->RemoveAttribute(SetKey, UserData, Callback);
+	return RequestHandler->RemoveAttribute(SetKey, UserData, Callback);
 }
 
 
-void UGameFuseUser::PurchaseStoreItem(const FGFStoreItem& StoreItem, FGFApiCallback Callback)
+FGuid UGameFuseUser::PurchaseStoreItem(const FGFStoreItem& StoreItem, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->PurchaseStoreItem(StoreItem.Id, UserData, Callback);
+	return RequestHandler->PurchaseStoreItem(StoreItem.Id, UserData, Callback);
 }
 
 
-void UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FGFApiCallback Callback)
+FGuid UGameFuseUser::PurchaseStoreItemWithId(const int StoreItemId, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->PurchaseStoreItem(StoreItemId, UserData, Callback);
+	return RequestHandler->PurchaseStoreItem(StoreItemId, UserData, Callback);
 }
 
 
-void UGameFuseUser::RemoveStoreItem(const FGFStoreItem& StoreItem, FGFApiCallback Callback)
+FGuid UGameFuseUser::RemoveStoreItem(const FGFStoreItem& StoreItem, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->RemoveStoreItem(StoreItem.Id, UserData, Callback);
+	return RequestHandler->RemoveStoreItem(StoreItem.Id, UserData, Callback);
 }
 
 
-void UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FGFApiCallback Callback)
+FGuid UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->RemoveStoreItem(StoreItemId, UserData, Callback);
+	return RequestHandler->RemoveStoreItem(StoreItemId, UserData, Callback);
 }
 
 
-void UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, TMap<FString, FString> ExtraAttributes, FGFApiCallback Callback)
+FGuid UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, TMap<FString, FString> ExtraAttributes, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, UserData, Callback);
+	return RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, UserData, Callback);
 }
 
 
-void UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, FGFApiCallback Callback)
+FGuid UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, UserData, Callback);
+	return RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, UserData, Callback);
 }
 
 
-void UGameFuseUser::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FGFApiCallback Callback)
+FGuid UGameFuseUser::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->FetchMyLeaderboardEntries(Limit, bOnePerUser, UserData, Callback);
+	return RequestHandler->FetchMyLeaderboardEntries(Limit, bOnePerUser, UserData, Callback);
 }
 
 
-void UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGFApiCallback Callback)
+FGuid UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->ClearLeaderboardEntry(LeaderboardName, UserData, Callback);
+	return RequestHandler->ClearLeaderboardEntry(LeaderboardName, UserData, Callback);
 }
 
 
 
-void UGameFuseUser::FetchAttributes(FGFApiCallback Callback)
+FGuid UGameFuseUser::FetchAttributes(FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->FetchAttributes(UserData, Callback);
+	return RequestHandler->FetchAttributes(UserData, Callback);
 }
 
 
-void UGameFuseUser::FetchPurchasedStoreItems(FGFApiCallback Callback)
+FGuid UGameFuseUser::FetchPurchasedStoreItems(FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	RequestHandler->FetchPurchaseStoreItems(UserData, Callback);
+	return RequestHandler->FetchPurchaseStoreItems(UserData, Callback);
 }
 
 
