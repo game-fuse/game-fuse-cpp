@@ -44,8 +44,9 @@ void GameFuseManagerSpec::Define()
 			AddErrorIfFalse(GameData->Id != 0, TEXT("Game was not initialized"));
 			AddErrorIfFalse(GameData->Token.Len() > 0, TEXT("Game Authentication Token was not initialized"));
 		});
-
-		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(TestAPIHandler, GameData, OnGameCreated, this, FGuid()));
+		FGuid CreateGameRequestId;
+		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(TestAPIHandler, GameData, OnGameCreated, this, CreateGameRequestId));
+		ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, CreateGameRequestId));
 
 		FGuid SetupRequestId;
 		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, &SetupRequestId]() -> bool {
