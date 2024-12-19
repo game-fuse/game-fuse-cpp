@@ -98,6 +98,11 @@ bool FCreateStoreItem::Update()
 
 bool FCleanupGame::Update()
 {
+
+	if (GameData->Id == 0) {
+		Test->AddWarning("Tried to clean up game with ID 0");
+		return true;
+	}
     if (RequestId.IsValid()) {
         return !APIHandler->IsRequestActive(RequestId);
     }
