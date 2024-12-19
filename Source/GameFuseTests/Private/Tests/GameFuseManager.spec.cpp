@@ -55,6 +55,8 @@ void GameFuseManagerSpec::Define()
 				[this](const FGFAPIResponse& Response) {
 					UE_LOG(LogGameFuse, Log, TEXT("Setup Game Responded: %s"), *Response.ResponseStr);
 					TestTrue("setup game should be successful", Response.bSuccess);
+					TestTrue("GameFuseManager should be set up", GameFuseManager->IsSetUp());
+					TestTrue("has correct GameData", GameFuseManager->GetGameData() == *GameData);
 				});
 
 			// Set up the game and capture its request ID
@@ -64,13 +66,6 @@ void GameFuseManagerSpec::Define()
 
 		// Wait for setup to complete
 		ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseManager->GetRequestHandler(), SetupRequestId));
-
-		// Verify final state
-		ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() -> bool {
-			TestTrue("GameFuseManager should be set up", GameFuseManager->SetupCheck());
-			TestTrue("has correct GameData", GameFuseManager->GetGameData() == *GameData);
-			return true;
-		}));
 	});
 }
 
