@@ -6,14 +6,15 @@
 
 BEGIN_DEFINE_SPEC(GameFuseManagerSpec, "GameFuseTests.GameFuseManager",
                   EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-	UGameFuseManager *GameFuseManager;
-	UGameInstance *GameInstance;
-	UTestAPIHandler *TestAPIHandler;
+	UGameFuseManager* GameFuseManager;
+	UGameInstance* GameInstance;
+	UTestAPIHandler* TestAPIHandler;
 	TSharedPtr<FGFGameData> GameData;
 END_DEFINE_SPEC(GameFuseManagerSpec);
 
 void GameFuseManagerSpec::Define()
 {
+
 	GameInstance = NewObject<UGameInstance>();
 	GameInstance->Init();
 	GameFuseManager = GameInstance->GetSubsystem<UGameFuseManager>();
@@ -37,7 +38,7 @@ void GameFuseManagerSpec::Define()
 
 			bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameData.Get());
 			UE_LOG(LogGameFuse, Log, TEXT("Parsing CreateGame response. Success: %d, GameData: ID=%d, Token=%s"),
-				   parseSuccess, GameData->Id, *GameData->Token);
+			       parseSuccess, GameData->Id, *GameData->Token);
 
 			TestTrue("got game data from response", parseSuccess);
 			TestTrue("Game ID should be valid", GameData->Id != 0);
@@ -53,16 +54,16 @@ void GameFuseManagerSpec::Define()
 			FGFApiCallback SetUpCallback;
 			SetUpCallback.AddLambda(
 				[this](const FGFAPIResponse& Response) {
-					UE_LOG(LogGameFuse, Log, TEXT("Setup Game Responded: %s"), *Response.ResponseStr);
-					TestTrue("setup game should be successful", Response.bSuccess);
-					TestTrue("GameFuseManager should be set up", GameFuseManager->IsSetUp());
-					TestTrue("has correct GameData", GameFuseManager->GetGameData() == *GameData);
+				UE_LOG(LogGameFuse, Log, TEXT("Setup Game Responded: %s"), *Response.ResponseStr);
+				TestTrue("setup game should be successful", Response.bSuccess);
+				TestTrue("GameFuseManager should be set up", GameFuseManager->IsSetUp());
+				TestTrue("has correct GameData", GameFuseManager->GetGameData() == *GameData);
 				});
 
 			// Set up the game and capture its request ID
 			SetupRequestId = GameFuseManager->SetUpGame(GameData->Id, GameData->Token, SetUpCallback);
 			return true;
-		}));
+			}));
 
 		// Wait for setup to complete
 		ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseManager->GetRequestHandler(), SetupRequestId));

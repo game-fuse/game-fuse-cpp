@@ -18,6 +18,7 @@ END_DEFINE_SPEC(GameFuseUserSpec);
 
 void GameFuseUserSpec::Define()
 {
+	UE_LOG(LogGameFuse, Log, TEXT("GameFuseUserSpec::DEFINE was called"));
 	// Setup
 	GameInstance = NewObject<UGameInstance>();
 	GameInstance->Init();
@@ -36,8 +37,7 @@ void GameFuseUserSpec::Define()
 		BeforeEach([this]() {
 			// Setup GameFuse before each test
 			if (GameFuseManager->IsSetUp()) {
-				AddWarning("Already have a game setup");
-				return;
+				UE_LOG(LogGameFuse, Warning, TEXT("Already have a game setup"));
 			}
 
 			// Clear any saved user data
@@ -61,13 +61,26 @@ void GameFuseUserSpec::Define()
 				}));
 		});
 
-		AfterEach([this]() {
-			// Cleanup GameFuse after each test
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
-
-			GameData = MakeShared<FGFGameData>();
-			UserData = MakeShared<FGFUserData>();
-		});
+		// AfterEach([this]() {
+		// 	// Log the current game ID
+		// 	UE_LOG(LogGameFuse, Log, TEXT("AfterEach called with GameData->Id = %d"), GameData->Id);
+		//
+		// 	// Cleanup GameFuse after each test
+		// 	FGuid CleanupRequestId;
+		// 	if (GameData->Id != 0) {
+		// 		ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, CleanupRequestId));
+		// 		ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, CleanupRequestId));
+		// 	} else {
+		// 		UE_LOG(LogGameFuse, Warning, TEXT("Skipping cleanup - GameData->Id is 0"));
+		// 	}
+		//
+		// 	// Only reset data after cleanup is complete
+		// 	ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() -> bool {
+		// 		GameData = MakeShared<FGFGameData>();
+		// 		UserData = MakeShared<FGFUserData>();
+		// 		return true;
+		// 	}));
+		// });
 
 		It("signs in user", [this]() {
 			TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
@@ -90,11 +103,11 @@ void GameFuseUserSpec::Define()
 				UE_LOG(LogGameFuse, Log, TEXT("TestUserData updated - ID: %d, Username: %s"), TestUserData->Id, *TestUserData->Username);
 
 				FGFApiCallback SignInCallback;
-				SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					UE_LOG(LogGameFuse, Log, TEXT("Sign in Response: %s"), *Response.ResponseStr);
-					TestTrue("Sign in request succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Sign in failed: %s"), *Response.ResponseStr));
+				SignInCallback.AddLambda([this](const FGFAPIResponse& SignInResponse) {
+					UE_LOG(LogGameFuse, Log, TEXT("Sign in Response: %s"), *SignInResponse.ResponseStr);
+					TestTrue("Sign in request succeeded", SignInResponse.bSuccess);
+					if (!SignInResponse.bSuccess) {
+						AddError(FString::Printf(TEXT("Sign in failed: %s"), *SignInResponse.ResponseStr));
 					}
 				});
 
@@ -103,6 +116,10 @@ void GameFuseUserSpec::Define()
 
 			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, TestUserData, OnUserCreated, this));
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SignInRequestId));
+
+			FGuid CleanupRequestId;
+			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, CleanupRequestId));
+			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, CleanupRequestId));
 		});
 
 		It("handles add and set credit operations", [this]() {
@@ -135,6 +152,8 @@ void GameFuseUserSpec::Define()
 
 				FGuid SignInRequestId = GameFuseUser->SignIn(TestUserData->Username + TEXT("@gamefuse.com"), TEXT("password"), SignInCallback);
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SignInRequestId));
+
+
 			});
 
 			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, TestUserData, OnUserCreated, this));
@@ -151,6 +170,7 @@ void GameFuseUserSpec::Define()
 
 				FGFApiCallback AddCreditsCallback;
 				AddCreditsCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					UE_LOG(LogGameFuse, Log, TEXT("Add credits Response: %s"), *Response.ResponseStr);
 					TestTrue("Add credits request succeeded", Response.bSuccess);
 					if (!Response.bSuccess) {
 					AddError(FString::Printf(TEXT("Add credits failed: %s"), *Response.ResponseStr));
@@ -170,6 +190,7 @@ void GameFuseUserSpec::Define()
 
 				FGFApiCallback SetCreditsCallback;
 				SetCreditsCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					UE_LOG(LogGameFuse, Log, TEXT("Set credits Response: %s"), *Response.ResponseStr);
 					TestTrue("Set credits request succeeded", Response.bSuccess);
 					if (!Response.bSuccess) {
 					AddError(FString::Printf(TEXT("Set credits failed: %s"), *Response.ResponseStr));
@@ -180,6 +201,10 @@ void GameFuseUserSpec::Define()
 				return true;
 				}));
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SetCreditsRequestId));
+
+			FGuid CleanupRequestId;
+			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, CleanupRequestId));
+			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, CleanupRequestId));
 		});
 	});
 }

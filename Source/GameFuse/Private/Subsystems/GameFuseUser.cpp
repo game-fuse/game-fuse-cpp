@@ -9,6 +9,7 @@
 
 #include "Subsystems/GameFuseUser.h"
 
+#include "JsonObjectConverter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetStringLibrary.h"
 
@@ -514,7 +515,7 @@ void UGameFuseUser::InternalResponseManager(FGFAPIResponse ResponseData)
 void UGameFuseUser::SetLoginInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
 	UE_LOG(LogGameFuse, Warning, TEXT("User Log in Token Response: %s"), *JsonObject->GetStringField(TEXT("authentication_token")));
-	const bool bSuccess = GameFuseUtilities::ConvertJsonToUserData(UserData, JsonObject);
+	const bool bSuccess = FJsonObjectConverter::JsonObjectToUStruct(JsonObject.ToSharedRef(), &UserData);
 
 	if (bSuccess) {
 		UserData.bSignedIn = true;
@@ -596,6 +597,7 @@ void UGameFuseUser::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
 		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray) {
 			size_t newIndex = PurchasedStoreItems.AddDefaulted();
 
+			//TODO: use json converter to Ustruct
 			bool bSuccess = GameFuseUtilities::ConvertJsonToStoreItem(PurchasedStoreItems[newIndex], AttributeValue);
 
 			if (!bSuccess) {
@@ -628,6 +630,7 @@ void UGameFuseUser::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
 
 	for (const TSharedPtr<FJsonValue>& AttributeValue : AttributeArray) {
 		size_t newIndex = LeaderboardEntries.AddDefaulted();
+		//TODO: use json converter to Ustruct, look into converting entire array from string
 		const bool bSuccess = GameFuseUtilities::ConvertJsonToLeaderboardItem(LeaderboardEntries[newIndex], AttributeValue);
 
 		if (!bSuccess) {
