@@ -44,6 +44,48 @@ def find_uproject():
     
     return uproject_files[0]
 
+def build_project(engine_path, project_file):
+    print("Building project...")
+    
+    # Construct the UBT command
+    ubt_path = engine_path / "Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll"
+    
+    if not ubt_path.exists():
+        print(f"Error: Could not find UnrealBuildTool at {ubt_path}")
+        return False
+    
+    # Get project name without extension
+    project_name = project_file.stem
+    
+    # Build the command arguments
+    cmd = [
+        "dotnet",
+        str(ubt_path),
+        f"{project_name}Editor",
+        "Development",
+        "Win64",
+        "-Project=" + str(project_file),
+        "-WaitMutex"
+    ]
+    
+    try:
+        print(f"Build command: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        
+        # Print output
+        print("\nBuild Output:")
+        print(result.stdout)
+        
+        if result.stderr:
+            print("\nBuild Errors:")
+            print(result.stderr)
+        
+        return result.returncode == 0
+        
+    except subprocess.SubprocessError as e:
+        print(f"Error building project: {e}")
+        return False
+
 def run_tests(ue_version, test_name):
     try:
         # Get the engine path
@@ -51,6 +93,11 @@ def run_tests(ue_version, test_name):
         
         # Find the project file
         project_file = find_uproject()
+        
+        # Build the project first
+        if not build_project(engine_path, project_file):
+            print("Project build failed. Aborting tests.")
+            return False
         
         # Construct the command
         cmd_path = engine_path / "Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
