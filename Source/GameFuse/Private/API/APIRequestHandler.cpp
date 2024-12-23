@@ -15,19 +15,16 @@ UAPIRequestHandler::UAPIRequestHandler()
 }
 
 
-
-FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived)
+FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject>& Body)
 {
 
 	// Error Checking
-	if (!OnResponseReceived.IsBound())
-	{
+	if (!OnResponseReceived.IsBound()) {
 		UE_LOG(LogGameFuse, Error, TEXT("OnResponseReceived is not bound"));
 		return FGuid();
 	}
 
-	if (Endpoint.IsEmpty() || HttpMethod.IsEmpty())
-	{
+	if (Endpoint.IsEmpty() || HttpMethod.IsEmpty()) {
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid input parameters for SendRequest"));
 		return FGuid();
 	}
@@ -36,14 +33,14 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	// Generate unique ID for the request
 	FGuid RequestId = GenerateRequestId();
 
+
 	// Construct full URL
 	FString URL = BaseUrl + Endpoint;
 
 	// Create HTTP Request
 	FHttpRequestPtr HttpRequest = FHttpModule::Get().CreateRequest();
 
-	if (!HttpRequest.IsValid())
-	{
+	if (!HttpRequest.IsValid()) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to create HTTP request"));
 		return RequestId;
 	}
@@ -51,8 +48,13 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	HttpRequest->SetURL(URL);
 	HttpRequest->SetVerb(HttpMethod);
 
-	// Request Body not used for Gamefuse API
-	// HttpRequest->SetContentAsString(RequestBody);
+	// Serialize JSON object and set as request body if provided
+	if (Body.IsValid()) {
+		FString RequestBody;
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
+		FJsonSerializer::Serialize(Body.ToSharedRef(), Writer);
+		HttpRequest->SetContentAsString(RequestBody);
+	}
 
 	// Add Default Headers
 	AddCommonHeaders(HttpRequest);
@@ -62,19 +64,16 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 		HandleResponse(Request, Response, bWasSuccessful, RequestId);
 	});
 
-	UE_LOG(LogGameFuse, Log, TEXT("Sending Request to endpoint: %s"), *Endpoint);
+	UE_LOG(LogGameFuse, Log, TEXT("Sending Request [%s] to endpoint: %s"), *RequestId.ToString(), *Endpoint);
 
 	//Store in maps for retrieval in response
 	// Add to ActiveRequests map
 	ActiveRequests.Add(RequestId, HttpRequest);
 
 	// Store the response delegate
-	if (OnResponseReceived.IsBound())
-	{
+	if (OnResponseReceived.IsBound()) {
 		ResponseDelegates.Add(RequestId, OnResponseReceived);
-	}
-	else
-	{
+	} else {
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid RequestId or OnResponseReceived callback, request not sent"));
 		return RequestId;
 	}
@@ -88,14 +87,18 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, const bool bWasSuccessful, const FGuid& RequestId)
 {
 	//error checking
-	if (!ActiveRequests.Contains(RequestId))
-	{
+	if (!ActiveRequests.Contains(RequestId)) {
 		UE_LOG(LogGameFuse, Log, TEXT("Got response without an active request"));
 	}
 
-	if (!RequestId.IsValid())
-	{
+	if (!RequestId.IsValid()) {
 		UE_LOG(LogGameFuse, Error, TEXT("Request not found"));
+		return;
+	}
+
+	if (!Response.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid response for request:"));
+		GameFuseUtilities::LogRequest(Request);
 		return;
 	}
 
@@ -107,8 +110,7 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 
 
 	// Retrieve and execute the response delegate
-	if (ResponseDelegates.Contains(RequestId))
-	{
+	if (ResponseDelegates.Contains(RequestId)) {
 		const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 		FString ResponseContent = bSuccessfulAndValid ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
 
@@ -117,24 +119,18 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 	}
 
 
-	if (bSuccessfulAndValid)
-	{
+	if (bSuccessfulAndValid) {
 
-		if (bIsGoodResponse)
-		{
+		if (bIsGoodResponse) {
 			UE_LOG(LogTemp, Log, TEXT("Request %s succeeded"), *RequestId.ToString());
 			GameFuseUtilities::LogResponse(Response);
-		}
-		else
-		{
+		} else {
 
-			UE_LOG(LogTemp, Warning, TEXT("Request %s failed"), *RequestId.ToString());
+			UE_LOG(LogTemp, Error, TEXT("Request %s failed"), *RequestId.ToString());
 			GameFuseUtilities::LogRequest(Request);
 			GameFuseUtilities::LogResponse(Response);
 		}
-	}
-	else
-	{
+	} else {
 		// Handle failure case here
 		UE_LOG(LogTemp, Error, TEXT("Request %s failed"), *RequestId.ToString());
 		GameFuseUtilities::LogRequest(Request);
@@ -147,11 +143,9 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 void UAPIRequestHandler::AddCommonHeaders(FHttpRequestPtr HttpRequest)
 {
 
-	for (auto Header : CommonHeaders)
-	{
+	for (auto Header : CommonHeaders) {
 
-		if (Header.Key.IsEmpty() || Header.Value.IsEmpty())
-		{
+		if (Header.Key.IsEmpty() || Header.Value.IsEmpty()) {
 			UE_LOG(LogGameFuse, Error, TEXT("Header Key or Value is empty"));
 			continue;
 		}
@@ -159,8 +153,7 @@ void UAPIRequestHandler::AddCommonHeaders(FHttpRequestPtr HttpRequest)
 	}
 }
 
-
-
+// Generate a unique ID for the request
 FGuid UAPIRequestHandler::GenerateRequestId()
 {
 	return FGuid::NewGuid();

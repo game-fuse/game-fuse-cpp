@@ -101,7 +101,7 @@ void UGameFuseManager::BP_SetUpGame(const FString& GameId, const FString& Token,
 {
 	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
-	SetUpGame(GameId, Token, InternalCallback);
+	SetUpGame(FCString::Atoi(*GameId), Token, InternalCallback);
 }
 
 void UGameFuseManager::BP_SendPasswordResetEmail(const FString& Email, const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
@@ -137,60 +137,80 @@ void UGameFuseManager::BP_FetchLeaderboardEntries(const int Limit = 20, bool bOn
 
 #pragma region CPP Implementations
 
-void UGameFuseManager::SetUpGame(const FString& GameId, const FString& Token, FGFApiCallback Callback)
+FGuid UGameFuseManager::SetUpGame(int GameId, const FString& Token, FGFApiCallback Callback)
 {
-	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
-	RequestHandler->SetUpGame(GameId, Token, Callback);
+    if (GameId <= 0)
+    {
+        UE_LOG(LogGameFuse, Error, TEXT("Invalid Game ID: %d. Game ID must be greater than 0"), GameId);
+        FGFAPIResponse ErrorResponse;
+        ErrorResponse.bSuccess = false;
+        ErrorResponse.ResponseStr = TEXT("Invalid Game ID. Game ID must be greater than 0");
+        Callback.Broadcast(ErrorResponse);
+        return FGuid();
+    }
+
+    if (Token.IsEmpty())
+    {
+        UE_LOG(LogGameFuse, Error, TEXT("Invalid Token: Token cannot be empty"));
+        FGFAPIResponse ErrorResponse;
+        ErrorResponse.bSuccess = false;
+        ErrorResponse.ResponseStr = TEXT("Invalid Token. Token cannot be empty");
+        Callback.Broadcast(ErrorResponse);
+        return FGuid();
+    }
+
+    Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
+    return RequestHandler->SetUpGame(GameId, Token, Callback);
 }
 
-void UGameFuseManager::SendPasswordResetEmail(const FString& Email, FGFApiCallback Callback)
+FGuid UGameFuseManager::SendPasswordResetEmail(const FString& Email, FGFApiCallback Callback)
 {
 	if (!SetupCheck())
 	{
-		return;
+		return FGuid();
 	}
 
 	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
-	RequestHandler->SendPasswordResetEmail(Email, GameData.Id, GameData.Token, Callback);
+	return RequestHandler->SendPasswordResetEmail(Email, GameData.Id, GameData.Token, Callback);
 }
 
 
 
-void UGameFuseManager::FetchGameVariables(FGFApiCallback Callback)
+FGuid UGameFuseManager::FetchGameVariables(FGFApiCallback Callback)
 {
 	if (!SetupCheck())
 	{
-		return;
+		return FGuid();
 	}
 
 	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
 
-	RequestHandler->FetchGameVariables(GameData.Id, GameData.Token, Callback);
+	return RequestHandler->FetchGameVariables(GameData.Id, GameData.Token, Callback);
 }
 
-void UGameFuseManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback)
+FGuid UGameFuseManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback)
 {
 	if (!SetupCheck())
 	{
-		return;
+		return FGuid();
 	}
 	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetUserData();
 
 	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
 
-	RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, UserData.AuthenticationToken, Callback);
+	return RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, UserData.AuthenticationToken, Callback);
 }
 
-void UGameFuseManager::FetchStoreItems(FGFApiCallback Callback)
+FGuid UGameFuseManager::FetchStoreItems(FGFApiCallback Callback)
 {
 	if (!SetupCheck())
 	{
-		return;
+		return FGuid();
 	}
 
 	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
 
-	RequestHandler->FetchStoreItems(GameData.Id, GameData.Token, Callback);
+	return RequestHandler->FetchStoreItems(GameData.Id, GameData.Token, Callback);
 }
 
 #pragma endregion

@@ -5,194 +5,118 @@
 #include "Library/GameFuseLog.h"
 #include "Library/GameFuseUtilities.h"
 
-void UUserAPIHandler::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, const int InGameId, const FString& InToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, const int InGameId, const FString& InToken, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users?email=%s&password=%s&password_confirmation=%s&username=%s&game_id=%d&game_token=%s")
 	                                            , *Email, *Password, *PasswordConfirmation, *Username, InGameId, *InToken);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Sending Static Request - Signing Up"));
-	SendRequest(ApiEndpoint, "POST", Callback);
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::SignIn(const FString& Email, const FString& Password, const int InGameId, const FString& InToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::SignIn(const FString& Email, const FString& Password, const int InGameId, const FString& InToken, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/sessions?email=%s&password=%s&game_id=%d&game_token=%s")
 	                                            , *Email, *Password, InGameId, *InToken);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Sending Static Request - Signing In"));
 
-	SendRequest(ApiEndpoint, "POST", Callback);
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::AddCredits(const int AddCredits, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::AddCredits(const int AddCredits, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_credits?authentication_token=%s&credits=%d")
-	                                            , Id, *AuthenticationToken, AddCredits);
+	                                            , UserData.Id, *UserData.AuthenticationToken, AddCredits);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Adding Credits: %d"), AddCredits);
-	SendRequest(ApiEndpoint, "POST", Callback);
-	//
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::SetCredits(const int SetCredits, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::SetCredits(const int SetCredits, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/set_credits?authentication_token=%s&credits=%d")
-	                                            , Id, *AuthenticationToken, SetCredits);
+	                                            , UserData.Id, *UserData.AuthenticationToken, SetCredits);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Setting Credits: %d"), SetCredits);
-	SendRequest(ApiEndpoint, "POST", Callback);
-
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::AddScore(const int AddScore, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::AddScore(const int AddScore, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_score?authentication_token=%s&score=%d")
-	                                            , Id, *AuthenticationToken, AddScore);
+	                                            , UserData.Id, *UserData.AuthenticationToken, AddScore);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Adding Scores: %d"), AddScore);
-	SendRequest(ApiEndpoint, "POST", Callback);
-
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::SetScore(const int SetScore, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::SetScore(const int SetScore, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/set_score?authentication_token=%s&score=%d")
-	                                            , Id, *AuthenticationToken, SetScore);
+	                                            , UserData.Id, *UserData.AuthenticationToken, SetScore);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Setting Scores: %d"), SetScore);
-	SendRequest(ApiEndpoint, "POST", Callback);
-	//
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::SetAttribute(const FString& SetKey, const FString& SetValue, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::SetAttribute(const FString& SetKey, const FString& SetValue, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_game_user_attribute?authentication_token=%s&key=%s&value=%s")
-	                                            , Id, *AuthenticationToken, *SetKey, *SetValue);
+	                                            , UserData.Id, *UserData.AuthenticationToken, *SetKey, *SetValue);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Setting Attribute: %s : %s"), *SetKey, *SetValue);
-	SendRequest(ApiEndpoint, "POST", Callback);
-
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::SyncLocalAttributes(const TMap<FString, FString>& DirtyAttributes, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::SyncLocalAttributes(const TMap<FString, FString>& DirtyAttributes, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	const FString Json_Dirty_Attributes = GameFuseUtilities::MakeStrRequestBody(AuthenticationToken, "attributes", DirtyAttributes);
+	const FString Json_Dirty_Attributes = GameFuseUtilities::MakeStrRequestBody(UserData.AuthenticationToken, "attributes", DirtyAttributes);
 
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_game_user_attribute")
-	                                            , Id);
+	                                            , UserData.Id);
 
-	UE_LOG(LogGameFuse, Verbose, TEXT("Syncing All Local Dirty Attributes: %s, %s"), *Json_Dirty_Attributes, *AuthenticationToken);
+	UE_LOG(LogGameFuse, Verbose, TEXT("Syncing All Local Dirty Attributes: %s, %s"), *Json_Dirty_Attributes, *UserData.AuthenticationToken);
 
-	SendRequest(ApiEndpoint, "POST", Callback);
-
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	// RequestManager->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-	// RequestManager->SetContentAsString(Json_Dirty_Attributes);
-	// RequestManager->SetHeader(TEXT("authentication_token"), *AuthenticationToken);
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::RemoveAttribute(const FString& SetKey, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::RemoveAttribute(const FString& SetKey, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/remove_game_user_attributes?authentication_token=%s&key=%s")
-	                                            , Id, *AuthenticationToken, *SetKey);
+	                                            , UserData.Id, *UserData.AuthenticationToken, *SetKey);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Removing Attribute: %s"), *SetKey);
 
-	SendRequest(ApiEndpoint, "GET", Callback);
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("GET");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "GET", Callback);
 }
 
-void UUserAPIHandler::PurchaseStoreItem(const int StoreItemId, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::PurchaseStoreItem(const int StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
-	                                            , Id, *AuthenticationToken, StoreItemId);
+	                                            , UserData.Id, *UserData.AuthenticationToken, StoreItemId);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Purchasing Store Item: %d"), StoreItemId);
 
-	SendRequest(ApiEndpoint, "POST", Callback);
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::RemoveStoreItem(const int StoreItemId, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::RemoveStoreItem(const int StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/remove_game_user_store_item?authentication_token=%s&store_item_id=%d")
-	                                            , Id, *AuthenticationToken, StoreItemId);
+	                                            , UserData.Id, *UserData.AuthenticationToken, StoreItemId);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Removing Store Item: %d"), StoreItemId);
 
-	SendRequest(ApiEndpoint, "GET", Callback);
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("GET");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "GET", Callback);
 }
 
-void UUserAPIHandler::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, TMap<FString, FString>* ExtraAttributes, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, TMap<FString, FString>* ExtraAttributes, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	FString ExtraAttributesStr = "";
 
 
-	if (ExtraAttributes != nullptr)
-	{
+	if (ExtraAttributes != nullptr) {
 		UE_LOG(LogTemp, Warning, TEXT("TODO:: FIX EXTRA ATTRIBUTE ENCODING"))
 		//TODO:: find cross platform way to encode Attribs
 		const FString ExtraAttributes_Encoded = ""; //FPlatformHttp::UrlEncode(GameFuseUtilities::ConvertMapToJsonStr(*ExtraAttributes));
@@ -201,82 +125,52 @@ void UUserAPIHandler::AddLeaderboardEntry(const FString& LeaderboardName, const 
 
 	const FString ApiEndpoint = FString::Printf(
 	TEXT("/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s%s")
-	, Id, *AuthenticationToken, OurScore, *LeaderboardName, *ExtraAttributesStr);
+	, UserData.Id, *UserData.AuthenticationToken, OurScore, *LeaderboardName, *ExtraAttributesStr);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Adding Leaderboard : %s : %d"), *LeaderboardName, OurScore);
 
-	SendRequest(ApiEndpoint, "POST", Callback);
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::ClearLeaderboardEntry(const FString& LeaderboardName, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::ClearLeaderboardEntry(const FString& LeaderboardName, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/clear_my_leaderboard_entries?authentication_token=%s&leaderboard_name=%s")
-	                                            , Id, *AuthenticationToken, *LeaderboardName);
+	                                            , UserData.Id, *UserData.AuthenticationToken, *LeaderboardName);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Clearing Leaderboard : %s"), *LeaderboardName);
 
-	SendRequest(ApiEndpoint, "POST", Callback);
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("POST");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-void UUserAPIHandler::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString OnePerUserStr = (bOnePerUser) ? TEXT("true") : TEXT("false");
 	const FString ApiEndpoint = FString::Printf(
 	TEXT("/users/%d/leaderboard_entries?authentication_token=%s&limit=%d&one_per_user=%s")
-	, Id, *AuthenticationToken, Limit, *OnePerUserStr);
+	, UserData.Id, *UserData.AuthenticationToken, Limit, *OnePerUserStr);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Fetching My Leaderboard : %d : %s"), Limit, *OnePerUserStr);
 
-	SendRequest(ApiEndpoint, "GET", Callback);
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("GET");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "GET", Callback);
 }
 
 
-void UUserAPIHandler::FetchAttributes(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::FetchAttributes(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/game_user_attributes?authentication_token=%s")
-	                                            , Id, *AuthenticationToken);
+	                                            , UserData.Id, *UserData.AuthenticationToken);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Fetching Attributes"));
 
-	SendRequest(ApiEndpoint, "GET", Callback);
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("GET");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "GET", Callback);
 }
 
-void UUserAPIHandler::FetchPurchaseStoreItems(bool bChainedFromLogin, const int Id, const FString& AuthenticationToken, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::FetchPurchaseStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/game_user_store_items?authentication_token=%s")
-	                                            , Id, *AuthenticationToken);
+	                                            , UserData.Id, *UserData.AuthenticationToken);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Fetching Purchased Store Items"));
 
-	SendRequest(ApiEndpoint, "GET", Callback);
-	// RequestManager->SetURL(ApiEndpoint);
-	// RequestManager->SetVerb("GET");
-	//
-	// RequestManager->OnProcessRequestComplete().BindLambda(HandleResponseReceived(Callback));
-	//
-	// RequestManager->ProcessRequest();
+	return SendRequest(ApiEndpoint, "GET", Callback);
 }
