@@ -65,6 +65,30 @@ def validate_version(version: str) -> bool:
     except ValueError:
         return False
 
+def get_engine_path(version):
+    # Common installation paths for Epic Games
+    base_paths = [
+        Path("G:/Program Files/Epic Games"),
+        Path("C:/Program Files/Epic Games")
+    ]
+    
+    for base_path in base_paths:
+        engine_path = base_path / f"UE_{version}"
+        if engine_path.exists():
+            return engine_path
+        
+        # Also try without UE_ prefix
+        engine_path = base_path / version
+        if engine_path.exists():
+            return engine_path
+    
+    print("Searched in the following locations:")
+    for base_path in base_paths:
+        print(f"- {base_path / f'UE_{version}'}")
+        print(f"- {base_path / version}")
+    
+    raise FileNotFoundError(f"Could not find Unreal Engine {version} installation. Please ensure it is installed in one of the standard locations.")
+
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description='Build and package an Unreal Engine plugin')
@@ -72,8 +96,6 @@ def parse_args() -> argparse.Namespace:
                        help='Path to the .uplugin file')
     parser.add_argument('--build-dir', required=True, type=Path,
                        help='Directory for build outputs')
-    parser.add_argument('--ue-base-path', required=True, type=Path,
-                       help='Base path to Unreal Engine installations')
     parser.add_argument('--ue-version', required=True,
                        help='Unreal Engine version (e.g., 5.4)')
     parser.add_argument('--plugin-name', required=True,
@@ -89,7 +111,6 @@ def parse_args() -> argparse.Namespace:
     print_info("Build Plugin Parameters:")
     print_path(f"Plugin Path: {args.plugin_path}")
     print_path(f"Build Directory: {args.build_dir}")
-    print_path(f"UE Base Path: {args.ue_base_path}")
     print_path(f"UE Version: {args.ue_version}")
     print_path(f"Plugin Name: {args.plugin_name}")
     print_path(f"Version: {args.version}")
@@ -99,32 +120,38 @@ def parse_args() -> argparse.Namespace:
         print_error(f"Invalid UE version format: {args.ue_version}")
         print_error("UE version must be in format X.Y (e.g., 5.4)")
         sys.exit(1)
-    
+        
     # Validate plugin version format
     if not validate_version(args.version):
         print_error(f"Invalid plugin version format: {args.version}")
         print_error("Version must be in format X.Y.Z (e.g., 2.2.81)")
         sys.exit(1)
-    
-    # Check if plugin path exists and is a file
-    if not args.plugin_path.is_file():
-        print_error(f"Plugin file not found: {args.plugin_path}")
-        sys.exit(1)
-    
-    # Check if UE base path exists
-    if not args.ue_base_path.is_dir():
-        print_error(f"UE base path not found: {args.ue_base_path}")
-        sys.exit(1)
-    
-    # Create build directory if it doesn't exist
-    try:
-        args.build_dir.mkdir(parents=True, exist_ok=True)
-    except Exception as e:
-        print_error(f"Failed to create build directory: {args.build_dir}")
-        print_error(f"Error: {str(e)}")
-        sys.exit(1)
-    
+        
     return args
+
+def setup_paths(args: argparse.Namespace) -> BuildPaths:
+    """Initialize and validate all required paths"""
+    plugin_path = args.plugin_path.resolve()
+    build_dir = args.build_dir.resolve()
+    
+    try:
+        ue_path = get_engine_path(args.ue_version)
+    except FileNotFoundError as e:
+        print_error(str(e))
+        sys.exit(1)
+        
+    runuat = ue_path / "Engine/Build/BatchFiles/RunUAT.bat"
+    release_zip = build_dir / f"{args.plugin_name}-{args.version}-UE{args.ue_version}.zip"
+    prebuilt_zip = build_dir / f"{args.plugin_name}-{args.version}-UE{args.ue_version}-prebuilt.zip"
+    
+    return BuildPaths(
+        plugin=plugin_path,
+        build_dir=build_dir,
+        ue_path=ue_path,
+        runuat=runuat,
+        release_zip=release_zip,
+        prebuilt_zip=prebuilt_zip
+    )
 
 def update_uplugin_version(plugin_path: Path, version: str, ue_version: str):
     """Update the version information in the .uplugin file"""
@@ -163,28 +190,6 @@ def update_uplugin_version(plugin_path: Path, version: str, ue_version: str):
     except Exception as e:
         print_error(f"Error updating .uplugin file: {e}")
         sys.exit(1)
-
-def setup_paths(args: argparse.Namespace) -> BuildPaths:
-    """Initialize and validate all required paths"""
-    ue_path = args.ue_base_path / f"UE_{args.ue_version}"
-    runuat = ue_path / "Engine" / "Build" / "BatchFiles" / "RunUAT.bat"
-    package_dir = Path(os.getcwd()) / "Packages"
-    version_string = f"{args.ue_version}_v{args.version}"
-    build_dir = args.build_dir / version_string
-    release_zip = package_dir / f"{args.plugin_name}_{version_string}.zip"
-    prebuilt_zip = package_dir / f"{args.plugin_name}_{version_string}_PrebuiltBinaries.zip"
-    
-    # Create packages directory if it doesn't exist
-    package_dir.mkdir(exist_ok=True)
-    
-    return BuildPaths(
-        plugin=args.plugin_path,
-        build_dir=build_dir,
-        ue_path=ue_path,
-        runuat=runuat,
-        release_zip=release_zip,
-        prebuilt_zip=prebuilt_zip
-    )
 
 def validate_paths(paths: BuildPaths):
     """Check if required paths exist"""
