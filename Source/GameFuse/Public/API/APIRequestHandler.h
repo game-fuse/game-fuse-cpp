@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Delegates/Delegate.h"
+#include "Dom/JsonObject.h"
+
 #include "Library/GameFuseStructLibrary.h"
 
 #include "ApiRequestHandler.generated.h"
@@ -54,7 +56,7 @@ public:
 protected:
 
 	// Sends an HTTP Request, optionally with a JSON object as the body, returns unique Request ID
-	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject>& Body = nullptr);
+	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject, ESPMode::ThreadSafe>& Body = nullptr);
 
 private:
 
