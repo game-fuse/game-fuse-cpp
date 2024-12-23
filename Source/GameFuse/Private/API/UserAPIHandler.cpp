@@ -7,21 +7,29 @@
 
 FGuid UUserAPIHandler::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, const int InGameId, const FString& InToken, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/users?email=%s&password=%s&password_confirmation=%s&username=%s&game_id=%d&game_token=%s")
-	                                            , *Email, *Password, *PasswordConfirmation, *Username, InGameId, *InToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users?game_id=%d&game_token=%s"), InGameId, *InToken);
+
+	const TSharedPtr<FJsonObject> Body = MakeShared<FJsonObject>();
+	Body->SetStringField("email", Email);
+	Body->SetStringField("username", Username);
+	Body->SetStringField("password", Password);
+	Body->SetStringField("password_confirmation", PasswordConfirmation);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Sending Static Request - Signing Up"));
-	return SendRequest(ApiEndpoint, "POST", Callback);
+	return SendRequest(ApiEndpoint, "POST", Callback, Body);
 }
 
 FGuid UUserAPIHandler::SignIn(const FString& Email, const FString& Password, const int InGameId, const FString& InToken, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/sessions?email=%s&password=%s&game_id=%d&game_token=%s")
-	                                            , *Email, *Password, InGameId, *InToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/sessions?game_id=%d&game_token=%s"), InGameId, *InToken);
+
+	const TSharedPtr<FJsonObject> Body = MakeShared<FJsonObject>();
+	Body->SetStringField("email", Email);
+	Body->SetStringField("password", Password);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Sending Static Request - Signing In"));
 
-	return SendRequest(ApiEndpoint, "POST", Callback);
+	return SendRequest(ApiEndpoint, "POST", Callback, Body);
 }
 
 FGuid UUserAPIHandler::AddCredits(const int AddCredits, const FGFUserData& UserData, const FGFApiCallback& Callback)
@@ -116,7 +124,8 @@ FGuid UUserAPIHandler::AddLeaderboardEntry(const FString& LeaderboardName, const
 	FString ExtraAttributesStr = "";
 
 
-	if (ExtraAttributes != nullptr) {
+	if (ExtraAttributes != nullptr)
+	{
 		UE_LOG(LogTemp, Warning, TEXT("TODO:: FIX EXTRA ATTRIBUTE ENCODING"))
 		//TODO:: find cross platform way to encode Attribs
 		const FString ExtraAttributes_Encoded = ""; //FPlatformHttp::UrlEncode(GameFuseUtilities::ConvertMapToJsonStr(*ExtraAttributes));
