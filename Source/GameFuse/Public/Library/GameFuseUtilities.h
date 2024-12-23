@@ -22,7 +22,7 @@ class GAMEFUSE_API GameFuseUtilities
 {
 public:
 
-	static TMap<FString, FString> ConvertJsonToMap(const FString& JsonString);
+	static void ConvertJsonToMap(TMap<FString, FString>& InMap, const FString& JsonString);
 
 	static bool ConvertJsonToGameData(FGFGameData& InGameData, const TSharedPtr<FJsonObject>& JsonObject);
 
