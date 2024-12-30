@@ -95,7 +95,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--plugin-path', required=True, type=Path,
                        help='Path to the .uplugin file')
     parser.add_argument('--build-dir', required=True, type=Path,
-                       help='Directory for build outputs')
+                       help='Directory for intermediate build outputs')
+    parser.add_argument('--output-dir', required=True, type=Path,
+                       help='Directory where final .zip files will be copied')
     parser.add_argument('--ue-version', required=True,
                        help='Unreal Engine version (e.g., 5.4)')
     parser.add_argument('--plugin-name', required=True,
@@ -111,6 +113,7 @@ def parse_args() -> argparse.Namespace:
     print_info("Build Plugin Parameters:")
     print_path(f"Plugin Path: {args.plugin_path}")
     print_path(f"Build Directory: {args.build_dir}")
+    print_path(f"Output Directory: {args.output_dir}")
     print_path(f"UE Version: {args.ue_version}")
     print_path(f"Plugin Name: {args.plugin_name}")
     print_path(f"Version: {args.version}")
@@ -126,13 +129,24 @@ def parse_args() -> argparse.Namespace:
         print_error(f"Invalid plugin version format: {args.version}")
         print_error("Version must be in format X.Y.Z (e.g., 2.2.81)")
         sys.exit(1)
+
+    # Create output directory if it doesn't exist
+    try:
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        print_error(f"Failed to create output directory: {args.output_dir}")
+        print_error(f"Error: {str(e)}")
+        sys.exit(1)
         
     return args
 
 def setup_paths(args: argparse.Namespace) -> BuildPaths:
     """Initialize and validate all required paths"""
     plugin_path = args.plugin_path.resolve()
-    build_dir = args.build_dir.resolve()
+    
+    # Include UE version in build directory name
+    versioned_build_dir = args.build_dir / f"UE_{args.ue_version}"
+    build_dir = versioned_build_dir.resolve()
     
     try:
         ue_path = get_engine_path(args.ue_version)
@@ -141,8 +155,18 @@ def setup_paths(args: argparse.Namespace) -> BuildPaths:
         sys.exit(1)
         
     runuat = ue_path / "Engine/Build/BatchFiles/RunUAT.bat"
-    release_zip = build_dir / f"{args.plugin_name}-{args.version}-UE{args.ue_version}.zip"
-    prebuilt_zip = build_dir / f"{args.plugin_name}-{args.version}-UE{args.ue_version}-prebuilt.zip"
+    
+    # Create release zip files in the output directory with new naming convention
+    release_zip = args.output_dir / f"GameFuse_{args.ue_version}_v{args.version}.zip"
+    prebuilt_zip = args.output_dir / f"GameFuse_{args.ue_version}_v{args.version}_PrebuiltBinaries.zip"
+    
+    # Create build directory if it doesn't exist
+    try:
+        build_dir.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        print_error(f"Failed to create build directory: {build_dir}")
+        print_error(f"Error: {str(e)}")
+        sys.exit(1)
     
     return BuildPaths(
         plugin=plugin_path,

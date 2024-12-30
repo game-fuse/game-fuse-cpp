@@ -8,6 +8,7 @@
 
 #include "Library/GameFuseUtilities.h"
 #include "Library/GameFuseLog.h"
+#include "Interfaces/IHttpResponse.h"
 
 
 
