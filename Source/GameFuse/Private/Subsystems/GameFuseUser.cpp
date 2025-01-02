@@ -309,7 +309,7 @@ void UGameFuseUser::LogOut(const FString& SaveSlotName)
 		UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
 		UE_LOG(LogGameFuse, Log, TEXT("User Logged Out Successfully"), UserData.Id);
 	} else {
-		UE_LOG(LogGameFuse, Warning, TEXT("Save slot %s does not exist"), *SaveSlotName);
+		UE_LOG(LogGameFuse, Log, TEXT("Save slot %s does not exist"), *SaveSlotName);
 	}
 
 }

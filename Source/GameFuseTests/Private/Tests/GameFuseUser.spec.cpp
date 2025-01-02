@@ -37,11 +37,11 @@ void GameFuseUserSpec::Define()
 		BeforeEach([this]() {
 			// Setup GameFuse before each test
 			if (GameFuseManager->IsSetUp()) {
-				UE_LOG(LogGameFuse, Warning, TEXT("Already have a game setup"));
+				// UE_LOG(LogGameFuse, Warning, TEXT("Already have a game setup"));
 			}
 
 			// Clear any saved user data
-			if (GameFuseUser) {
+			if (GameFuseUser->IsSignedIn()) {
 				GameFuseUser->LogOut();
 			}
 
@@ -298,7 +298,7 @@ void GameFuseUserSpec::Define()
 			FGuid AddCreditsRequestId;
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, &AddCreditsRequestId]() -> bool {
 				if (!GameFuseUser->IsSignedIn()) {
-					return false;
+				return false;
 				}
 
 				FGFApiCallback AddCreditsCallback;
@@ -306,20 +306,20 @@ void GameFuseUserSpec::Define()
 					UE_LOG(LogGameFuse, Log, TEXT("Add credits Response: %s"), *Response.ResponseStr);
 					TestTrue("Add credits request succeeded", Response.bSuccess);
 					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Add credits failed: %s"), *Response.ResponseStr));
+					AddError(FString::Printf(TEXT("Add credits failed: %s"), *Response.ResponseStr));
 					}
-				});
+					});
 
 				AddCreditsRequestId = GameFuseUser->AddCredits(200, AddCreditsCallback);
 				return true;
-			}));
+				}));
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), AddCreditsRequestId));
 
 			// Purchase store item using item
 			FGuid PurchaseItemRequestId;
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestStoreItem, &PurchaseItemRequestId]() -> bool {
 				if (!GameFuseUser->IsSignedIn()) {
-					return false;
+				return false;
 				}
 
 				FGFApiCallback PurchaseCallback;
@@ -327,13 +327,13 @@ void GameFuseUserSpec::Define()
 					UE_LOG(LogGameFuse, Log, TEXT("Purchase store item Response: %s"), *Response.ResponseStr);
 					TestTrue("Purchase store item request succeeded", Response.bSuccess);
 					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Purchase store item failed: %s"), *Response.ResponseStr));
+					AddError(FString::Printf(TEXT("Purchase store item failed: %s"), *Response.ResponseStr));
 					}
-				});
+					});
 
 				PurchaseItemRequestId = GameFuseUser->PurchaseStoreItem(*TestStoreItem, PurchaseCallback);
 				return true;
-			}));
+				}));
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), PurchaseItemRequestId));
 
 			FGuid CleanupRequestId;
@@ -391,7 +391,7 @@ void GameFuseUserSpec::Define()
 			FGuid AddCreditsRequestId;
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, &AddCreditsRequestId]() -> bool {
 				if (!GameFuseUser->IsSignedIn()) {
-					return false;
+				return false;
 				}
 
 				FGFApiCallback AddCreditsCallback;
@@ -399,20 +399,20 @@ void GameFuseUserSpec::Define()
 					UE_LOG(LogGameFuse, Log, TEXT("Add credits Response: %s"), *Response.ResponseStr);
 					TestTrue("Add credits request succeeded", Response.bSuccess);
 					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Add credits failed: %s"), *Response.ResponseStr));
+					AddError(FString::Printf(TEXT("Add credits failed: %s"), *Response.ResponseStr));
 					}
-				});
+					});
 
 				AddCreditsRequestId = GameFuseUser->AddCredits(200, AddCreditsCallback);
 				return true;
-			}));
+				}));
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), AddCreditsRequestId));
 
 			// Purchase store item using item ID
 			FGuid PurchaseItemRequestId;
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestStoreItem, &PurchaseItemRequestId]() -> bool {
 				if (!GameFuseUser->IsSignedIn()) {
-					return false;
+				return false;
 				}
 
 				FGFApiCallback PurchaseCallback;
@@ -420,20 +420,20 @@ void GameFuseUserSpec::Define()
 					UE_LOG(LogGameFuse, Log, TEXT("Purchase store item Response: %s"), *Response.ResponseStr);
 					TestTrue("Purchase store item request succeeded", Response.bSuccess);
 					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Purchase store item failed: %s"), *Response.ResponseStr));
+					AddError(FString::Printf(TEXT("Purchase store item failed: %s"), *Response.ResponseStr));
 					}
-				});
+					});
 
 				PurchaseItemRequestId = GameFuseUser->PurchaseStoreItemWithId(TestStoreItem->Id, PurchaseCallback);
 				return true;
-			}));
+				}));
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), PurchaseItemRequestId));
 
 			// Remove store item using item ID
 			FGuid RemoveItemRequestId;
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, TestStoreItem, &RemoveItemRequestId]() -> bool {
 				if (!GameFuseUser->IsSignedIn()) {
-					return false;
+				return false;
 				}
 
 				FGFApiCallback RemoveCallback;
@@ -441,13 +441,13 @@ void GameFuseUserSpec::Define()
 					UE_LOG(LogGameFuse, Log, TEXT("Remove store item Response: %s"), *Response.ResponseStr);
 					TestTrue("Remove store item request succeeded", Response.bSuccess);
 					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Remove store item failed: %s"), *Response.ResponseStr));
+					AddError(FString::Printf(TEXT("Remove store item failed: %s"), *Response.ResponseStr));
 					}
-				});
+					});
 
 				RemoveItemRequestId = GameFuseUser->RemoveStoreItemWithId(TestStoreItem->Id, RemoveCallback);
 				return true;
-			}));
+				}));
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), RemoveItemRequestId));
 
 			FGuid CleanupRequestId;
