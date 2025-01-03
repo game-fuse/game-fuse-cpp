@@ -369,7 +369,14 @@ void GameFuseLeaderboard::Define()
         });
 
         AfterEach([this]() {
-            // Cleanup after each test
+            // Add a delay to ensure all previous latent commands have completed
+            ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() {
+                // Small delay to ensure previous commands are processed
+                FPlatformProcess::Sleep(0.1f);
+                return true;
+            }));
+
+            // Once delay is done, proceed with cleanup
             if (GameFuseUser) {
                 GameFuseUser->LogOut();
             }
