@@ -8,6 +8,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Kismet/BlueprintFunctionLibrary.h" // Include this for FDateTime
 
 #include "GameFuseStructLibrary.generated.h"
 
@@ -175,4 +176,67 @@ struct FGFAPIResponse
 		ResponseStr = _Response;
 		RequestId = _RequestId;
 	}
+};
+
+// Game Round Rankings User Data
+USTRUCT(BlueprintType, Category = "GameFuse|GameRound")
+struct FGFGameRoundRanking
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	int32 Place = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	int32 Score = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	FDateTime StartTime;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	FDateTime EndTime;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	FGFUserData User;
+};
+
+// Main Game Round Structure
+USTRUCT(BlueprintType, Category = "GameFuse|GameRound")
+struct FGFGameRound
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	int32 Id = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	int32 GameUserId = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	FDateTime StartTime;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	FDateTime EndTime;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	int32 Score = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	int32 Place = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	FString GameType = "";
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	int32 MultiplayerGameRoundId = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	TMap<FString, FString> Metadata;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	TArray<FGFGameRoundRanking> Rankings;
+
+	// Constructor for easy initialization
+	FGFGameRound()
+	{}
 };

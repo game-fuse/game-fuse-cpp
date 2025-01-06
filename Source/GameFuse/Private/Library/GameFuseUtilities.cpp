@@ -237,3 +237,53 @@ void GameFuseUtilities::LogHeaders(const TMap<FString, FString>& Headers)
 		UE_LOG(LogGameFuse, Log, TEXT("%s : %s"), *Pair.Key, *Pair.Value);
 	}
 }
+
+FString GameFuseUtilities::DateTimeToString(const FDateTime& DateTime)
+{
+	return DateTime.ToIso8601();
+}
+
+FDateTime GameFuseUtilities::StringToDateTime(const FString& DateTimeStr)
+{
+	FDateTime Result;
+	FDateTime::ParseIso8601(*DateTimeStr, Result);
+	return Result;
+}
+
+// bool GameFuseUtilities::ConvertJsonToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>& JsonRankings,
+//     TArray<FGFGameRoundRanking>& OutRankings)
+// {
+// 	for (const auto& JsonRanking : JsonRankings)
+// 	{
+// 		const TSharedPtr<FJsonObject>* RankingObj;
+// 		if (JsonRanking->TryGetObject(RankingObj))
+// 		{
+// 			FGFGameRoundRanking Ranking;
+//
+// 			(*RankingObj)->TryGetNumberField("place", Ranking.Place);
+// 			(*RankingObj)->TryGetNumberField("score", Ranking.Score);
+//
+// 			FString StartTimeStr, EndTimeStr;
+// 			if ((*RankingObj)->TryGetStringField("start_time", StartTimeStr))
+// 			{
+// 				Ranking.StartTime = StringToDateTime(StartTimeStr);
+// 			}
+// 			if ((*RankingObj)->TryGetStringField("end_time", EndTimeStr))
+// 			{
+// 				Ranking.EndTime = StringToDateTime(EndTimeStr);
+// 			}
+//
+// 			// Parse user data
+// 			const TSharedPtr<FJsonObject>* UserObj;
+// 			if ((*RankingObj)->TryGetObjectField("user", UserObj))
+// 			{
+// 				(*UserObj)->TryGetNumberField("id", Ranking.User.Id);
+// 				(*UserObj)->TryGetStringField("username", Ranking.User.Username);
+// 				(*UserObj)->TryGetBoolField("signed_in", Ranking.User.bSignedIn);
+// 			}
+//
+// 			OutRankings.Add(Ranking);
+// 		}
+// 	}
+// 	return true;
+// }

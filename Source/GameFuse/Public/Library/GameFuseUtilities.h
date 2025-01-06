@@ -32,6 +32,8 @@ public:
 
 	static bool ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
 
+	// static bool ConvertJsonToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>& JsonRankings, TArray<FGFGameRoundRanking>& OutRankings);
+
 	static FString ConvertMapToJsonStr(const TMap<FString, FString>& OurMap);
 
 	static FString MakeStrRequestBody(const FString& AuthenticationToken, const FString& MapBody, const TMap<FString, FString>& OurMap);
@@ -43,4 +45,10 @@ public:
 	static void LogRequest(FHttpRequestPtr HttpRequest);
 	static void LogResponse(FHttpResponsePtr HttpResponse);
 	static void LogHeaders(const TMap<FString, FString>& Headers);
+
+	/** Convert FDateTime to ISO8601 string format */
+	static FString DateTimeToString(const FDateTime& DateTime);
+
+	/** Convert ISO8601 string to FDateTime */
+	static FDateTime StringToDateTime(const FString& DateTimeStr);
 };
