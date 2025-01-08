@@ -168,10 +168,11 @@ bool FSetupGame::Update()
     {
         GameFuseManager->GetRequestHandler() = APIHandler;
         GameFuseManager->SetUpGame(GameData->Id, GameData->Token, FGFApiCallback());
+
     }
 
     bRequestSent = false; // Reset for next run
-    return true;
+    return GameFuseManager->IsSetUp();
 }
 
 bool FSetupUser::Update()

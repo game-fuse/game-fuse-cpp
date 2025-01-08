@@ -15,6 +15,24 @@ UAPIRequestHandler::UAPIRequestHandler()
 }
 
 
+bool UAPIRequestHandler::VerifyUserData(const FGFUserData& UserData)
+{
+	if (UserData.Id == 0) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid user ID: %d"), UserData.Id);
+		return false;
+	}
+	return true;
+}
+
+bool UAPIRequestHandler::VerifyGameData(const FGFGameData& GameData)
+{
+	if (GameData.Id == 0) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid game ID: %d"), GameData.Id);
+		return false;
+	}
+	return true;
+}
+
 FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject>& Body)
 {
 

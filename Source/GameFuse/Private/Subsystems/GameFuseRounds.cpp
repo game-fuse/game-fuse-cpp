@@ -36,7 +36,9 @@ void UGameFuseRounds::BP_CreateGameRound(const FGFGameRound& GameRound, const bo
 FGuid UGameFuseRounds::CreateGameRound(const FGFGameRound& GameRound, const bool bMultiplayer, FGFApiCallback Callback)
 {
 	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
+
 		return RequestHandler->CreateGameRound(User->GetUserData(), GameRound, bMultiplayer, Callback);
+
 	}
 	return FGuid();
 }

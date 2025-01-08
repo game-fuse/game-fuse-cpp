@@ -53,6 +53,10 @@ public:
 		return ActiveRequests.Num();
 	}
 
+
+	static bool VerifyUserData(const FGFUserData& UserData);
+	static bool VerifyGameData(const FGFGameData& GameData);
+
 protected:
 
 	// Sends an HTTP Request, optionally with a JSON object as the body, returns unique Request ID
