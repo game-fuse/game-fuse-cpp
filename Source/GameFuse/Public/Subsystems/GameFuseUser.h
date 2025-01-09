@@ -80,7 +80,10 @@ public:
 	 * CPP only usage
 	 * @return A reference to the RequestHandler
 	 */
-	TObjectPtr<UAPIRequestHandler> GetRequestHandler() { return RequestHandler; }
+	TObjectPtr<UAPIRequestHandler> GetRequestHandler()
+	{
+		return RequestHandler;
+	}
 
 
 
@@ -91,12 +94,13 @@ public:
 	void BP_SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FBP_GFApiCallback Callback);
 
 	FGuid SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FGFApiCallback Callback);
+	FGuid SignUp(const FGFGameData& GameData, const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FGFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName="Sign In", Category = "GameFuse|User")
 	void BP_SignIn(const FString& Email, const FString& Password, FBP_GFApiCallback Callback);
 
 	FGuid SignIn(const FString& Email, const FString& Password, FGFApiCallback Callback);
-
+	FGuid SignIn(const FGFGameData& GameData, const FString& Email, const FString& Password, FGFApiCallback Callback);
 	/**
 	 * Logs out the current user and optionally clears saved data.
 	 *
@@ -206,7 +210,6 @@ public:
 	FGuid FetchPurchasedStoreItems(FGFApiCallback Callback);
 
 	void InternalResponseManager(FGFAPIResponse ResponseData);
-
 
 private:
 

@@ -149,6 +149,7 @@ void UGameFuseUser::BP_SignIn(const FString& Email, const FString& Password, FBP
 	SignIn(Email, Password, InternalCallback);
 }
 
+
 void UGameFuseUser::BP_AddCredits(const int Credits, FBP_GFApiCallback Callback)
 {
 	FGFApiCallback InternalCallback;
@@ -285,11 +286,17 @@ void UGameFuseUser::BP_SyncLocalAttributes(FBP_GFApiCallback Callback)
 
 
 
-FGuid UGameFuseUser::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& OurUsername, FGFApiCallback Callback)
+FGuid UGameFuseUser::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 	const FGFGameData& GameData = GameFuseManager->GetGameData();
-	return RequestHandler->SignUp(Email, Password, PasswordConfirmation, OurUsername, GameData.Id, GameData.Token, Callback);
+	return RequestHandler->SignUp(Email, Password, PasswordConfirmation, Username, GameData.Id, GameData.Token, Callback);
+}
+
+FGuid UGameFuseUser::SignUp(const FGFGameData& GameData, const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FGFApiCallback Callback)
+{
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
+	return RequestHandler->SignUp(Email, Password, PasswordConfirmation, Username, GameData.Id, GameData.Token, Callback);
 }
 
 
@@ -299,6 +306,13 @@ FGuid UGameFuseUser::SignIn(const FString& Email, const FString& Password, FGFAp
 	const FGFGameData& GameData = GameFuseManager->GetGameData();
 	return RequestHandler->SignIn(Email, Password, GameData.Id, GameData.Token, Callback);
 }
+
+FGuid UGameFuseUser::SignIn(const FGFGameData& GameData, const FString& Email, const FString& Password, FGFApiCallback Callback)
+{
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
+	return RequestHandler->SignIn(Email, Password, GameData.Id, GameData.Token, Callback);
+}
+
 
 void UGameFuseUser::LogOut(const FString& SaveSlotName)
 {

@@ -77,8 +77,7 @@ const TMap<FString, FGFLeaderboard>& UGameFuseManager::GetLeaderboards()
 
 const TArray<FGFLeaderboardEntry>& UGameFuseManager::GetLeaderboardEntries(const FString& LeaderboardName)
 {
-	if (!Leaderboards.Contains(LeaderboardName))
-	{
+	if (!Leaderboards.Contains(LeaderboardName)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Leaderboard %s has not been fetched"), *LeaderboardName);
 		return EmptyEntries;
 	}
@@ -139,34 +138,31 @@ void UGameFuseManager::BP_FetchLeaderboardEntries(const int Limit = 20, bool bOn
 
 FGuid UGameFuseManager::SetUpGame(int GameId, const FString& Token, FGFApiCallback Callback)
 {
-    if (GameId <= 0)
-    {
-        UE_LOG(LogGameFuse, Error, TEXT("Invalid Game ID: %d. Game ID must be greater than 0"), GameId);
-        FGFAPIResponse ErrorResponse;
-        ErrorResponse.bSuccess = false;
-        ErrorResponse.ResponseStr = TEXT("Invalid Game ID. Game ID must be greater than 0");
-        Callback.Broadcast(ErrorResponse);
-        return FGuid();
-    }
+	if (GameId <= 0) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid Game ID: %d. Game ID must be greater than 0"), GameId);
+		FGFAPIResponse ErrorResponse;
+		ErrorResponse.bSuccess = false;
+		ErrorResponse.ResponseStr = TEXT("Invalid Game ID. Game ID must be greater than 0");
+		Callback.Broadcast(ErrorResponse);
+		return FGuid();
+	}
 
-    if (Token.IsEmpty())
-    {
-        UE_LOG(LogGameFuse, Error, TEXT("Invalid Token: Token cannot be empty"));
-        FGFAPIResponse ErrorResponse;
-        ErrorResponse.bSuccess = false;
-        ErrorResponse.ResponseStr = TEXT("Invalid Token. Token cannot be empty");
-        Callback.Broadcast(ErrorResponse);
-        return FGuid();
-    }
+	if (Token.IsEmpty()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid Token: Token cannot be empty"));
+		FGFAPIResponse ErrorResponse;
+		ErrorResponse.bSuccess = false;
+		ErrorResponse.ResponseStr = TEXT("Invalid Token. Token cannot be empty");
+		Callback.Broadcast(ErrorResponse);
+		return FGuid();
+	}
 
-    Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
-    return RequestHandler->SetUpGame(GameId, Token, Callback);
+	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
+	return RequestHandler->SetUpGame(GameId, Token, Callback);
 }
 
 FGuid UGameFuseManager::SendPasswordResetEmail(const FString& Email, FGFApiCallback Callback)
 {
-	if (!SetupCheck())
-	{
+	if (!SetupCheck()) {
 		return FGuid();
 	}
 
@@ -178,8 +174,7 @@ FGuid UGameFuseManager::SendPasswordResetEmail(const FString& Email, FGFApiCallb
 
 FGuid UGameFuseManager::FetchGameVariables(FGFApiCallback Callback)
 {
-	if (!SetupCheck())
-	{
+	if (!SetupCheck()) {
 		return FGuid();
 	}
 
@@ -190,8 +185,7 @@ FGuid UGameFuseManager::FetchGameVariables(FGFApiCallback Callback)
 
 FGuid UGameFuseManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, FGFApiCallback Callback)
 {
-	if (!SetupCheck())
-	{
+	if (!SetupCheck()) {
 		return FGuid();
 	}
 	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetUserData();
@@ -203,8 +197,7 @@ FGuid UGameFuseManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUse
 
 FGuid UGameFuseManager::FetchStoreItems(FGFApiCallback Callback)
 {
-	if (!SetupCheck())
-	{
+	if (!SetupCheck()) {
 		return FGuid();
 	}
 
@@ -229,12 +222,16 @@ bool UGameFuseManager::IsSetUp()
  */
 bool UGameFuseManager::SetupCheck()
 {
-	if (!IsSetUp())
-	{
+	if (!IsSetUp()) {
 		UE_LOG(LogGameFuse, Error, TEXT("GameFuse has not been set up. Please call BPSetUpGame() before using GameFuse."));
 		return false;
 	}
 	return true;
+}
+
+void UGameFuseManager::ClearGameData()
+{
+	GameData = FGFGameData();
 }
 
 #pragma endregion
@@ -243,22 +240,19 @@ bool UGameFuseManager::SetupCheck()
 
 void UGameFuseManager::InternalResponseManager(FGFAPIResponse ResponseData)
 {
-	if (!ResponseData.bSuccess)
-	{
+	if (!ResponseData.bSuccess) {
 		UE_LOG(LogGameFuse, Warning, TEXT("THERE SHOULD BE ANOTHER ERROR BEFORE THIS. Core API Request Failed. ID : %s"), *ResponseData.RequestId);
 		return;
 	}
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseData.ResponseStr);
 	TSharedPtr<FJsonObject> JsonObject;
 
-	if (!FJsonSerializer::Deserialize(Reader, JsonObject))
-	{
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse JSON Response"));
 		return;
 	}
 
-	switch (GameFuseUtilities::DetermineCoreAPIResponseType(JsonObject))
-	{
+	switch (GameFuseUtilities::DetermineCoreAPIResponseType(JsonObject)) {
 		case EGFCoreAPIResponseType::SetUpGame:
 			SetUpGameInternal(JsonObject);
 			SetVariablesInternal(ResponseData.ResponseStr);
@@ -280,8 +274,7 @@ void UGameFuseManager::InternalResponseManager(FGFAPIResponse ResponseData)
 void UGameFuseManager::SetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
 	const bool bSuccess = FJsonObjectConverter::JsonObjectToUStruct(JsonObject.ToSharedRef(), &GameData);
-	if (!bSuccess)
-	{
+	if (!bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse Game Data"));
 	}
 	UE_LOG(LogGameFuse, Log, TEXT("SetUp Game Completed : %d : %s"), GameData.Id, *GameData.Token);
@@ -293,27 +286,21 @@ void UGameFuseManager::SetVariablesInternal(const FString& JsonStr)
 
 	const TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
 
-	if (TSharedPtr<FJsonObject> JsonObject; FJsonSerializer::Deserialize(JsonReader, JsonObject))
-	{
-		if (const TArray<TSharedPtr<FJsonValue>>* GameVariablesArray = nullptr; JsonObject->TryGetArrayField(TEXT("game_variables"), GameVariablesArray))
-		{
-			for (const TSharedPtr<FJsonValue>& JsonValue : *GameVariablesArray)
-			{
+	if (TSharedPtr<FJsonObject> JsonObject; FJsonSerializer::Deserialize(JsonReader, JsonObject)) {
+		if (const TArray<TSharedPtr<FJsonValue>>* GameVariablesArray = nullptr; JsonObject->TryGetArrayField(TEXT("game_variables"), GameVariablesArray)) {
+			for (const TSharedPtr<FJsonValue>& JsonValue : *GameVariablesArray) {
 				const TSharedPtr<FJsonObject> VariableObject = JsonValue->AsObject();
 
 				FString Key = "";
 				FString Value = "";
 
-				if (VariableObject->TryGetStringField(TEXT("key"), Key) && VariableObject->TryGetStringField(TEXT("value"), Value))
-				{
+				if (VariableObject->TryGetStringField(TEXT("key"), Key) && VariableObject->TryGetStringField(TEXT("value"), Value)) {
 					GameVariables.Add(Key, Value);
 				}
 			}
 			UE_LOG(LogGameFuse, Log, TEXT("Fetched Variables amount of : %d"), GameVariables.Num());
 		}
-	}
-	else
-	{
+	} else {
 		// Handle JSON parsing error
 		UE_LOG(LogGameFuse, Error, TEXT("Fetching Game Variables Failed to parse JSON"));
 	}
@@ -322,15 +309,13 @@ void UGameFuseManager::SetVariablesInternal(const FString& JsonStr)
 void UGameFuseManager::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
 
-	if (!JsonObject->HasField(TEXT("leaderboard_entries")))
-	{
+	if (!JsonObject->HasField(TEXT("leaderboard_entries"))) {
 		UE_LOG(LogGameFuse, Error, TEXT("Fetching Leaderboard Failed to parse JSON"));
 		return;
 	}
 
 	const TArray<TSharedPtr<FJsonValue>>& AttributeArray = JsonObject->GetArrayField(TEXT("leaderboard_entries"));
-	if (AttributeArray.Num() == 0)
-	{
+	if (AttributeArray.Num() == 0) {
 		UE_LOG(LogGameFuse, Log, TEXT("Leaderboard Entries Empty"));
 		return;
 	}
@@ -340,12 +325,9 @@ void UGameFuseManager::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& Js
 
 	// Entries.Reserve(AttributeArray.Num());
 
-	if (!Leaderboards.Contains(LeaderboardKey))
-	{
+	if (!Leaderboards.Contains(LeaderboardKey)) {
 		Leaderboards.Add(LeaderboardKey, FGFLeaderboard(LeaderboardKey));
-	}
-	else
-	{
+	} else {
 		Leaderboards[LeaderboardKey].Entries.Empty();
 	}
 
@@ -353,12 +335,10 @@ void UGameFuseManager::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& Js
 	CurrLeaderboardEntries.Reserve(AttributeArray.Num());
 
 
-	for (const TSharedPtr<FJsonValue>& AttributeValue : AttributeArray)
-	{
+	for (const TSharedPtr<FJsonValue>& AttributeValue : AttributeArray) {
 		const size_t newIndex = CurrLeaderboardEntries.AddDefaulted();
 		const bool bSuccess = GameFuseUtilities::ConvertJsonToLeaderboardItem(CurrLeaderboardEntries[newIndex], AttributeValue);
-		if (!bSuccess)
-		{
+		if (!bSuccess) {
 			CurrLeaderboardEntries.RemoveAt(newIndex);
 		}
 	}
@@ -372,24 +352,19 @@ void UGameFuseManager::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& Json
 {
 	StoreItems.Empty();
 
-	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("store_items"), AttributeArray))
-	{
+	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("store_items"), AttributeArray)) {
 		StoreItems.Reserve(AttributeArray->Num());
-		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray)
-		{
+		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray) {
 			//create store items in place
 			const size_t newIndex = StoreItems.AddDefaulted();
 
 			bool bSuccess = GameFuseUtilities::ConvertJsonToStoreItem(StoreItems[newIndex], AttributeValue);
-			if (!bSuccess)
-			{
+			if (!bSuccess) {
 				StoreItems.RemoveAt(newIndex);
 			}
 		}
 		UE_LOG(LogGameFuse, Log, TEXT("Fetched Store Items amount of : %d"), StoreItems.Num());
-	}
-	else
-	{
+	} else {
 		UE_LOG(LogGameFuse, Error, TEXT("Fetching Store Items Failed to parse JSON"));
 	}
 }

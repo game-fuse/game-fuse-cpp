@@ -63,7 +63,10 @@ public:
 	 * CPP only usage
 	 * @return A reference to the RequestHandler
 	 */
-	TObjectPtr<UAPIRequestHandler> GetRequestHandler() { return RequestHandler; }
+	TObjectPtr<UAPIRequestHandler> GetRequestHandler()
+	{
+		return RequestHandler;
+	}
 
 	/** Returns a TMap of all leaderboards that have been fetched from GameFuse */
 	UFUNCTION(BlueprintPure, Category = "GameFuse")
@@ -81,7 +84,8 @@ public:
 	bool SetupCheck();
 
 
-
+	UFUNCTION(NotBlueprintable, Category = "GameFuse | Manager")
+	void ClearGameData();
 
 
 	/**
