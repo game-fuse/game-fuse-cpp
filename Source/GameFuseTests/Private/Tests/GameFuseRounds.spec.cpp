@@ -57,9 +57,9 @@ void GameFuseRoundsSpec::Define()
 				return true;
 				}));
 
-			// Create and sign in user
-			TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
-			ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, TestUserData, GameFuseUser, this));
+			// // Create and sign in user
+			// TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
+			ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, UserData, GameFuseUser, this));
 
 			// Wait for user to be fully signed in
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() -> bool {
@@ -80,6 +80,7 @@ void GameFuseRoundsSpec::Define()
 			RoundData->Score = 100;
 			RoundData->StartTime = FDateTime::Now();
 			RoundData->EndTime = RoundData->StartTime + FTimespan::FromMinutes(1);
+			RoundData->GameType = "SinglePlayer";
 
 			TSharedPtr<FGuid> CreateRoundRequestId = MakeShared<FGuid>();
 			FGFApiCallback OnCreatedRound;
@@ -91,7 +92,7 @@ void GameFuseRoundsSpec::Define()
 			// Create the round after user setup is complete
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, RoundData, CreateRoundRequestId, OnCreatedRound]() -> bool {
 				UE_LOG(LogGameFuse, Log, TEXT("Creating game round"));
-				*CreateRoundRequestId = GameFuseRounds->CreateGameRound(*RoundData, false, OnCreatedRound);
+				*CreateRoundRequestId = GameFuseRounds->CreateGameRound(*RoundData, OnCreatedRound);
 				return true;
 				}));
 

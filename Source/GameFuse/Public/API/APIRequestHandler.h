@@ -60,7 +60,9 @@ public:
 protected:
 
 	// Sends an HTTP Request, optionally with a JSON object as the body, returns unique Request ID
-	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject, ESPMode::ThreadSafe>& Body = nullptr);
+	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject>& Body = nullptr);
+
+	void SetAuthHeader(const FString& AuthToken);
 
 private:
 

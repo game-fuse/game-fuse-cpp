@@ -26,18 +26,18 @@ void UGameFuseRounds::WrapBlueprintCallback(const FBP_GFApiCallback& Callback, F
 	});
 }
 
-void UGameFuseRounds::BP_CreateGameRound(const FGFGameRound& GameRound, const bool bMultiplayer, FBP_GFApiCallback Callback)
+void UGameFuseRounds::BP_CreateGameRound(const FGFGameRound& GameRound, FBP_GFApiCallback Callback)
 {
 	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
-	CreateGameRound(GameRound, bMultiplayer, InternalCallback);
+	CreateGameRound(GameRound, InternalCallback);
 }
 
-FGuid UGameFuseRounds::CreateGameRound(const FGFGameRound& GameRound, const bool bMultiplayer, FGFApiCallback Callback)
+FGuid UGameFuseRounds::CreateGameRound(const FGFGameRound& GameRound, FGFApiCallback Callback)
 {
 	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
 
-		return RequestHandler->CreateGameRound(User->GetUserData(), GameRound, bMultiplayer, Callback);
+		return RequestHandler->CreateGameRound(User->GetUserData(), GameRound, Callback);
 
 	}
 	return FGuid();

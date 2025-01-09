@@ -9,6 +9,7 @@
 #include "Library/GameFuseUtilities.h"
 #include "Library/GameFuseLog.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Library/GameFuseStructLibrary.h"
 
 
 
@@ -130,6 +131,38 @@ bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLead
 
 
 	return true;
+}
+
+bool GameFuseUtilities::GameRoundToJson(const FGFGameRound& GameRound, TSharedPtr<FJsonObject>& JsonObject)
+{
+
+	// required fields
+	JsonObject->SetStringField("game_user_id", FString::FromInt(GameRound.GameUserId));
+
+	if (GameRound.StartTime != FDateTime()) {
+		JsonObject->SetStringField("start_time", GameRound.StartTime.ToIso8601());
+	}
+	if (GameRound.EndTime != FDateTime()) {
+		JsonObject->SetStringField("end_time", GameRound.EndTime.ToIso8601());
+	}
+
+	JsonObject->SetNumberField("score", GameRound.Score);
+	if (GameRound.Place >= 0) {
+		JsonObject->SetNumberField("place", GameRound.Place);
+	}
+	if (!GameRound.GameType.IsEmpty()) {
+		JsonObject->SetStringField("game_type", GameRound.GameType);
+	}
+	if (GameRound.MultiplayerGameRoundId >= 0) {
+		JsonObject->SetNumberField("multiplayer_game_round_id", GameRound.MultiplayerGameRoundId);
+	}
+	if (!GameRound.Metadata.IsEmpty()) {
+		JsonObject->SetArrayField("metadata", ConvertMapToJsonArray(GameRound.Metadata));
+	}
+
+	return true;
+
+
 }
 
 
@@ -261,6 +294,17 @@ FDateTime GameFuseUtilities::StringToDateTime(const FString& DateTimeStr)
 	FDateTime Result;
 	FDateTime::ParseIso8601(*DateTimeStr, Result);
 	return Result;
+}
+
+TArray<TSharedPtr<FJsonValue>> GameFuseUtilities::ConvertMapToJsonArray(const TMap<FString, FString>& Map)
+{
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	for (const auto& Pair : Map) {
+		TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+		JsonObject->SetStringField(Pair.Key, Pair.Value);
+		JsonArray.Add(MakeShareable(new FJsonValueObject(JsonObject)));
+	}
+	return JsonArray;
 }
 
 // bool GameFuseUtilities::ConvertJsonToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>& JsonRankings,

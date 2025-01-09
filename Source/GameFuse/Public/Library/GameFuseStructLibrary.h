@@ -8,12 +8,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Kismet/BlueprintFunctionLibrary.h" // Include this for FDateTime
-
 #include "GameFuseStructLibrary.generated.h"
 
 // Add this new struct to the file
 USTRUCT(BlueprintType, Category = "GameFuse|GameData")
+
 struct FGFGameData
 {
 	GENERATED_BODY()
@@ -38,6 +37,7 @@ struct FGFGameData
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|UserData")
+
 struct FGFUserData
 {
 	GENERATED_BODY()
@@ -74,6 +74,7 @@ struct FGFUserData
 
 
 USTRUCT(BlueprintType, Category = "GameFuse|StoreItem")
+
 struct FGFStoreItem
 {
 	GENERATED_BODY()
@@ -108,6 +109,7 @@ struct FGFStoreItem
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|LeaderboardItem")
+
 struct FGFLeaderboardEntry
 {
 	GENERATED_BODY()
@@ -135,6 +137,7 @@ struct FGFLeaderboardEntry
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|Leaderboard")
+
 struct FGFLeaderboard
 {
 	GENERATED_BODY()
@@ -156,6 +159,7 @@ struct FGFLeaderboard
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse| API")
+
 struct FGFAPIResponse
 {
 	GENERATED_BODY()
@@ -180,6 +184,7 @@ struct FGFAPIResponse
 
 // Game Round Rankings User Data
 USTRUCT(BlueprintType, Category = "GameFuse|GameRound")
+
 struct FGFGameRoundRanking
 {
 	GENERATED_BODY()
@@ -202,6 +207,7 @@ struct FGFGameRoundRanking
 
 // Main Game Round Structure
 USTRUCT(BlueprintType, Category = "GameFuse|GameRound")
+
 struct FGFGameRound
 {
 	GENERATED_BODY()
@@ -222,13 +228,13 @@ struct FGFGameRound
 	int32 Score = 0;
 
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
-	int32 Place = 0;
+	int32 Place = -1;
 
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	FString GameType = "";
 
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
-	int32 MultiplayerGameRoundId = 0;
+	int32 MultiplayerGameRoundId = -1;
 
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	TMap<FString, FString> Metadata;

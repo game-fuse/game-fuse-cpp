@@ -102,6 +102,11 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	return RequestId;
 }
 
+void UAPIRequestHandler::SetAuthHeader(const FString& AuthToken)
+{
+	CommonHeaders.Add(TEXT("authentication-token"), AuthToken);
+}
+
 void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, const bool bWasSuccessful, const FGuid& RequestId)
 {
 	//error checking

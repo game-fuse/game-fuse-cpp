@@ -18,6 +18,8 @@
 #include "Library/GameFuseEnumLibrary.h"
 #include "Library/GameFuseStructLibrary.h"
 
+
+
 class GAMEFUSE_API GameFuseUtilities
 {
 public:
@@ -34,7 +36,7 @@ public:
 	static bool ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
 
 	// static bool ConvertJsonToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>& JsonRankings, TArray<FGFGameRoundRanking>& OutRankings);
-
+	static bool GameRoundToJson(const FGFGameRound& GameRound, TSharedPtr<FJsonObject>& JsonObject);
 	static FString ConvertMapToJsonStr(const TMap<FString, FString>& OurMap);
 
 	static FString MakeStrRequestBody(const FString& AuthenticationToken, const FString& MapBody, const TMap<FString, FString>& OurMap);
@@ -52,4 +54,5 @@ public:
 
 	/** Convert ISO8601 string to FDateTime */
 	static FDateTime StringToDateTime(const FString& DateTimeStr);
+	static TArray<TSharedPtr<FJsonValue>> ConvertMapToJsonArray(const TMap<FString, FString>& Map);
 };
