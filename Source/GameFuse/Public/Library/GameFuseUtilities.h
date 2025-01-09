@@ -26,6 +26,7 @@ public:
 
 	static bool ConvertJsonToGameData(FGFGameData& InGameData, const TSharedPtr<FJsonObject>& JsonObject);
 
+	static bool ConvertJsonToUserData(FGFUserData& InUserData, const FString& JsonString);
 	static bool ConvertJsonToUserData(FGFUserData& InUserData, const TSharedPtr<FJsonObject>& JsonObject);
 
 	static bool ConvertJsonToStoreItem(FGFStoreItem& InStoreItem, const TSharedPtr<FJsonValue>& JsonValue);

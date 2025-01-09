@@ -498,8 +498,8 @@ void UGameFuseUser::InternalResponseManager(FGFAPIResponse ResponseData)
 		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse JSON Response From API"));
 		return;
 	}
-
-	switch (GameFuseUtilities::DetermineUserAPIResponseType(JsonObject)) {
+	EGFUserAPIResponseType ResponseType = GameFuseUtilities::DetermineUserAPIResponseType(JsonObject);
+	switch (ResponseType) {
 		//switch on EGF_UserAPIResponse
 		case (EGFUserAPIResponseType::Login):
 			SetLoginInternal(JsonObject);
@@ -529,7 +529,7 @@ void UGameFuseUser::InternalResponseManager(FGFAPIResponse ResponseData)
 void UGameFuseUser::SetLoginInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
 	UE_LOG(LogGameFuse, Warning, TEXT("User Log in Token Response: %s"), *JsonObject->GetStringField(TEXT("authentication_token")));
-	const bool bSuccess = FJsonObjectConverter::JsonObjectToUStruct(JsonObject.ToSharedRef(), &UserData);
+	const bool bSuccess = GameFuseUtilities::ConvertJsonToUserData(UserData, JsonObject);
 
 	if (bSuccess) {
 		UserData.bSignedIn = true;

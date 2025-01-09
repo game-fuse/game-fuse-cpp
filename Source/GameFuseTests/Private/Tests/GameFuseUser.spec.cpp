@@ -61,79 +61,39 @@ void GameFuseUserSpec::Define()
 				}));
 		});
 
-		It("signs in user", [this]() {
-			TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
-			FString RandomGuid = FGuid::NewGuid().ToString();
-			TestUserData->Username = FString::Printf(TEXT("user_%s"), *RandomGuid.Left(8));
-			FGuid SignInRequestId;
-
-			FGFApiCallback OnUserCreated;
-			OnUserCreated.AddLambda([this, TestUserData, &SignInRequestId](const FGFAPIResponse& Response) {
-				TestTrue("Create user request succeeded", Response.bSuccess);
-				if (!Response.bSuccess) {
-					AddError(FString::Printf(TEXT("Create User Request failed. Response: %s"), *Response.ResponseStr));
-					return;
-				}
-
-				bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, TestUserData.Get());
-				TestTrue("Parse user data response", bParseSuccess);
-
-				TestTrue("User ID should be valid", TestUserData->Id != 0);
-				UE_LOG(LogGameFuse, Log, TEXT("TestUserData updated - ID: %d, Username: %s"), TestUserData->Id, *TestUserData->Username);
-
-				FGFApiCallback SignInCallback;
-				SignInCallback.AddLambda([this](const FGFAPIResponse& SignInResponse) {
-					UE_LOG(LogGameFuse, Log, TEXT("Sign in Response: %s"), *SignInResponse.ResponseStr);
-					TestTrue("Sign in request succeeded", SignInResponse.bSuccess);
-					if (!SignInResponse.bSuccess) {
-						AddError(FString::Printf(TEXT("Sign in failed: %s"), *SignInResponse.ResponseStr));
-					}
-				});
-
-				SignInRequestId = GameFuseUser->SignIn(TestUserData->Username + TEXT("@gamefuse.com"), TEXT("password"), SignInCallback);
-			});
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, TestUserData, OnUserCreated, this));
-			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SignInRequestId));
-
-			FGuid CleanupRequestId;
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, CleanupRequestId));
-			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, CleanupRequestId));
-		});
-
 		It("adds credits to user", [this]() {
-			TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
-			FString RandomGuid = FGuid::NewGuid().ToString();
-			TestUserData->Username = FString::Printf(TEXT("user_%s"), *RandomGuid.Left(8));
+			// TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
+			// FString RandomGuid = FGuid::NewGuid().ToString();
+			// TestUserData->Username = FString::Printf(TEXT("user_%s"), *RandomGuid.Left(8));
 
-			FGFApiCallback OnUserCreated;
-			OnUserCreated.AddLambda([this, TestUserData](const FGFAPIResponse& Response) {
-				TestTrue("Create user request succeeded", Response.bSuccess);
-				if (!Response.bSuccess) {
-					AddError(FString::Printf(TEXT("Create User Request failed. Response: %s"), *Response.ResponseStr));
-					return;
-				}
+			// FGFApiCallback OnUserCreated;
+			// OnUserCreated.AddLambda([this, TestUserData](const FGFAPIResponse& Response) {
+			// 	TestTrue("Create user request succeeded", Response.bSuccess);
+			// 	if (!Response.bSuccess) {
+			// 		AddError(FString::Printf(TEXT("Create User Request failed. Response: %s"), *Response.ResponseStr));
+			// 		return;
+			// 	}
+			//
+			// 	bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, TestUserData.Get());
+			// 	TestTrue("Parse user data response", bParseSuccess);
+			//
+			// 	TestTrue("User ID should be valid", TestUserData->Id != 0);
+			// 	UE_LOG(LogGameFuse, Log, TEXT("TestUserData updated - ID: %d, Username: %s"), TestUserData->Id, *TestUserData->Username);
+			//
+			// 	FGFApiCallback SignInCallback;
+			// 	SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
+			// 		UE_LOG(LogGameFuse, Log, TEXT("Sign in Response: %s"), *Response.ResponseStr);
+			// 		TestTrue("Sign in request succeeded", Response.bSuccess);
+			// 		if (!Response.bSuccess) {
+			// 			AddError(FString::Printf(TEXT("Sign in failed: %s"), *Response.ResponseStr));
+			// 		}
+			// 	});
+			//
+			// 	FGuid SignInRequestId = GameFuseUser->SignIn(TestUserData->Username + TEXT("@gamefuse.com"), TEXT("password"), SignInCallback);
+			// 	ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SignInRequestId));
+			// });
 
-				bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, TestUserData.Get());
-				TestTrue("Parse user data response", bParseSuccess);
-
-				TestTrue("User ID should be valid", TestUserData->Id != 0);
-				UE_LOG(LogGameFuse, Log, TEXT("TestUserData updated - ID: %d, Username: %s"), TestUserData->Id, *TestUserData->Username);
-
-				FGFApiCallback SignInCallback;
-				SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					UE_LOG(LogGameFuse, Log, TEXT("Sign in Response: %s"), *Response.ResponseStr);
-					TestTrue("Sign in request succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Sign in failed: %s"), *Response.ResponseStr));
-					}
-				});
-
-				FGuid SignInRequestId = GameFuseUser->SignIn(TestUserData->Username + TEXT("@gamefuse.com"), TEXT("password"), SignInCallback);
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SignInRequestId));
-			});
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, TestUserData, OnUserCreated, this));
+			ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, UserData, GameFuseUser, this));
 
 			FGuid AddCreditsRequestId;
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, &AddCreditsRequestId]() -> bool {
@@ -154,45 +114,49 @@ void GameFuseUserSpec::Define()
 				return true;
 				}));
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), AddCreditsRequestId));
-
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				TestTrue("credits are updated", GameFuseUser->GetCredits() == 100);
+				return true;
+				}
+			));
 			FGuid CleanupRequestId;
 			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, CleanupRequestId));
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, CleanupRequestId));
 		});
 
 		It("sets credits for user", [this]() {
-			TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
-			FString RandomGuid = FGuid::NewGuid().ToString();
-			TestUserData->Username = FString::Printf(TEXT("user_%s"), *RandomGuid.Left(8));
+			// TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
+			// FString RandomGuid = FGuid::NewGuid().ToString();
+			// TestUserData->Username = FString::Printf(TEXT("user_%s"), *RandomGuid.Left(8));
+			//
+			// FGFApiCallback OnUserCreated;
+			// OnUserCreated.AddLambda([this, TestUserData](const FGFAPIResponse& Response) {
+			// 	TestTrue("Create user request succeeded", Response.bSuccess);
+			// 	if (!Response.bSuccess) {
+			// 		AddError(FString::Printf(TEXT("Create User Request failed. Response: %s"), *Response.ResponseStr));
+			// 		return;
+			// 	}
+			//
+			// 	bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, TestUserData.Get());
+			// 	TestTrue("Parse user data response", bParseSuccess);
+			//
+			// 	TestTrue("User ID should be valid", TestUserData->Id != 0);
+			// 	UE_LOG(LogGameFuse, Log, TEXT("TestUserData updated - ID: %d, Username: %s"), TestUserData->Id, *TestUserData->Username);
+			//
+			// 	FGFApiCallback SignInCallback;
+			// 	SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
+			// 		UE_LOG(LogGameFuse, Log, TEXT("Sign in Response: %s"), *Response.ResponseStr);
+			// 		TestTrue("Sign in request succeeded", Response.bSuccess);
+			// 		if (!Response.bSuccess) {
+			// 			AddError(FString::Printf(TEXT("Sign in failed: %s"), *Response.ResponseStr));
+			// 		}
+			// 	});
+			//
+			// 	FGuid SignInRequestId = GameFuseUser->SignIn(TestUserData->Username + TEXT("@gamefuse.com"), TEXT("password"), SignInCallback);
+			// 	ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SignInRequestId));
+			// });
 
-			FGFApiCallback OnUserCreated;
-			OnUserCreated.AddLambda([this, TestUserData](const FGFAPIResponse& Response) {
-				TestTrue("Create user request succeeded", Response.bSuccess);
-				if (!Response.bSuccess) {
-					AddError(FString::Printf(TEXT("Create User Request failed. Response: %s"), *Response.ResponseStr));
-					return;
-				}
-
-				bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, TestUserData.Get());
-				TestTrue("Parse user data response", bParseSuccess);
-
-				TestTrue("User ID should be valid", TestUserData->Id != 0);
-				UE_LOG(LogGameFuse, Log, TEXT("TestUserData updated - ID: %d, Username: %s"), TestUserData->Id, *TestUserData->Username);
-
-				FGFApiCallback SignInCallback;
-				SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					UE_LOG(LogGameFuse, Log, TEXT("Sign in Response: %s"), *Response.ResponseStr);
-					TestTrue("Sign in request succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Sign in failed: %s"), *Response.ResponseStr));
-					}
-				});
-
-				FGuid SignInRequestId = GameFuseUser->SignIn(TestUserData->Username + TEXT("@gamefuse.com"), TEXT("password"), SignInCallback);
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SignInRequestId));
-			});
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, TestUserData, OnUserCreated, this));
+			ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, UserData, GameFuseUser, this));
 
 			FGuid SetCreditsRequestId;
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, &SetCreditsRequestId]() -> bool {
@@ -232,10 +196,8 @@ void GameFuseUserSpec::Define()
 				GameFuseUser->LogOut();
 			}
 
-			// Create and setup game
-			FGuid SetupGameRequestId;
 			ADD_LATENT_AUTOMATION_COMMAND(FSetupGame(TestAPIHandler, GameData, GameFuseManager, this, FGuid()));
-			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, SetupGameRequestId));
+
 
 			// Wait for GameFuseManager to be fully set up
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() -> bool {
@@ -249,39 +211,9 @@ void GameFuseUserSpec::Define()
 		});
 
 		It("creates and purchases a store item", [this]() {
-			TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
-			FString RandomGuid = FGuid::NewGuid().ToString();
-			TestUserData->Username = FString::Printf(TEXT("user_%s"), *RandomGuid.Left(8));
 
-			// Create and sign in user
-			FGFApiCallback OnUserCreated;
-			OnUserCreated.AddLambda([this, TestUserData](const FGFAPIResponse& Response) {
-				TestTrue("Create user request succeeded", Response.bSuccess);
-				if (!Response.bSuccess) {
-					AddError(FString::Printf(TEXT("Create User Request failed. Response: %s"), *Response.ResponseStr));
-					return;
-				}
 
-				bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, TestUserData.Get());
-				TestTrue("Parse user data response", bParseSuccess);
-
-				TestTrue("User ID should be valid", TestUserData->Id != 0);
-				UE_LOG(LogGameFuse, Log, TEXT("TestUserData updated - ID: %d, Username: %s"), TestUserData->Id, *TestUserData->Username);
-
-				FGFApiCallback SignInCallback;
-				SignInCallback.AddLambda([this](const FGFAPIResponse& SignInResponse) {
-					UE_LOG(LogGameFuse, Log, TEXT("Sign in Response: %s"), *SignInResponse.ResponseStr);
-					TestTrue("Sign in request succeeded", SignInResponse.bSuccess);
-					if (!SignInResponse.bSuccess) {
-						AddError(FString::Printf(TEXT("Sign in failed: %s"), *SignInResponse.ResponseStr));
-					}
-				});
-
-				FGuid SignInRequestId = GameFuseUser->SignIn(TestUserData->Username + TEXT("@gamefuse.com"), TEXT("password"), SignInCallback);
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SignInRequestId));
-			});
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, TestUserData, OnUserCreated, this));
+			ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, UserData, GameFuseUser, this));
 
 			// Create store item
 			TSharedPtr<FGFStoreItem> TestStoreItem = MakeShared<FGFStoreItem>();
@@ -342,39 +274,39 @@ void GameFuseUserSpec::Define()
 		});
 
 		It("purchases and removes store items using ID", [this]() {
-			TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
-			FString RandomGuid = FGuid::NewGuid().ToString();
-			TestUserData->Username = FString::Printf(TEXT("user_%s"), *RandomGuid.Left(8));
+			// TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
+			// FString RandomGuid = FGuid::NewGuid().ToString();
+			// TestUserData->Username = FString::Printf(TEXT("user_%s"), *RandomGuid.Left(8));
+			//
+			// // Create and sign in user
+			// FGFApiCallback OnUserCreated;
+			// OnUserCreated.AddLambda([this, TestUserData](const FGFAPIResponse& Response) {
+			// 	TestTrue("Create user request succeeded", Response.bSuccess);
+			// 	if (!Response.bSuccess) {
+			// 		AddError(FString::Printf(TEXT("Create User Request failed. Response: %s"), *Response.ResponseStr));
+			// 		return;
+			// 	}
+			//
+			// 	bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, TestUserData.Get());
+			// 	TestTrue("Parse user data response", bParseSuccess);
+			//
+			// 	TestTrue("User ID should be valid", TestUserData->Id != 0);
+			// 	UE_LOG(LogGameFuse, Log, TEXT("TestUserData updated - ID: %d, Username: %s"), TestUserData->Id, *TestUserData->Username);
+			//
+			// 	FGFApiCallback SignInCallback;
+			// 	SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
+			// 		UE_LOG(LogGameFuse, Log, TEXT("Sign in Response: %s"), *Response.ResponseStr);
+			// 		TestTrue("Sign in request succeeded", Response.bSuccess);
+			// 		if (!Response.bSuccess) {
+			// 			AddError(FString::Printf(TEXT("Sign in failed: %s"), *Response.ResponseStr));
+			// 		}
+			// 	});
+			//
+			// 	FGuid SignInRequestId = GameFuseUser->SignIn(TestUserData->Username + TEXT("@gamefuse.com"), TEXT("password"), SignInCallback);
+			// 	ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SignInRequestId));
+			// });
 
-			// Create and sign in user
-			FGFApiCallback OnUserCreated;
-			OnUserCreated.AddLambda([this, TestUserData](const FGFAPIResponse& Response) {
-				TestTrue("Create user request succeeded", Response.bSuccess);
-				if (!Response.bSuccess) {
-					AddError(FString::Printf(TEXT("Create User Request failed. Response: %s"), *Response.ResponseStr));
-					return;
-				}
-
-				bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, TestUserData.Get());
-				TestTrue("Parse user data response", bParseSuccess);
-
-				TestTrue("User ID should be valid", TestUserData->Id != 0);
-				UE_LOG(LogGameFuse, Log, TEXT("TestUserData updated - ID: %d, Username: %s"), TestUserData->Id, *TestUserData->Username);
-
-				FGFApiCallback SignInCallback;
-				SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					UE_LOG(LogGameFuse, Log, TEXT("Sign in Response: %s"), *Response.ResponseStr);
-					TestTrue("Sign in request succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Sign in failed: %s"), *Response.ResponseStr));
-					}
-				});
-
-				FGuid SignInRequestId = GameFuseUser->SignIn(TestUserData->Username + TEXT("@gamefuse.com"), TEXT("password"), SignInCallback);
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), SignInRequestId));
-			});
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, TestUserData, OnUserCreated, this));
+			ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, UserData, GameFuseUser, this));
 
 			// Create store item
 			TSharedPtr<FGFStoreItem> TestStoreItem = MakeShared<FGFStoreItem>();

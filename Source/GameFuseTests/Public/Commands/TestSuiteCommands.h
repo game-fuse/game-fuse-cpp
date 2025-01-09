@@ -6,11 +6,10 @@
 #include "Misc/AutomationTest.h"
 #include "JsonObjectConverter.h"
 
-DEFINE_LATENT_AUTOMATION_COMMAND_FIVE_PARAMETER(
+DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
 FCreateGame,
 UTestAPIHandler*, APIHandler,
 TSharedPtr<FGFGameData>, GameData,
-FGFApiCallback, OnGameCreated,
 FAutomationTestBase*, Test,
 FGuid, RequestId);
 
@@ -19,8 +18,8 @@ FCreateUser,
 UTestAPIHandler*, APIHandler,
 TSharedPtr<FGFGameData>, GameData,
 TSharedPtr<FGFUserData>, UserData,
-FGFApiCallback, OnUserCreated,
-FAutomationTestBase*, Test);
+FAutomationTestBase*, Test,
+FGuid, RequestId);
 
 DEFINE_LATENT_AUTOMATION_COMMAND_FIVE_PARAMETER(
 FCreateStoreItem,

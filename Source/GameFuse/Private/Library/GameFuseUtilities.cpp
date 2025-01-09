@@ -79,6 +79,19 @@ bool GameFuseUtilities::ConvertJsonToUserData(FGFUserData& InUserData, const TSh
 	return true;
 }
 
+bool GameFuseUtilities::ConvertJsonToUserData(FGFUserData& InUserData, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	return ConvertJsonToUserData(InUserData, JsonObject);
+}
+
 bool GameFuseUtilities::ConvertJsonToStoreItem(FGFStoreItem& InStoreItem, const TSharedPtr<FJsonValue>& JsonValue)
 {
 	if (JsonValue->Type != EJson::Object) {
@@ -184,7 +197,7 @@ EGFCoreAPIResponseType GameFuseUtilities::DetermineCoreAPIResponseType(const TSh
 
 EGFUserAPIResponseType GameFuseUtilities::DetermineUserAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("username"))) {
+	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("username")) && JsonObject->HasField(TEXT("authentication_token"))) {
 		return EGFUserAPIResponseType::Login;
 	}
 	if (JsonObject->HasField(TEXT("game_user_attributes"))) {

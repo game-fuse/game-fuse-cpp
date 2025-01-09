@@ -44,7 +44,8 @@ void GameFuseRoundsSpec::Define()
 			// Create and setup game
 			FGuid SetupGameRequestId;
 			ADD_LATENT_AUTOMATION_COMMAND(FSetupGame(TestAPIHandler, GameData, GameFuseManager, this, SetupGameRequestId));
-			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, SetupGameRequestId));
+			// Removed unnecessary wait for response after FSetupGame
+			// ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, SetupGameRequestId));
 
 			// Wait for GameFuseManager to be fully set up
 			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() -> bool {
