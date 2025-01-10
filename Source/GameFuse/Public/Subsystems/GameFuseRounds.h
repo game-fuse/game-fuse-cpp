@@ -6,17 +6,25 @@
 #include "API/RoundsAPIHandler.h"
 #include "GameFuseRounds.generated.h"
 
-UCLASS()
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnGameRoundResponseNative, const FGFGameRound&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnGameRoundListResponseNative, const TArray<FGFGameRound>&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnGameRoundDeleteResponseNative, bool);
 
+UCLASS()
 class GAMEFUSE_API UGameFuseRounds : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
+protected:
+
+	void OnReceiveGameRound(const FGFAPIResponse& Response, FGFApiCallback OriginalCallback);
+	void OnReceiveGameRoundList(const FGFAPIResponse& Response, FGFApiCallback OriginalCallback);
+	void OnReceiveDeleteResponse(const FGFAPIResponse& Response, FGFApiCallback OriginalCallback);
+
 public:
 
-	//> Subsystem Initialization and Deinitialization
-	void Initialize(FSubsystemCollectionBase& Collection) override;
-	void Deinitialize() override;
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
 	//> Blueprint Callable Functions
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
@@ -41,10 +49,23 @@ public:
 	FGuid GetUserGameRounds(FGFApiCallback Callback);
 	FGuid DeleteGameRound(int32 RoundId, FGFApiCallback Callback);
 
+	// Native delegates for response handling
+	FOnGameRoundResponseNative OnGameRoundResponse;
+	FOnGameRoundListResponseNative OnGameRoundListResponse;
+	FOnGameRoundDeleteResponseNative OnGameRoundDeleteResponse;
+
+	TObjectPtr<UAPIRequestHandler> GetRequestHandler()
+	{
+		return RequestHandler;
+	}
+
 private:
 
-	UPROPERTY()
-	URoundsAPIHandler* RequestHandler;
-
+	TObjectPtr<URoundsAPIHandler> RequestHandler;
 	static void WrapBlueprintCallback(const FBP_GFApiCallback& Callback, FGFApiCallback& InternalCallback);
+
+	// Internal response handlers that will trigger the delegates
+	void HandleGameRoundResponse(FGFAPIResponse Response);
+	void HandleGameRoundListResponse(FGFAPIResponse Response);
+	void HandleDeleteResponse(FGFAPIResponse Response);
 };

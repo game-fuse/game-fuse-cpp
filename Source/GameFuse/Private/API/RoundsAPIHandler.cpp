@@ -1,16 +1,15 @@
 #include "API/RoundsAPIHandler.h"
 #include "Library/GameFuseLog.h"
 #include "Library/GameFuseUtilities.h"
-#include "JsonObjectConverter.h"
 
 
 
 FGuid URoundsAPIHandler::CreateGameRound(const FGFUserData& UserData, const FGFGameRound& GameRound, const FGFApiCallback& Callback)
 {
-	SetAuthHeader(UserData.AuthenticationToken);
 	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
+	SetAuthHeader(UserData.AuthenticationToken);
 	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
 	if (GameFuseUtilities::GameRoundToJson(GameRound, JsonObject)) {
 		JsonObject->SetNumberField("game_user_id", UserData.Id);

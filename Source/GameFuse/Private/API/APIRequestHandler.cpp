@@ -83,7 +83,7 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	});
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Request [%s] to endpoint: %s"), *RequestId.ToString(), *Endpoint);
-
+	GameFuseUtilities::LogRequest(HttpRequest);
 	//Store in maps for retrieval in response
 	// Add to ActiveRequests map
 	ActiveRequests.Add(RequestId, HttpRequest);

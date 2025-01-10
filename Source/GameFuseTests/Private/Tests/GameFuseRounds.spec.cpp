@@ -17,6 +17,7 @@ BEGIN_DEFINE_SPEC(GameFuseRoundsSpec, "GameFuseTests.GameFuseRounds",
 	UTestAPIHandler* TestAPIHandler;
 	TSharedPtr<FGFGameData> GameData;
 	TSharedPtr<FGFUserData> UserData;
+
 	bool bCleanupSuccess;
 END_DEFINE_SPEC(GameFuseRoundsSpec);
 
@@ -37,7 +38,7 @@ void GameFuseRoundsSpec::Define()
 	// Init testing data
 	GameData = MakeShared<FGFGameData>();
 	UserData = MakeShared<FGFUserData>();
-	bCleanupSuccess = false;
+
 
 	Describe("GameFuseRounds Basic Operations", [this]() {
 		BeforeEach([this]() {
@@ -48,7 +49,7 @@ void GameFuseRoundsSpec::Define()
 			// ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, SetupGameRequestId));
 
 			// Wait for GameFuseManager to be fully set up
-			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() -> bool {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 				if (!GameFuseManager->IsSetUp()) {
 				UE_LOG(LogGameFuse, Warning, TEXT("Waiting for GameFuseManager setup..."));
 				return false; // Keep waiting
@@ -57,12 +58,12 @@ void GameFuseRoundsSpec::Define()
 				return true;
 				}));
 
-			// // Create and sign in user
-			// TSharedPtr<FGFUserData> TestUserData = MakeShared<FGFUserData>();
+			// Create and sign in user
+
 			ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, UserData, GameFuseUser, this));
 
 			// Wait for user to be fully signed in
-			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this]() -> bool {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 				if (!GameFuseUser->IsSignedIn()) {
 				UE_LOG(LogGameFuse, Warning, TEXT("Waiting for user signin..."));
 				return false; // Keep waiting
@@ -82,27 +83,64 @@ void GameFuseRoundsSpec::Define()
 			RoundData->EndTime = RoundData->StartTime + FTimespan::FromMinutes(1);
 			RoundData->GameType = "SinglePlayer";
 
-			TSharedPtr<FGuid> CreateRoundRequestId = MakeShared<FGuid>();
-			FGFApiCallback OnCreatedRound;
-			OnCreatedRound.AddLambda([this](const FGFAPIResponse& Response) {
-				UE_LOG(LogGameFuse, Error, TEXT("Round created response: %s"), *Response.ResponseStr);
-				TestTrue("Create round request succeeded", Response.bSuccess);
-			});
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
 
-			// Create the round after user setup is complete
-			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, RoundData, CreateRoundRequestId, OnCreatedRound]() -> bool {
-				UE_LOG(LogGameFuse, Log, TEXT("Creating game round"));
-				*CreateRoundRequestId = GameFuseRounds->CreateGameRound(*RoundData, OnCreatedRound);
+
+				GameFuseRounds->OnGameRoundResponse.AddLambda([this](const FGFGameRound& _RoundData) {
+					TestTrue("has good id", _RoundData.Id != 0);
+					TestTrue("has good score", _RoundData.Score == 100);
+					TestTrue("has good game type", _RoundData.GameType == "SinglePlayer");
+					TestTrue("has valid start time", _RoundData.StartTime != FDateTime());
+					TestTrue("has valid end time", _RoundData.EndTime != FDateTime());
+					TestTrue("keeps end time difference", _RoundData.EndTime - _RoundData.StartTime == FTimespan::FromMinutes(1));
+
+					GameFuseRounds->OnGameRoundResponse.Clear();
+					});
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, FGFApiCallback())));
 				return true;
 				}));
 
-			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(TestAPIHandler, *CreateRoundRequestId));
-			ADD_LATENT_AUTOMATION_COMMAND(FDelayedFunctionLatentCommand([this, RoundData]() -> bool {
-				TestTrue("Round has good id", RoundData->Id != 0);
-				TestTrue("Round has good score", RoundData->Score == 100);
 
+			// ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
+			//
+			//
+			//
+			// 	}));
+
+			// ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+		});
+
+		It("creates a game round with metadata", [this]() {
+
+			// Create round data
+
+			TSharedPtr<FGFGameRound> RoundData = MakeShared<FGFGameRound>();
+			RoundData->Score = 100;
+			RoundData->StartTime = FDateTime::Now();
+			RoundData->EndTime = RoundData->StartTime + FTimespan::FromMinutes(1);
+			RoundData->GameType = "SinglePlayer";
+
+			RoundData->Metadata.Add("key1", "value1");
+			RoundData->Metadata.Add("key2", "value2");
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
+
+
+				GameFuseRounds->OnGameRoundResponse.AddLambda([this](const FGFGameRound& _RoundData) {
+					AddErrorIfFalse(_RoundData.Metadata.IsEmpty(), "metadata should be present");
+					TestTrue("metadata has the right number of keys", _RoundData.Metadata.Num() == 2);
+
+					TestTrue("metadata has the right key", _RoundData.Metadata.Contains("key1"));
+					TestTrue("metadata has the right value", _RoundData.Metadata["key1"] == "value1");
+
+					GameFuseRounds->OnGameRoundResponse.Clear();
+					});
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, FGFApiCallback())));
 				return true;
 				}));
+
+
+			// ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 	});
 }

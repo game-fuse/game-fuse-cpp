@@ -162,6 +162,7 @@ bool FWaitForFGFResponse::Update()
 		UE_LOG(LogGameFuse, Warning, TEXT("Tried to wait for invalid request id: %s"), *RequestId.ToString());
 		return true; // No request ID, nothing to wait for()
 	}
+	UE_LOG(LogGameFuse, Log, TEXT("Waiting for request %s to complete"), *RequestId.ToString());
 
 	return !APIHandler->IsRequestActive(RequestId);
 }

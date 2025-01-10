@@ -7,6 +7,7 @@
  */
 
 #include "Library/GameFuseUtilities.h"
+
 #include "Library/GameFuseLog.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Library/GameFuseStructLibrary.h"
@@ -133,9 +134,101 @@ bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLead
 	return true;
 }
 
+void GameFuseUtilities::ConvertJsonArrayToMap(TMap<FString, FString> Map, const TArray<TSharedPtr<FJsonValue>>& _JsonArray)
+{
+	Map.Empty();
+
+	for (const TSharedPtr<FJsonValue>& JsonValue : _JsonArray) {
+		UE_LOG(LogGameFuse, Log, TEXT("Converting JSON Array to Map"));
+	}
+}
+
+
+bool GameFuseUtilities::ConvertJsonToGameRound(FGFGameRound& InGameRound, const FString& JsonString)
+{
+	if (JsonString.IsEmpty()) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Empty JSON string"));
+		return false;
+	}
+
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Failed to parse JSON string: %s"), *JsonString);
+		return false;
+	}
+
+	// json object example {
+	// 	"id": 101,
+	// 	"game_user_id": 1,
+	// 	"start_time": "2024-09-20T10:00:00Z",
+	// 	"end_time": "2024-09-20T11:00:00Z",
+	// 	"score": 1600,
+	// 	"place": 2,
+	// 	"game_type": "battle",
+	// 	"metadata": {
+	// 		"level": "Hard"
+	// 	}
+	// }
+
+	// Required fields
+	if (!JsonObject->HasField(TEXT("id")) || !JsonObject->HasField(TEXT("game_user_id"))) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Missing required fields"));
+		return false;
+	}
+
+	JsonObject->TryGetNumberField(TEXT("id"), InGameRound.Id);
+	JsonObject->TryGetNumberField(TEXT("game_user_id"), InGameRound.GameUserId);
+
+	// Optional fields with default values
+	FString StartTime;
+	if (JsonObject->TryGetStringField(TEXT("start_time"), StartTime)) {
+		InGameRound.StartTime = StringToDateTime(StartTime);
+	}
+
+	FString EndTime;
+	if (JsonObject->TryGetStringField(TEXT("end_time"), EndTime)) {
+		InGameRound.EndTime = StringToDateTime(EndTime);
+	}
+
+	JsonObject->TryGetNumberField(TEXT("score"), InGameRound.Score);
+	JsonObject->TryGetNumberField(TEXT("place"), InGameRound.Place);
+	JsonObject->TryGetStringField(TEXT("game_type"), InGameRound.GameType);
+	JsonObject->TryGetNumberField(TEXT("multiplayer_game_round_id"), InGameRound.MultiplayerGameRoundId);
+
+	// Handle metadata
+	InGameRound.Metadata.Empty(); // Clear existing metadata
+
+	if (!JsonObject->HasTypedField(TEXT("metadata"), EJson::Null)) {
+		const TSharedPtr<FJsonObject>* MetadataObject = nullptr;
+		if (JsonObject->TryGetObjectField(TEXT("metadata"), MetadataObject) && MetadataObject != nullptr) {
+			if (!MetadataObject->IsValid()) {
+				UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid metadata object"));
+				return false;
+			}
+
+			for (const auto& Pair : (*MetadataObject)->Values) {
+				if (!Pair.Value.IsValid()) {
+					UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid metadata value for key: %s"), *Pair.Key);
+					continue;
+				}
+
+				FString ValueStr;
+				if (Pair.Value->TryGetString(ValueStr)) {
+					InGameRound.Metadata.Add(Pair.Key, ValueStr);
+				}
+			}
+		}
+	} else {
+		UE_LOG(LogGameFuse, Log, TEXT("ConvertJsonToGameRound: Metadata field is null"));
+	}
+
+	return true;
+}
+
 bool GameFuseUtilities::GameRoundToJson(const FGFGameRound& GameRound, TSharedPtr<FJsonObject>& JsonObject)
 {
-
 	// required fields
 	JsonObject->SetStringField("game_user_id", FString::FromInt(GameRound.GameUserId));
 
@@ -156,15 +249,22 @@ bool GameFuseUtilities::GameRoundToJson(const FGFGameRound& GameRound, TSharedPt
 	if (GameRound.MultiplayerGameRoundId >= 0) {
 		JsonObject->SetNumberField("multiplayer_game_round_id", GameRound.MultiplayerGameRoundId);
 	}
+
 	if (!GameRound.Metadata.IsEmpty()) {
-		JsonObject->SetArrayField("metadata", ConvertMapToJsonArray(GameRound.Metadata));
+		JsonObject->SetObjectField("metadata", ConvertMapToJsonObject(GameRound.Metadata));
 	}
 
 	return true;
-
-
 }
 
+TSharedPtr<FJsonObject> GameFuseUtilities::ConvertMapToJsonObject(const TMap<FString, FString>& Map)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+	for (const auto& Pair : Map) {
+		JsonObject->SetStringField(Pair.Key, Pair.Value);
+	}
+	return JsonObject;
+}
 
 FString GameFuseUtilities::ConvertMapToJsonStr(const TMap<FString, FString>& OurMap)
 {
@@ -294,17 +394,6 @@ FDateTime GameFuseUtilities::StringToDateTime(const FString& DateTimeStr)
 	FDateTime Result;
 	FDateTime::ParseIso8601(*DateTimeStr, Result);
 	return Result;
-}
-
-TArray<TSharedPtr<FJsonValue>> GameFuseUtilities::ConvertMapToJsonArray(const TMap<FString, FString>& Map)
-{
-	TArray<TSharedPtr<FJsonValue>> JsonArray;
-	for (const auto& Pair : Map) {
-		TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
-		JsonObject->SetStringField(Pair.Key, Pair.Value);
-		JsonArray.Add(MakeShareable(new FJsonValueObject(JsonObject)));
-	}
-	return JsonArray;
 }
 
 // bool GameFuseUtilities::ConvertJsonToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>& JsonRankings,

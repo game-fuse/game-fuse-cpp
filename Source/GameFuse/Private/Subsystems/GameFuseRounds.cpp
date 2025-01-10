@@ -36,11 +36,18 @@ void UGameFuseRounds::BP_CreateGameRound(const FGFGameRound& GameRound, FBP_GFAp
 FGuid UGameFuseRounds::CreateGameRound(const FGFGameRound& GameRound, FGFApiCallback Callback)
 {
 	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
-
+		Callback.AddUObject(this, &UGameFuseRounds::HandleGameRoundResponse);
 		return RequestHandler->CreateGameRound(User->GetUserData(), GameRound, Callback);
-
 	}
 	return FGuid();
+}
+
+void UGameFuseRounds::HandleGameRoundResponse(FGFAPIResponse Response)
+{
+	FGFGameRound GameRound;
+	if (GameFuseUtilities::ConvertJsonToGameRound(GameRound, Response.ResponseStr)) {
+		OnGameRoundResponse.Broadcast(GameRound);
+	}
 }
 
 void UGameFuseRounds::BP_GetGameRound(const int32 RoundId, FBP_GFApiCallback Callback)
@@ -53,6 +60,7 @@ void UGameFuseRounds::BP_GetGameRound(const int32 RoundId, FBP_GFApiCallback Cal
 FGuid UGameFuseRounds::GetGameRound(const int32 RoundId, FGFApiCallback Callback)
 {
 	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
+		Callback.AddUObject(this, &UGameFuseRounds::HandleGameRoundResponse);
 		return RequestHandler->GetGameRound(RoundId, User->GetUserData(), Callback);
 	}
 	return FGuid();
@@ -68,6 +76,7 @@ void UGameFuseRounds::BP_UpdateGameRound(const int32 RoundId, const FGFGameRound
 FGuid UGameFuseRounds::UpdateGameRound(const int32 RoundId, const FGFGameRound& GameRound, FGFApiCallback Callback)
 {
 	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
+		Callback.AddUObject(this, &UGameFuseRounds::HandleGameRoundResponse);
 		return RequestHandler->UpdateGameRound(RoundId, User->GetUserData(), GameRound, Callback);
 	}
 	return FGuid();
@@ -83,9 +92,37 @@ void UGameFuseRounds::BP_GetUserGameRounds(FBP_GFApiCallback Callback)
 FGuid UGameFuseRounds::GetUserGameRounds(FGFApiCallback Callback)
 {
 	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
+		Callback.AddUObject(this, &UGameFuseRounds::HandleGameRoundListResponse);
 		return RequestHandler->GetUserGameRounds(User->GetUserData(), Callback);
 	}
 	return FGuid();
+}
+
+void UGameFuseRounds::HandleGameRoundListResponse(FGFAPIResponse Response)
+{
+	TArray<FGFGameRound> GameRounds;
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
+
+	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid()) {
+		const TArray<TSharedPtr<FJsonValue>>* RoundsArray;
+		if (JsonObject->TryGetArrayField(TEXT("rounds"), RoundsArray)) {
+			for (const auto& RoundValue : *RoundsArray) {
+				if (const TSharedPtr<FJsonObject>* RoundObject; RoundValue->TryGetObject(RoundObject)) {
+					FString RoundString;
+					if (const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RoundString);
+						FJsonSerializer::Serialize(RoundObject->ToSharedRef(), Writer)) {
+						FGFGameRound GameRound;
+						if (GameFuseUtilities::ConvertJsonToGameRound(GameRound, RoundString)) {
+							GameRounds.Add(GameRound);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	OnGameRoundListResponse.Broadcast(GameRounds);
 }
 
 void UGameFuseRounds::BP_DeleteGameRound(const int32 RoundId, FBP_GFApiCallback Callback)
@@ -98,7 +135,21 @@ void UGameFuseRounds::BP_DeleteGameRound(const int32 RoundId, FBP_GFApiCallback 
 FGuid UGameFuseRounds::DeleteGameRound(const int32 RoundId, FGFApiCallback Callback)
 {
 	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
+		Callback.AddUObject(this, &UGameFuseRounds::HandleDeleteResponse);
 		return RequestHandler->DeleteGameRound(RoundId, User->GetUserData(), Callback);
 	}
 	return FGuid();
+}
+
+void UGameFuseRounds::HandleDeleteResponse(FGFAPIResponse Response)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
+
+	bool bSuccess = false;
+	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid()) {
+		JsonObject->TryGetBoolField(TEXT("success"), bSuccess);
+	}
+
+	OnGameRoundDeleteResponse.Broadcast(bSuccess);
 }

@@ -120,10 +120,6 @@ void FTestSuiteCommandsSpec::Define()
 			// Wait for setup response using APIHandler
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]{
-				if (!GameFuseManager->IsSetUp()) {
-				AddWarning("waiting for GameFuseManager to set up");
-				return false;
-				}
 				TestTrue("GameFuseManager should be set up", GameFuseManager->IsSetUp());
 				return true;
 

@@ -35,7 +35,10 @@ public:
 
 	static bool ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
 
-	// static bool ConvertJsonToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>& JsonRankings, TArray<FGFGameRoundRanking>& OutRankings);
+	static void ConvertJsonArrayToMap(TMap<FString, FString> Map, const TArray<TSharedPtr<FJsonValue>>& _JsonArray);
+	static bool ConvertJsonToGameRound(FGFGameRound& InGameRound, const FString& JsonString);
+
+	static bool ConvertJsonToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>& JsonRankings, TArray<FGFGameRoundRanking>& OutRankings);
 	static bool GameRoundToJson(const FGFGameRound& GameRound, TSharedPtr<FJsonObject>& JsonObject);
 	static FString ConvertMapToJsonStr(const TMap<FString, FString>& OurMap);
 
@@ -54,5 +57,7 @@ public:
 
 	/** Convert ISO8601 string to FDateTime */
 	static FDateTime StringToDateTime(const FString& DateTimeStr);
-	static TArray<TSharedPtr<FJsonValue>> ConvertMapToJsonArray(const TMap<FString, FString>& Map);
+
+	/** Convert a map to a JSON object */
+	static TSharedPtr<FJsonObject> ConvertMapToJsonObject(const TMap<FString, FString>& Map);
 };
