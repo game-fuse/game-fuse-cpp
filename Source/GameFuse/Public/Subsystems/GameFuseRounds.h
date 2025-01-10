@@ -15,12 +15,6 @@ class GAMEFUSE_API UGameFuseRounds : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
-protected:
-
-	void OnReceiveGameRound(const FGFAPIResponse& Response, FGFApiCallback OriginalCallback);
-	void OnReceiveGameRoundList(const FGFAPIResponse& Response, FGFApiCallback OriginalCallback);
-	void OnReceiveDeleteResponse(const FGFAPIResponse& Response, FGFApiCallback OriginalCallback);
-
 public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;

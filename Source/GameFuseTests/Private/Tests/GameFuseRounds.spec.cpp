@@ -127,7 +127,7 @@ void GameFuseRoundsSpec::Define()
 
 
 				GameFuseRounds->OnGameRoundResponse.AddLambda([this](const FGFGameRound& _RoundData) {
-					AddErrorIfFalse(_RoundData.Metadata.IsEmpty(), "metadata should be present");
+					AddErrorIfFalse(!_RoundData.Metadata.IsEmpty(), "metadata should be present");
 					TestTrue("metadata has the right number of keys", _RoundData.Metadata.Num() == 2);
 
 					TestTrue("metadata has the right key", _RoundData.Metadata.Contains("key1"));
