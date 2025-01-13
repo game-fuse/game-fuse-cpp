@@ -240,6 +240,9 @@ struct FGFGameRound
 	TMap<FString, FString> Metadata;
 
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
+	bool bMultiplayer = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	TArray<FGFGameRoundRanking> Rankings;
 
 	// Constructor for easy initialization

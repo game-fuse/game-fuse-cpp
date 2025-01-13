@@ -35,10 +35,10 @@ public:
 
 	static bool ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
 
-	static void ConvertJsonArrayToMap(TMap<FString, FString> Map, const TArray<TSharedPtr<FJsonValue>>& _JsonArray);
+	static void ConvertJsonArrayToMap(TMap<FString, FString> Map, const TArray<TSharedPtr<FJsonValue>>& _JsonArray);;
 	static bool ConvertJsonToGameRound(FGFGameRound& InGameRound, const FString& JsonString);
 
-	static bool ConvertJsonToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>& JsonRankings, TArray<FGFGameRoundRanking>& OutRankings);
+	static bool ConvertJsonArrayToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>* JsonRankings, TArray<FGFGameRoundRanking>& OutRankings);
 	static bool GameRoundToJson(const FGFGameRound& GameRound, TSharedPtr<FJsonObject>& JsonObject);
 	static FString ConvertMapToJsonStr(const TMap<FString, FString>& OurMap);
 
