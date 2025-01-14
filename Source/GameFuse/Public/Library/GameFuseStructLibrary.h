@@ -33,7 +33,6 @@ struct FGFGameData
 	{
 		return Id == Other.Id && Token == Other.Token && Name == Other.Name && Description == Other.Description;
 	}
-
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|UserData")
@@ -133,7 +132,6 @@ struct FGFLeaderboardEntry
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString DateTime = "";
-
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|Leaderboard")
@@ -174,11 +172,15 @@ struct FGFAPIResponse
 	FString RequestId = "";
 	FGFAPIResponse() = default;
 
-	FGFAPIResponse(bool _bSuccess, const FString& _Response, const FString& _RequestId = "")
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
+	int ResponseCode = 0;
+
+	FGFAPIResponse(bool _bSuccess, const FString& _Response, const FString& _RequestId = "", int _ResponseCode = 0)
 	{
 		bSuccess = _bSuccess;
 		ResponseStr = _Response;
 		RequestId = _RequestId;
+		ResponseCode = _ResponseCode;
 	}
 };
 

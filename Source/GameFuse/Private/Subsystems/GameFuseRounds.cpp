@@ -153,13 +153,5 @@ FGuid UGameFuseRounds::DeleteGameRound(const int32 RoundId, FGFApiCallback Callb
 
 void UGameFuseRounds::HandleDeleteResponse(FGFAPIResponse Response)
 {
-	TSharedPtr<FJsonObject> JsonObject;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
-
-	bool bSuccess = false;
-	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid()) {
-		JsonObject->TryGetBoolField(TEXT("success"), bSuccess);
-	}
-
-	OnGameRoundDeleteResponse.Broadcast(bSuccess);
+	OnGameRoundDeleteResponse.Broadcast(Response.ResponseCode == 200);
 }

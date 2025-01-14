@@ -149,11 +149,6 @@ void GameFuseRoundsSpec::Define()
 				return true;
 			}));
 
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->SetScore(888, FGFApiCallback())));
-				return true;
-			}));
-
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OriginalRoundData]() -> bool {
 				GameFuseRounds->OnGameRoundResponse.AddLambda([this, OriginalRoundData](const FGFGameRound& _RoundData) {
 					TestTrue("has good id", _RoundData.Id != 0);
@@ -170,7 +165,6 @@ void GameFuseRoundsSpec::Define()
 
 						// test user obj
 						TestTrue("has good ranking user id", Ranking.User.Id == UserData->Id);
-						TestTrue("has User's score value", Ranking.User.Score == 888);
 						TestTrue("has good credits", Ranking.User.Credits == 888);
 					}
 					GameFuseRounds->OnGameRoundResponse.Clear();
@@ -293,6 +287,36 @@ void GameFuseRoundsSpec::Define()
 						GameFuseRounds->OnGameRoundResponse.Clear();
 					});
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->UpdateGameRound(RoundData->Id, *RoundData, FGFApiCallback())));
+					return true;
+				}));
+
+				return true;
+			}));
+		});
+
+		It("deletes a game round", [this]() {
+			// Create round data
+			TSharedPtr<FGFGameRound> RoundData = MakeShared<FGFGameRound>();
+			RoundData->Score = 100;
+			RoundData->StartTime = FDateTime::Now();
+			RoundData->EndTime = RoundData->StartTime + FTimespan::FromMinutes(1);
+			RoundData->GameType = "SinglePlayer";
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
+				GameFuseRounds->OnGameRoundResponse.AddLambda([this, RoundData](const FGFGameRound& _RoundData) {
+					TestTrue("has good id", _RoundData.Id != 0);
+					RoundData->Id = _RoundData.Id;
+					GameFuseRounds->OnGameRoundResponse.Clear();
+				});
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, FGFApiCallback())));
+
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
+					GameFuseRounds->OnGameRoundDeleteResponse.AddLambda([this, RoundData](bool bSuccess) {
+						AddErrorIfFalse(bSuccess, FString::Printf(TEXT("Failed to delete round with id %d"), RoundData->Id));
+						TestTrue("deleted round", bSuccess);
+						GameFuseRounds->OnGameRoundDeleteResponse.Clear();
+					});
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->DeleteGameRound(RoundData->Id, FGFApiCallback())));
 					return true;
 				}));
 

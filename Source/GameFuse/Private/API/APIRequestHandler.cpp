@@ -77,15 +77,15 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	// Add Default Headers
 	AddCommonHeaders(HttpRequest);
 
-	//Capture request in the lambda to prevent collection before handle response is called.
+	// Capture request in the lambda to prevent collection before handle response is called.
 	HttpRequest->OnProcessRequestComplete().BindLambda([this, RequestId](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
 		HandleResponse(Request, Response, bWasSuccessful, RequestId);
 	});
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Request [%s] to endpoint: %s"), *RequestId.ToString(), *Endpoint);
 	GameFuseUtilities::LogRequest(HttpRequest);
-	//Store in maps for retrieval in response
-	// Add to ActiveRequests map
+	// Store in maps for retrieval in response
+	//  Add to ActiveRequests map
 	ActiveRequests.Add(RequestId, HttpRequest);
 
 	// Store the response delegate
@@ -109,7 +109,7 @@ void UAPIRequestHandler::SetAuthHeader(const FString& AuthToken)
 
 void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, const bool bWasSuccessful, const FGuid& RequestId)
 {
-	//error checking
+	// error checking
 	if (!ActiveRequests.Contains(RequestId)) {
 		UE_LOG(LogGameFuse, Log, TEXT("Got response without an active request"));
 	}
@@ -137,7 +137,7 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 		const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 		FString ResponseContent = bSuccessfulAndValid ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
 
-		Delegate.Broadcast(FGFAPIResponse(bSuccessfulAndValid && bIsGoodResponse, ResponseContent, RequestId.ToString()));
+		Delegate.Broadcast(FGFAPIResponse(bSuccessfulAndValid && bIsGoodResponse, ResponseContent, RequestId.ToString(), ResponseCode));
 		ResponseDelegates.Remove(RequestId);
 	}
 
