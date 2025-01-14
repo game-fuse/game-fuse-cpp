@@ -243,6 +243,62 @@ void GameFuseRoundsSpec::Define()
 			}));
 		});
 		// ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+
+		It("updates game rounds", [this]() {
+			// Create round data
+			TSharedPtr<FGFGameRound> RoundData = MakeShared<FGFGameRound>();
+			RoundData->Score = 100;
+			RoundData->Place = 2;
+			RoundData->StartTime = FDateTime::Now();
+			RoundData->EndTime = RoundData->StartTime + FTimespan::FromMinutes(1);
+			RoundData->GameType = "SinglePlayer";
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
+				GameFuseRounds->OnGameRoundResponse.AddLambda([this, RoundData](const FGFGameRound& _RoundData) {
+					AddInfo("UpdateGameRound 1");
+
+					TestTrue("has good id", _RoundData.Id != 0);
+					TestTrue("has good score", _RoundData.Score == 100);
+					TestTrue("has good game type", _RoundData.GameType == "SinglePlayer");
+					TestTrue("has valid start time", _RoundData.StartTime != FDateTime());
+					TestTrue("has valid end time", _RoundData.EndTime != FDateTime());
+					TestTrue("keeps end time difference", _RoundData.EndTime - _RoundData.StartTime == FTimespan::FromMinutes(1));
+
+					// RoundData->MultiplayerGameRoundId = _RoundData.MultiplayerGameRoundId;
+					RoundData->Id = _RoundData.Id;
+
+					GameFuseRounds->OnGameRoundResponse.Clear();
+				});
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, FGFApiCallback())));
+
+
+				// update round data
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
+					RoundData->Score = 200;
+					RoundData->Place = 1;
+					RoundData->GameType = "SinglePlayerUpdated";
+					RoundData->EndTime = RoundData->StartTime + FTimespan::FromMinutes(2);
+
+					TestTrue("has updated round id", RoundData->Id != 0);
+
+					GameFuseRounds->OnGameRoundResponse.AddLambda([this, RoundData](const FGFGameRound& _RoundData) {
+						AddInfo("UpdateGameRound 2");
+
+						TestTrue("has good id", _RoundData.Id != 0);
+						TestTrue("has updated score", _RoundData.Score == 200);
+						TestTrue("has updated place", _RoundData.Place == 1);
+						TestTrue("has good game type", _RoundData.GameType == "SinglePlayerUpdated");
+						TestTrue("has updated end time", _RoundData.EndTime - _RoundData.StartTime == FTimespan::FromMinutes(2));
+
+						GameFuseRounds->OnGameRoundResponse.Clear();
+					});
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->UpdateGameRound(RoundData->Id, *RoundData, FGFApiCallback())));
+					return true;
+				}));
+
+				return true;
+			}));
+		});
 	});
 }
 
