@@ -1,17 +1,12 @@
 ---
 Language: Cpp
-BasedOnStyle: LLVM
+BasedOnStyle: Microsoft
 AccessModifierOffset: -4
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
-AlignOperands: false
-AlignTrailingComments: true
-AllowShortBlocksOnASingleLine: false
+AlignOperands: DontAlign
+AllowShortBlocksOnASingleLine: Never
 AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: false
-AlwaysBreakAfterDefinitionReturnType: false
-AlwaysBreakTemplateDeclarations: Yes
-BraceWrapping: 
+AllowShortIfStatementsOnASingleLine: WithoutElse
+BraceWrapping:
   AfterCaseLabel: false
   AfterClass: true
   AfterControlStatement: false
@@ -30,9 +25,7 @@ BraceWrapping:
   SplitEmptyNamespace: false
 BreakBeforeBraces: Custom
 BreakConstructorInitializers: AfterColon
-BreakConstructorInitializersBeforeComma: false
 ColumnLimit: 0
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ContinuationIndentWidth: 0
 EmptyLineAfterAccessModifier: Always
 IncludeCategories: 
@@ -47,11 +40,9 @@ IndentCaseLabels: true
 IndentWidth: 4
 MaxEmptyLinesToKeep: 2
 PointerAlignment: Left
-SpaceInEmptyParentheses: false
-SpacesInAngles: false
-SpacesInConditionalStatement: false
-SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
+
+SpacesInAngles: Never
+SortIncludes: Never
 TabWidth: 4
 UseTab: Always
 ...
