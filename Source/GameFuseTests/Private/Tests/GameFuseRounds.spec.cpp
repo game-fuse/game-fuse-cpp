@@ -142,6 +142,7 @@ void GameFuseRoundsSpec::Define()
 			OriginalRoundData->EndTime = OriginalRoundData->StartTime + FTimespan::FromMinutes(1);
 			OriginalRoundData->GameType = "Multiplayer";
 			OriginalRoundData->bMultiplayer = true;
+			OriginalRoundData->Place = 10;
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->SetCredits(888, FGFApiCallback())));
@@ -164,7 +165,7 @@ void GameFuseRoundsSpec::Define()
 					if (!_RoundData.Rankings.IsEmpty()) {
 						const FGFGameRoundRanking& Ranking = _RoundData.Rankings[0];
 						// test place == -1
-						TestTrue("has null ranking place", Ranking.Place == -1);
+						TestTrue("has good ranking place", Ranking.Place == 10);
 						TestTrue("has good ranking score", Ranking.Score == 100);
 
 						// test user obj
@@ -172,9 +173,72 @@ void GameFuseRoundsSpec::Define()
 						TestTrue("has User's score value", Ranking.User.Score == 888);
 						TestTrue("has good credits", Ranking.User.Credits == 888);
 					}
+					GameFuseRounds->OnGameRoundResponse.Clear();
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*OriginalRoundData, FGFApiCallback())));
+				return true;
+			}));
+		});
+
+		It("adds multiple players to 1 GameRound", [this]() {
+			// Create round data
+			TSharedPtr<FGFUserData> OtherUser = MakeShared<FGFUserData>();
+			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, OtherUser, this, FGuid()));
+
+			TSharedPtr<FGFGameRound> OriginalRoundData = MakeShared<FGFGameRound>();
+			OriginalRoundData->GameUserId = UserData->Id;
+			OriginalRoundData->Score = 100;
+			OriginalRoundData->StartTime = FDateTime::Now();
+			OriginalRoundData->EndTime = OriginalRoundData->StartTime + FTimespan::FromMinutes(1);
+			OriginalRoundData->GameType = "Multiplayer";
+			OriginalRoundData->bMultiplayer = true;
+			OriginalRoundData->Place = 1;
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OriginalRoundData, OtherUser]() -> bool {
+				GameFuseRounds->OnGameRoundResponse.AddLambda([this, OriginalRoundData](const FGFGameRound& _RoundData) {
+					AddInfo("OnGameRoundResponse 1");
+					TestTrue("has good id", _RoundData.Id != 0);
+					TestTrue("has good score", _RoundData.Score == 100);
+					TestTrue("has good multiplayer game round id", _RoundData.MultiplayerGameRoundId != 0);
+
+					OriginalRoundData->MultiplayerGameRoundId = _RoundData.MultiplayerGameRoundId;
+					TestTrue("updates original round data with multiplayer game round id", OriginalRoundData->MultiplayerGameRoundId == _RoundData.MultiplayerGameRoundId);
+					TestTrue("has round rankings", !_RoundData.Rankings.IsEmpty());
+					GameFuseRounds->OnGameRoundResponse.Clear();
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*OriginalRoundData, FGFApiCallback())));
+
+
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OriginalRoundData, OtherUser]() -> bool {
+					TSharedPtr<FGFGameRound> SecondPlayerRoundData = MakeShared<FGFGameRound>();
+					TestTrue("has updated original multiplayer game round id", OriginalRoundData->MultiplayerGameRoundId != 0);
+					TestTrue("Other User has good id", OtherUser->Id != 0);
+
+					SecondPlayerRoundData->MultiplayerGameRoundId = OriginalRoundData->MultiplayerGameRoundId; // required for multiplayer rounds
+					SecondPlayerRoundData->GameUserId = OtherUser->Id;
+					SecondPlayerRoundData->Score = 50; // lower score
+					SecondPlayerRoundData->StartTime = FDateTime::Now();
+					SecondPlayerRoundData->EndTime = SecondPlayerRoundData->StartTime + FTimespan::FromMinutes(1);
+					SecondPlayerRoundData->GameType = "Multiplayer";
+					SecondPlayerRoundData->Place = 10;
+
+					GameFuseRounds->OnGameRoundResponse.AddLambda([this, SecondPlayerRoundData](const FGFGameRound& _RoundData) {
+						AddInfo("OnGameRoundResponse 2");
+
+						TestTrue("still has good multiplayer game round id", _RoundData.MultiplayerGameRoundId == SecondPlayerRoundData->MultiplayerGameRoundId);
+						TestTrue("has good id", _RoundData.Id != 0);
+						TestTrue("has lower score", _RoundData.Score == 50);
+						TestTrue("has arbitrary place", _RoundData.Place == 10);
+
+						int NumRankings = _RoundData.Rankings.Num();
+						TestTrue("has 2 rankings", NumRankings == 2);
+						GameFuseRounds->OnGameRoundResponse.Clear();
+					});
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*SecondPlayerRoundData, *OtherUser, FGFApiCallback())));
+					return true;
+				}));
 				return true;
 			}));
 		});

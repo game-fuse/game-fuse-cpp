@@ -4,6 +4,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Library/GameFuseStructLibrary.h"
 #include "API/RoundsAPIHandler.h"
+
 #include "GameFuseRounds.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnGameRoundResponseNative, const FGFGameRound&);
@@ -37,7 +38,14 @@ public:
 	void BP_DeleteGameRound(int32 RoundId, FBP_GFApiCallback Callback);
 
 	// C++ callable functions
+	/**
+	 * Creates a GameRound using the logged-in User
+	 */
 	FGuid CreateGameRound(const FGFGameRound& GameRound, FGFApiCallback Callback);
+	/**
+	 * Creates a GameRound for a specific User
+	 */
+	FGuid CreateGameRound(const FGFGameRound& GameRound, const FGFUserData& UserData, FGFApiCallback Callback);
 	FGuid GetGameRound(int32 RoundId, FGFApiCallback Callback);
 	FGuid UpdateGameRound(int32 RoundId, const FGFGameRound& GameRound, FGFApiCallback Callback);
 	FGuid GetUserGameRounds(FGFApiCallback Callback);

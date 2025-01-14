@@ -33,13 +33,23 @@ void UGameFuseRounds::BP_CreateGameRound(const FGFGameRound& GameRound, FBP_GFAp
 	CreateGameRound(GameRound, InternalCallback);
 }
 
+/**
+ * Auto Fills user data from the logged-in User
+ *
+ */
 FGuid UGameFuseRounds::CreateGameRound(const FGFGameRound& GameRound, FGFApiCallback Callback)
 {
 	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
-		Callback.AddUObject(this, &UGameFuseRounds::HandleGameRoundResponse);
-		return RequestHandler->CreateGameRound(User->GetUserData(), GameRound, Callback);
+
+		return CreateGameRound(GameRound, User->GetUserData(), Callback);
 	}
 	return FGuid();
+}
+
+FGuid UGameFuseRounds::CreateGameRound(const FGFGameRound& GameRound, const FGFUserData& UserData, FGFApiCallback Callback)
+{
+	Callback.AddUObject(this, &UGameFuseRounds::HandleGameRoundResponse);
+	return RequestHandler->CreateGameRound(UserData, GameRound, Callback);
 }
 
 void UGameFuseRounds::HandleGameRoundResponse(FGFAPIResponse Response)
