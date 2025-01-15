@@ -111,28 +111,13 @@ FGuid UGameFuseRounds::GetUserGameRounds(FGFApiCallback Callback)
 void UGameFuseRounds::HandleGameRoundListResponse(FGFAPIResponse Response)
 {
 	TArray<FGFGameRound> GameRounds;
-	TSharedPtr<FJsonObject> JsonObject;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
-
-	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid()) {
-		const TArray<TSharedPtr<FJsonValue>>* RoundsArray;
-		if (JsonObject->TryGetArrayField(TEXT("rounds"), RoundsArray)) {
-			for (const auto& RoundValue : *RoundsArray) {
-				if (const TSharedPtr<FJsonObject>* RoundObject; RoundValue->TryGetObject(RoundObject)) {
-					FString RoundString;
-					if (const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RoundString);
-						FJsonSerializer::Serialize(RoundObject->ToSharedRef(), Writer)) {
-						FGFGameRound GameRound;
-						if (GameFuseUtilities::ConvertJsonToGameRound(GameRound, RoundString)) {
-							GameRounds.Add(GameRound);
-						}
-					}
-				}
-			}
-		}
+	if (GameFuseUtilities::ConvertJsonArrayToGameRounds(GameRounds, Response.ResponseStr)) {
+		OnGameRoundListResponse.Broadcast(GameRounds);
+	} else {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to convert JSON to GameRounds"));
+		GameRounds.Empty();
+		OnGameRoundListResponse.Broadcast(GameRounds);
 	}
-
-	OnGameRoundListResponse.Broadcast(GameRounds);
 }
 
 void UGameFuseRounds::BP_DeleteGameRound(const int32 RoundId, FBP_GFApiCallback Callback)

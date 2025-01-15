@@ -1,5 +1,5 @@
 /**
-*  Copyright (c) 2023-11-06 GameFuse
+ *  Copyright (c) 2023-11-06 GameFuse
  *  All rights reserved.
  *
  *  https://GameFuse.co/
@@ -11,7 +11,6 @@
 #include "Library/GameFuseLog.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Library/GameFuseStructLibrary.h"
-
 
 
 void GameFuseUtilities::ConvertJsonToMap(TMap<FString, FString>& InMap, const FString& JsonString)
@@ -60,7 +59,6 @@ bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const TSh
 	JsonObject->TryGetStringField(TEXT("description"), InGameData.Description);
 
 	return true;
-
 }
 
 bool GameFuseUtilities::ConvertJsonToUserData(FGFUserData& InUserData, const TSharedPtr<FJsonObject>& JsonObject)
@@ -134,16 +132,14 @@ bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLead
 	return true;
 }
 
-void GameFuseUtilities::ConvertJsonArrayToMap(TMap<FString, FString> Map, const TArray<TSharedPtr<FJsonValue>>& _JsonArray)
+void GameFuseUtilities::ConvertJsonArrayToMap(TMap<FString, FString> Map, const TArray<TSharedPtr<FJsonValue>>& JsonArray)
 {
 	Map.Empty();
 
-	for (const TSharedPtr<FJsonValue>& JsonValue : _JsonArray) {
+	for (const TSharedPtr<FJsonValue>& JsonValue : JsonArray) {
 		UE_LOG(LogGameFuse, Log, TEXT("Converting JSON Array to Map"));
 	}
 }
-
-
 
 
 TSharedPtr<FJsonObject> GameFuseUtilities::ConvertMapToJsonObject(const TMap<FString, FString>& Map)
@@ -262,7 +258,6 @@ void GameFuseUtilities::LogResponse(FHttpResponsePtr HttpResponse)
 	UE_LOG(LogGameFuse, Log, TEXT("======== RESPONSE ========="))
 	UE_LOG(LogGameFuse, Log, TEXT("=== ResponseCode : %i ===="), HttpResponse->GetResponseCode());
 	UE_LOG(LogGameFuse, Log, TEXT("%s"), *HttpResponse->GetContentAsString());
-
 }
 
 void GameFuseUtilities::LogHeaders(const TMap<FString, FString>& Headers)
@@ -286,8 +281,9 @@ FDateTime GameFuseUtilities::StringToDateTime(const FString& DateTimeStr)
 }
 
 
-
 #pragma region GameRounds
+
+
 bool GameFuseUtilities::ConvertJsonToGameRound(FGFGameRound& InGameRound, const FString& JsonString)
 {
 	if (JsonString.IsEmpty()) {
@@ -303,20 +299,26 @@ bool GameFuseUtilities::ConvertJsonToGameRound(FGFGameRound& InGameRound, const 
 		return false;
 	}
 
-	// json object example {
-	// 	"id": 101,
-	// 	"game_user_id": 1,
-	// 	"start_time": "2024-09-20T10:00:00Z",
-	// 	"end_time": "2024-09-20T11:00:00Z",
-	// 	"score": 1600,
-	// 	"place": 2,
-	// 	"game_type": "battle",
-	// 	"metadata": {
-	// 		"level": "Hard"
-	// 	}
-	// }
 
 	// Required fields
+	return ConvertJsonToGameRound(InGameRound, JsonObject);
+}
+
+
+// json object example {
+// 	"id": 101,
+// 	"game_user_id": 1,
+// 	"start_time": "2024-09-20T10:00:00Z",
+// 	"end_time": "2024-09-20T11:00:00Z",
+// 	"score": 1600,
+// 	"place": 2,
+// 	"game_type": "battle",
+// 	"metadata": {
+// 		"level": "Hard"
+// 	}
+// }
+bool GameFuseUtilities::ConvertJsonToGameRound(FGFGameRound& InGameRound, const TSharedPtr<FJsonObject>& JsonObject)
+{
 	if (!JsonObject->HasField(TEXT("id")) || !JsonObject->HasField(TEXT("game_user_id"))) {
 		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Missing required fields"));
 		return false;
@@ -382,7 +384,7 @@ bool GameFuseUtilities::ConvertJsonToGameRound(FGFGameRound& InGameRound, const 
 	return true;
 }
 
-bool GameFuseUtilities::GameRoundToJson(const FGFGameRound& GameRound, TSharedPtr<FJsonObject>& JsonObject)
+bool GameFuseUtilities::GameRoundToJson(const FGFGameRound& GameRound, const TSharedPtr<FJsonObject>& JsonObject)
 {
 	// required fields
 	JsonObject->SetStringField("game_user_id", FString::FromInt(GameRound.GameUserId));
@@ -420,7 +422,7 @@ bool GameFuseUtilities::GameRoundToJson(const FGFGameRound& GameRound, TSharedPt
 }
 
 bool GameFuseUtilities::ConvertJsonArrayToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>* JsonRankings,
-                                                            TArray<FGFGameRoundRanking>& OutRankings)
+															TArray<FGFGameRoundRanking>& OutRankings)
 {
 	for (const auto& JsonRanking : *JsonRankings) {
 		const TSharedPtr<FJsonObject>* RankingObj;
@@ -454,6 +456,41 @@ bool GameFuseUtilities::ConvertJsonArrayToGameRoundRankings(const TArray<TShared
 			return false;
 		}
 	}
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonArrayToGameRounds(TArray<FGFGameRound>& InGameRounds, const FString& JsonString)
+{
+	if (JsonString.IsEmpty()) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Empty JSON string"));
+		return false;
+	}
+
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonArray) || JsonArray.Num() == 0) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Failed to parse JSON string: %s"), *JsonString);
+		return false;
+	}
+
+
+	for (const TSharedPtr<FJsonValue>& JsonValue : JsonArray) {
+		if (JsonValue->Type != EJson::Object) {
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonArrayToGameRounds: Invalid JSON value"));
+			return false;
+		}
+
+		FGFGameRound GameRound;
+		if (ConvertJsonToGameRound(GameRound, JsonValue->AsObject().ToSharedRef())) {
+			InGameRounds.Emplace(GameRound);
+		} else {
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonArrayToGameRounds: Failed to convert JSON value to GameRound"));
+			return false;
+		}
+	}
+
+
 	return true;
 }
 
