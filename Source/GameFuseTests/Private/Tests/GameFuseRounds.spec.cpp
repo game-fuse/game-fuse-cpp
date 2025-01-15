@@ -41,6 +41,25 @@ void GameFuseRoundsSpec::Define()
 
 	Describe("GameFuseRounds Basic Operations", [this]() {
 		BeforeEach([this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				if (GameFuseManager->IsSetUp()) {
+					UE_LOG(LogGameFuse, Warning, TEXT("Game was already Setup"));
+					GameFuseManager->ClearGameData();
+					return false; // Keep waiting
+				}
+				UE_LOG(LogGameFuse, Log, TEXT("GameFuseManager cleanup complete"));
+				return true;
+			}));
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				if (GameFuseUser->IsSignedIn()) {
+					UE_LOG(LogGameFuse, Warning, TEXT("User was already Signed in"));
+					GameFuseUser->LogOut();
+					return false; // Keep waiting
+				}
+				UE_LOG(LogGameFuse, Log, TEXT("GameFuseUser cleanup complete"));
+				return true;
+			}));
 			// Create and setup game
 			ADD_LATENT_AUTOMATION_COMMAND(FSetupGame(TestAPIHandler, GameData, GameFuseManager, this, FGuid()));
 

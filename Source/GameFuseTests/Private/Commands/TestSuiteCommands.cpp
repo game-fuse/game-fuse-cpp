@@ -21,7 +21,7 @@ bool FCreateGame::Update()
 
 		bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameData.Get());
 		UE_LOG(LogGameFuse, Log, TEXT("Parsing CreateGame response. Success: %d, GameData: ID=%d, Token=%s"),
-		       parseSuccess, GameData->Id, *GameData->Token);
+			   parseSuccess, GameData->Id, *GameData->Token);
 
 		Test->TestTrue("got game data from response", parseSuccess);
 		Test->TestTrue("Game ID should be valid", GameData->Id != 0);
@@ -279,6 +279,7 @@ bool FSetupUser::Update()
 
 	// Wait for user creation to complete
 	if (bCreateUserSent && APIHandler->IsRequestActive(RequestId)) {
+		UE_LOG(LogGameFuse, Log, TEXT("Waiting for user creation to complete..."));
 		return false;
 	}
 
@@ -317,6 +318,10 @@ bool FSetupUser::Update()
 		const FGFUserData& CurrentUserData = GameFuseUser->GetUserData();
 		Test->TestEqual("User IDs should match", CurrentUserData.Id, UserData->Id);
 		Test->TestEqual("Usernames should match", CurrentUserData.Username, UserData->Username);
+
+		// reset static vars
+		bCreateUserSent = false;
+		bSignInSent = false;
 		return true;
 	}
 
