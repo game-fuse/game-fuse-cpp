@@ -11,7 +11,7 @@ FGuid URoundsAPIHandler::CreateGameRound(const FGFUserData& UserData, const FGFG
 	}
 	SetAuthHeader(UserData.AuthenticationToken);
 	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
-	if (GameFuseUtilities::GameRoundToJson(GameRound, JsonObject)) {
+	if (GameFuseUtilities::ConvertGameRoundToJson(GameRound, JsonObject)) {
 		JsonObject->SetNumberField("game_user_id", UserData.Id);
 		UE_LOG(LogGameFuse, Verbose, TEXT("Creating new game round"));
 		return SendRequest("/game_rounds", "POST", Callback, JsonObject);
@@ -36,7 +36,7 @@ FGuid URoundsAPIHandler::UpdateGameRound(int32 RoundId, const FGFUserData& UserD
 	const FString ApiEndpoint = FString::Printf(TEXT("/game_rounds/%d"), RoundId);
 
 	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
-	if (GameFuseUtilities::GameRoundToJson(GameRound, JsonObject)) {
+	if (GameFuseUtilities::ConvertGameRoundToJson(GameRound, JsonObject)) {
 		JsonObject->SetNumberField("game_user_id", UserData.Id);
 		UE_LOG(LogGameFuse, Verbose, TEXT("Updating game round with ID: %d"), RoundId);
 		return SendRequest(ApiEndpoint, "PUT", Callback, JsonObject);

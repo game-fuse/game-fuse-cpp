@@ -39,7 +39,7 @@ public:
 
 	FGuid RemoveStoreItem(const int StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	FGuid AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, TMap<FString, FString>* ExtraAttributes, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, const TMap<FString, FString>& ExtraAttributes, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	FGuid ClearLeaderboardEntry(const FString& LeaderboardName, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
@@ -54,8 +54,4 @@ public:
 
 	//> Helper Functions
 	// TFunction<void(FHttpRequestPtr, const FHttpResponsePtr&, bool)> HandleResponseReceived(const FGFApiCallback& Callback);
-
-
-
-
 };

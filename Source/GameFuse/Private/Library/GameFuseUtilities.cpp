@@ -8,46 +8,58 @@
 
 #include "Library/GameFuseUtilities.h"
 
+#include "GenericPlatform/GenericPlatformHttp.h"
 #include "Library/GameFuseLog.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Library/GameFuseStructLibrary.h"
 
 
-void GameFuseUtilities::ConvertJsonToMap(TMap<FString, FString>& InMap, const FString& JsonString)
+#pragma region Struct => JSON Conversion
+
+bool GameFuseUtilities::ConvertGameRoundToJson(const FGFGameRound& GameRound, const TSharedPtr<FJsonObject>& JsonObject)
 {
+	// required fields
+	JsonObject->SetStringField("game_user_id", FString::FromInt(GameRound.GameUserId));
 
-	InMap.Empty();
-
-	TSharedPtr<FJsonObject> JsonObject;
-	const TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonString);
-
-	if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid()) {
-		// Reserve memory in the map to avoid reallocations
-		InMap.Reserve(JsonObject->Values.Num());
-
-		// Iterate over the JSON object's key-value pairs
-		for (const auto& JsonField : JsonObject->Values) {
-			const FString& Key = JsonField.Key;
-			const TSharedPtr<FJsonValue>& JsonValue = JsonField.Value;
-
-			// Check if the JSON value is a string
-			if (JsonValue.IsValid() && JsonValue->Type == EJson::String) {
-				// Access the string value directly
-				const FString& Value = JsonValue->AsString();
-
-				// Add the key-value pair to the map without unnecessary copies
-				InMap.Emplace(Key, Value);
-			} else {
-				UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON value for key: %s \n Input String :\n %s"), *Key, *JsonString);
-			}
-		}
+	if (GameRound.StartTime != FDateTime()) {
+		JsonObject->SetStringField("start_time", GameRound.StartTime.ToIso8601());
 	}
+	if (GameRound.EndTime != FDateTime()) {
+		JsonObject->SetStringField("end_time", GameRound.EndTime.ToIso8601());
+	}
+
+	JsonObject->SetNumberField("score", GameRound.Score);
+	if (GameRound.Place >= 0) {
+		JsonObject->SetNumberField("place", GameRound.Place);
+	}
+	if (!GameRound.GameType.IsEmpty()) {
+		JsonObject->SetStringField("game_type", GameRound.GameType);
+	} else { // special case since it's marked as not required, but the request will fail without it
+		UE_LOG(LogGameFuse, Warning, TEXT("GameRoundToJson: Missing required field 'game_type', adding default value"));
+		JsonObject->SetStringField("game_type", "default");
+	}
+
+	if (GameRound.bMultiplayer) {
+		JsonObject->SetBoolField("multiplayer", GameRound.bMultiplayer);
+	}
+	if (GameRound.MultiplayerGameRoundId >= 0) {
+		JsonObject->SetNumberField("multiplayer_game_round_id", GameRound.MultiplayerGameRoundId);
+	}
+
+	if (!GameRound.Metadata.IsEmpty()) {
+		JsonObject->SetObjectField("metadata", ConvertMapToJsonObject(GameRound.Metadata));
+	}
+
+	return true;
 }
+
+#pragma endregion
+
+#pragma region JSON => Struct Conversion
 
 
 bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const TSharedPtr<FJsonObject>& JsonObject)
 {
-
 	if (!JsonObject.IsValid()) {
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for GameData conversion"));
 		return false;
@@ -123,24 +135,238 @@ bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLead
 
 	JsonObject->TryGetStringField(TEXT("username"), InLeaderboardItem.Username);
 	JsonObject->TryGetStringField(TEXT("leaderboard_name"), InLeaderboardItem.LeaderboardName);
-	JsonObject->TryGetStringField(TEXT("extra_attributes"), InLeaderboardItem.ExtraAttributes);
 
 	JsonObject->TryGetNumberField(TEXT("score"), InLeaderboardItem.Score);
 	JsonObject->TryGetNumberField(TEXT("game_user_id"), InLeaderboardItem.GameUserId);
 
+	if (JsonObject->HasField(TEXT("extra_attributes"))) {
+		// Log the raw extra_attributes field
+		FString RawExtraAttribs;
+		JsonObject->TryGetStringField(TEXT("extra_attributes"), RawExtraAttribs);
+		UE_LOG(LogGameFuse, Log, TEXT("Raw extra_attributes: %s"), *RawExtraAttribs);
+
+		// extra attribs is stored as string so needs decoding before can be read as json
+		FString ExtraAttribsStr = RawExtraAttribs;
+		ExtraAttribsStr = FGenericPlatformHttp::UrlDecode(ExtraAttribsStr);
+		UE_LOG(LogGameFuse, Log, TEXT("URL Decoded extra_attributes: %s"), *ExtraAttribsStr);
+
+		ExtraAttribsStr = ExtraAttribsStr.Replace(TEXT("=>"), TEXT(":"));
+		UE_LOG(LogGameFuse, Log, TEXT("After => replacement: %s"), *ExtraAttribsStr);
+
+		TSharedPtr<FJsonObject> ExtraAttribsJson;
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ExtraAttribsStr);
+
+		if (!FJsonSerializer::Deserialize(Reader, ExtraAttribsJson) || !ExtraAttribsJson.IsValid()) {
+			UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+			return false;
+		}
+
+		ConvertJsonObjectToStringMap(ExtraAttribsJson, InLeaderboardItem.ExtraAttributes);
+
+		// Log the final attributes map
+		UE_LOG(LogGameFuse, Log, TEXT("Final ExtraAttributes map:"));
+		for (const auto& Pair : InLeaderboardItem.ExtraAttributes) {
+			UE_LOG(LogGameFuse, Log, TEXT("  %s: %s"), *Pair.Key, *Pair.Value);
+		}
+	}
 
 	return true;
 }
 
-void GameFuseUtilities::ConvertJsonArrayToMap(TMap<FString, FString> Map, const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+bool GameFuseUtilities::ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObject>& JsonObject, TMap<FString, FString>& InMap, const FString& FieldKey)
 {
-	Map.Empty();
+	InMap.Empty(); // Clear existing metadata
 
-	for (const TSharedPtr<FJsonValue>& JsonValue : JsonArray) {
-		UE_LOG(LogGameFuse, Log, TEXT("Converting JSON Array to Map"));
+	// if FieldKey is empty, assume the object is the map
+	// aka the json object looks like {"key1": "value1", "key2": "value2"}
+	if (FieldKey.IsEmpty()) {
+		// assume the object is the map
+		for (const auto& Pair : JsonObject->Values) {
+			if (Pair.Value.IsValid() && Pair.Value->Type == EJson::String) {
+				InMap.Add(Pair.Key, Pair.Value->AsString());
+			}
+		}
+		return true;
 	}
+
+
+	// if field is null, return success and skip
+	if (JsonObject->HasTypedField(FStringView(FieldKey), EJson::Null)) {
+		UE_LOG(LogGameFuse, Log, TEXT("ConvertJsonToGameRound: %s field is null, skipping"), *FieldKey);
+		return true;
+	}
+
+	// if FieldKey is not empty, assume the object is a field in the map
+	// aka the json object looks like {"field_key": {"key1": "value1", "key2": "value2"}}
+	const TSharedPtr<FJsonObject>* SrcJsonObject = nullptr;
+	if (JsonObject->TryGetObjectField(FStringView(FieldKey), SrcJsonObject)) {
+		if (!SrcJsonObject->IsValid()) {
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid object value for field: %s"), *FieldKey);
+			return false;
+		}
+
+		if ((*SrcJsonObject)->Values.Num() == 0) {
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: object was empty: %s"), *FieldKey);
+			return true;
+		}
+
+		for (const auto& Pair : (*SrcJsonObject)->Values) {
+			if (!Pair.Value.IsValid()) {
+				UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid object value for key: %s"), *Pair.Key);
+				continue;
+			}
+
+			FString ValueStr;
+			if (Pair.Value->TryGetString(ValueStr)) {
+				InMap.Add(Pair.Key, ValueStr);
+			}
+		}
+		return true;
+	}
+	return true;
 }
 
+#pragma endregion
+
+#pragma region Game Rounds
+
+bool GameFuseUtilities::ConvertJsonToGameRound(FGFGameRound& InGameRound, const FString& JsonString)
+{
+	if (JsonString.IsEmpty()) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Empty JSON string"));
+		return false;
+	}
+
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Failed to parse JSON string: %s"), *JsonString);
+		return false;
+	}
+
+	return ConvertJsonToGameRound(InGameRound, JsonObject);
+}
+
+bool GameFuseUtilities::ConvertJsonToGameRound(FGFGameRound& InGameRound, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (!JsonObject->HasField(TEXT("id")) || !JsonObject->HasField(TEXT("game_user_id"))) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Missing required fields"));
+		return false;
+	}
+
+	JsonObject->TryGetNumberField(TEXT("id"), InGameRound.Id);
+	JsonObject->TryGetNumberField(TEXT("game_user_id"), InGameRound.GameUserId);
+
+	// Optional fields with default values
+	FString StartTime;
+	if (JsonObject->TryGetStringField(TEXT("start_time"), StartTime)) {
+		InGameRound.StartTime = StringToDateTime(StartTime);
+	}
+
+	FString EndTime;
+	if (JsonObject->TryGetStringField(TEXT("end_time"), EndTime)) {
+		InGameRound.EndTime = StringToDateTime(EndTime);
+	}
+
+	JsonObject->TryGetNumberField(TEXT("score"), InGameRound.Score);
+	JsonObject->TryGetNumberField(TEXT("place"), InGameRound.Place);
+	JsonObject->TryGetStringField(TEXT("game_type"), InGameRound.GameType);
+
+	if (JsonObject->HasField(TEXT("metadata")) && !ConvertJsonObjectToStringMap(JsonObject, InGameRound.Metadata, "metadata")) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Failed to convert metadata to map"));
+		return false;
+	}
+
+	JsonObject->TryGetNumberField(TEXT("multiplayer_game_round_id"), InGameRound.MultiplayerGameRoundId);
+
+	if (InGameRound.MultiplayerGameRoundId > 0) {
+		const TArray<TSharedPtr<FJsonValue>>* RankingArray;
+		JsonObject->TryGetArrayField(TEXT("rankings"), RankingArray);
+		if (!ConvertJsonArrayToGameRoundRankings(RankingArray, InGameRound.Rankings)) {
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Failed to convert rankings to array"));
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
+bool GameFuseUtilities::ConvertJsonArrayToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>* JsonRankings,
+															TArray<FGFGameRoundRanking>& OutRankings)
+{
+	for (const auto& JsonRanking : *JsonRankings) {
+		const TSharedPtr<FJsonObject>* RankingObj;
+		if (JsonRanking->TryGetObject(RankingObj)) {
+			FGFGameRoundRanking Ranking;
+
+			if (!(*RankingObj)->TryGetNumberField(TEXT("place"), Ranking.Place)) {
+				// null represented with -1;
+				UE_LOG(LogGameFuse, Log, TEXT("null place represented with -1"));
+				Ranking.Place = -1;
+			}
+			(*RankingObj)->TryGetNumberField(TEXT("score"), Ranking.Score);
+
+			FString StartTimeStr, EndTimeStr;
+			if ((*RankingObj)->TryGetStringField(TEXT("start_time"), StartTimeStr)) {
+				Ranking.StartTime = StringToDateTime(StartTimeStr);
+			}
+			if ((*RankingObj)->TryGetStringField(TEXT("end_time"), EndTimeStr)) {
+				Ranking.EndTime = StringToDateTime(EndTimeStr);
+			}
+
+			// Parse user data
+			const TSharedPtr<FJsonObject>* UserObj;
+			if ((*RankingObj)->TryGetObjectField(TEXT("user"), UserObj)) {
+				ConvertJsonToUserData(Ranking.User, *UserObj);
+			}
+
+			OutRankings.Emplace(Ranking);
+		} else {
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonArrayToGameRoundRankings: Invalid ranking object"));
+			return false;
+		}
+	}
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonArrayToGameRounds(TArray<FGFGameRound>& InGameRounds, const FString& JsonString)
+{
+	if (JsonString.IsEmpty()) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Empty JSON string"));
+		return false;
+	}
+
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonArray) || JsonArray.Num() == 0) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Failed to parse JSON string: %s"), *JsonString);
+		return false;
+	}
+
+	for (const TSharedPtr<FJsonValue>& JsonValue : JsonArray) {
+		if (JsonValue->Type != EJson::Object) {
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonArrayToGameRounds: Invalid JSON value"));
+			return false;
+		}
+
+		FGFGameRound GameRound;
+		if (ConvertJsonToGameRound(GameRound, JsonValue->AsObject().ToSharedRef())) {
+			InGameRounds.Emplace(GameRound);
+		} else {
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonArrayToGameRounds: Failed to convert JSON value to GameRound"));
+			return false;
+		}
+	}
+
+	return true;
+}
+
+#pragma endregion
+
+#pragma region Utility Functions
 
 TSharedPtr<FJsonObject> GameFuseUtilities::ConvertMapToJsonObject(const TMap<FString, FString>& Map)
 {
@@ -193,8 +419,6 @@ FString GameFuseUtilities::MakeStrRequestBody(const FString& AuthenticationToken
 
 	return OutputString;
 }
-
-//> Check JSON data to determine what response was received
 
 EGFCoreAPIResponseType GameFuseUtilities::DetermineCoreAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject)
 {
@@ -280,219 +504,4 @@ FDateTime GameFuseUtilities::StringToDateTime(const FString& DateTimeStr)
 	return Result;
 }
 
-
-#pragma region GameRounds
-
-
-bool GameFuseUtilities::ConvertJsonToGameRound(FGFGameRound& InGameRound, const FString& JsonString)
-{
-	if (JsonString.IsEmpty()) {
-		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Empty JSON string"));
-		return false;
-	}
-
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
-
-	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
-		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Failed to parse JSON string: %s"), *JsonString);
-		return false;
-	}
-
-
-	// Required fields
-	return ConvertJsonToGameRound(InGameRound, JsonObject);
-}
-
-
-// json object example {
-// 	"id": 101,
-// 	"game_user_id": 1,
-// 	"start_time": "2024-09-20T10:00:00Z",
-// 	"end_time": "2024-09-20T11:00:00Z",
-// 	"score": 1600,
-// 	"place": 2,
-// 	"game_type": "battle",
-// 	"metadata": {
-// 		"level": "Hard"
-// 	}
-// }
-bool GameFuseUtilities::ConvertJsonToGameRound(FGFGameRound& InGameRound, const TSharedPtr<FJsonObject>& JsonObject)
-{
-	if (!JsonObject->HasField(TEXT("id")) || !JsonObject->HasField(TEXT("game_user_id"))) {
-		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Missing required fields"));
-		return false;
-	}
-
-	JsonObject->TryGetNumberField(TEXT("id"), InGameRound.Id);
-	JsonObject->TryGetNumberField(TEXT("game_user_id"), InGameRound.GameUserId);
-
-	// Optional fields with default values
-	FString StartTime;
-	if (JsonObject->TryGetStringField(TEXT("start_time"), StartTime)) {
-		InGameRound.StartTime = StringToDateTime(StartTime);
-	}
-
-	FString EndTime;
-	if (JsonObject->TryGetStringField(TEXT("end_time"), EndTime)) {
-		InGameRound.EndTime = StringToDateTime(EndTime);
-	}
-
-	JsonObject->TryGetNumberField(TEXT("score"), InGameRound.Score);
-	JsonObject->TryGetNumberField(TEXT("place"), InGameRound.Place);
-	JsonObject->TryGetStringField(TEXT("game_type"), InGameRound.GameType);
-
-
-	// Handle metadata
-	InGameRound.Metadata.Empty(); // Clear existing metadata
-
-	if (!JsonObject->HasTypedField(TEXT("metadata"), EJson::Null)) {
-		const TSharedPtr<FJsonObject>* MetadataObject = nullptr;
-		if (JsonObject->TryGetObjectField(TEXT("metadata"), MetadataObject) && MetadataObject != nullptr) {
-			if (!MetadataObject->IsValid()) {
-				UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid metadata object"));
-				return false;
-			}
-
-			for (const auto& Pair : (*MetadataObject)->Values) {
-				if (!Pair.Value.IsValid()) {
-					UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid metadata value for key: %s"), *Pair.Key);
-					continue;
-				}
-
-				FString ValueStr;
-				if (Pair.Value->TryGetString(ValueStr)) {
-					InGameRound.Metadata.Add(Pair.Key, ValueStr);
-				}
-			}
-		}
-	} else {
-		UE_LOG(LogGameFuse, Log, TEXT("ConvertJsonToGameRound: Metadata field is null"));
-	}
-
-
-	JsonObject->TryGetNumberField(TEXT("multiplayer_game_round_id"), InGameRound.MultiplayerGameRoundId);
-
-	if (InGameRound.MultiplayerGameRoundId > 0) {
-		const TArray<TSharedPtr<FJsonValue>>* RankingArray;
-		const TSharedPtr<FJsonObject>* RankObject;
-		JsonObject->TryGetObjectField(TEXT("rankings"), RankObject);
-		JsonObject->TryGetArrayField(TEXT("rankings"), RankingArray);
-		ConvertJsonArrayToGameRoundRankings(RankingArray, InGameRound.Rankings);
-	}
-
-	return true;
-}
-
-bool GameFuseUtilities::GameRoundToJson(const FGFGameRound& GameRound, const TSharedPtr<FJsonObject>& JsonObject)
-{
-	// required fields
-	JsonObject->SetStringField("game_user_id", FString::FromInt(GameRound.GameUserId));
-
-	if (GameRound.StartTime != FDateTime()) {
-		JsonObject->SetStringField("start_time", GameRound.StartTime.ToIso8601());
-	}
-	if (GameRound.EndTime != FDateTime()) {
-		JsonObject->SetStringField("end_time", GameRound.EndTime.ToIso8601());
-	}
-
-	JsonObject->SetNumberField("score", GameRound.Score);
-	if (GameRound.Place >= 0) {
-		JsonObject->SetNumberField("place", GameRound.Place);
-	}
-	if (!GameRound.GameType.IsEmpty()) {
-		JsonObject->SetStringField("game_type", GameRound.GameType);
-	} else {
-		UE_LOG(LogGameFuse, Warning, TEXT("GameRoundToJson: Missing required field 'game_type', adding default value"));
-		JsonObject->SetStringField("game_type", "default");
-	}
-
-	if (GameRound.bMultiplayer) {
-		JsonObject->SetBoolField("multiplayer", GameRound.bMultiplayer);
-	}
-	if (GameRound.MultiplayerGameRoundId >= 0) {
-		JsonObject->SetNumberField("multiplayer_game_round_id", GameRound.MultiplayerGameRoundId);
-	}
-
-	if (!GameRound.Metadata.IsEmpty()) {
-		JsonObject->SetObjectField("metadata", ConvertMapToJsonObject(GameRound.Metadata));
-	}
-
-	return true;
-}
-
-bool GameFuseUtilities::ConvertJsonArrayToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>* JsonRankings,
-															TArray<FGFGameRoundRanking>& OutRankings)
-{
-	for (const auto& JsonRanking : *JsonRankings) {
-		const TSharedPtr<FJsonObject>* RankingObj;
-		if (JsonRanking->TryGetObject(RankingObj)) {
-			FGFGameRoundRanking Ranking;
-
-			if (!(*RankingObj)->TryGetNumberField(TEXT("place"), Ranking.Place)) {
-				// null represented with -1;
-				UE_LOG(LogGameFuse, Log, TEXT("null place represented with -1"));
-				Ranking.Place = -1;
-			}
-			(*RankingObj)->TryGetNumberField(TEXT("score"), Ranking.Score);
-
-			FString StartTimeStr, EndTimeStr;
-			if ((*RankingObj)->TryGetStringField(TEXT("start_time"), StartTimeStr)) {
-				Ranking.StartTime = StringToDateTime(StartTimeStr);
-			}
-			if ((*RankingObj)->TryGetStringField(TEXT("end_time"), EndTimeStr)) {
-				Ranking.EndTime = StringToDateTime(EndTimeStr);
-			}
-
-			// Parse user data
-			const TSharedPtr<FJsonObject>* UserObj;
-			if ((*RankingObj)->TryGetObjectField(TEXT("user"), UserObj)) {
-				ConvertJsonToUserData(Ranking.User, *UserObj);
-			}
-
-			OutRankings.Emplace(Ranking);
-		} else {
-			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonArrayToGameRoundRankings: Invalid ranking object"));
-			return false;
-		}
-	}
-	return true;
-}
-
-bool GameFuseUtilities::ConvertJsonArrayToGameRounds(TArray<FGFGameRound>& InGameRounds, const FString& JsonString)
-{
-	if (JsonString.IsEmpty()) {
-		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Empty JSON string"));
-		return false;
-	}
-
-	TArray<TSharedPtr<FJsonValue>> JsonArray;
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
-
-	if (!FJsonSerializer::Deserialize(Reader, JsonArray) || JsonArray.Num() == 0) {
-		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Failed to parse JSON string: %s"), *JsonString);
-		return false;
-	}
-
-
-	for (const TSharedPtr<FJsonValue>& JsonValue : JsonArray) {
-		if (JsonValue->Type != EJson::Object) {
-			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonArrayToGameRounds: Invalid JSON value"));
-			return false;
-		}
-
-		FGFGameRound GameRound;
-		if (ConvertJsonToGameRound(GameRound, JsonValue->AsObject().ToSharedRef())) {
-			InGameRounds.Emplace(GameRound);
-		} else {
-			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonArrayToGameRounds: Failed to convert JSON value to GameRound"));
-			return false;
-		}
-	}
-
-
-	return true;
-}
-
-
-#pragma endregion GameRounds
+#pragma endregion

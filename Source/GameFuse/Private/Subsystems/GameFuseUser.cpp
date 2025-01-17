@@ -1,5 +1,5 @@
 /**
-*  Copyright (c) 2023-11-06 GameFuse
+ *  Copyright (c) 2023-11-06 GameFuse
  *  All rights reserved.
  *
  *  https://GameFuse.co/
@@ -9,7 +9,6 @@
 
 #include "Subsystems/GameFuseUser.h"
 
-#include "JsonObjectConverter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetStringLibrary.h"
 
@@ -19,9 +18,7 @@
 #include "Subsystems/GameFuseManager.h"
 
 
-
 #pragma region Subsystem Overloads
-
 
 
 void UGameFuseUser::Initialize(FSubsystemCollectionBase& Collection)
@@ -207,7 +204,6 @@ void UGameFuseUser::BP_FetchPurchasedStoreItems(FBP_GFApiCallback Callback)
 }
 
 
-
 void UGameFuseUser::BP_RemoveStoreItemWithId(const int StoreItemId, FBP_GFApiCallback Callback)
 {
 	FGFApiCallback InternalCallback;
@@ -236,7 +232,7 @@ void UGameFuseUser::BP_AddLeaderboardEntry(const FString& LeaderboardName, const
 	AddLeaderboardEntry(LeaderboardName, Score, InternalCallback);
 }
 
-void UGameFuseUser::BP_AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int Score, TMap<FString, FString> ExtraAttributes, FBP_GFApiCallback Callback)
+void UGameFuseUser::BP_AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int Score, TMap<FString, FString>& ExtraAttributes, FBP_GFApiCallback Callback)
 {
 	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
@@ -256,7 +252,6 @@ void UGameFuseUser::BP_ClearLeaderboardEntry(const FString& LeaderboardName, FBP
 	WrapBlueprintCallback(Callback, InternalCallback);
 	ClearLeaderboardEntry(LeaderboardName, InternalCallback);
 }
-
 
 
 void UGameFuseUser::BP_FetchAttributes(FBP_GFApiCallback Callback)
@@ -283,7 +278,6 @@ void UGameFuseUser::BP_SyncLocalAttributes(FBP_GFApiCallback Callback)
 
 #pragma endregion
 #pragma region Game Fuse User SignUp and SignIn
-
 
 
 FGuid UGameFuseUser::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FGFApiCallback Callback)
@@ -325,7 +319,6 @@ void UGameFuseUser::LogOut(const FString& SaveSlotName)
 	} else {
 		UE_LOG(LogGameFuse, Log, TEXT("Save slot %s does not exist"), *SaveSlotName);
 	}
-
 }
 
 
@@ -432,11 +425,11 @@ FGuid UGameFuseUser::RemoveStoreItemWithId(const int StoreItemId, FGFApiCallback
 }
 
 
-FGuid UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, TMap<FString, FString> ExtraAttributes, FGFApiCallback Callback)
+FGuid UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, const TMap<FString, FString>& ExtraAttributes, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	return RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, &ExtraAttributes, UserData, Callback);
+	return RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, ExtraAttributes, UserData, Callback);
 }
 
 
@@ -444,7 +437,7 @@ FGuid UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const i
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
 
-	return RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, nullptr, UserData, Callback);
+	return AddLeaderboardEntryWithAttributes(LeaderboardName, OurScore, TMap<FString, FString>(), Callback);
 }
 
 
@@ -462,7 +455,6 @@ FGuid UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGFAp
 
 	return RequestHandler->ClearLeaderboardEntry(LeaderboardName, UserData, Callback);
 }
-
 
 
 FGuid UGameFuseUser::FetchAttributes(FGFApiCallback Callback)
@@ -500,7 +492,7 @@ void UGameFuseUser::InternalResponseManager(FGFAPIResponse ResponseData)
 	}
 	EGFUserAPIResponseType ResponseType = GameFuseUtilities::DetermineUserAPIResponseType(JsonObject);
 	switch (ResponseType) {
-		//switch on EGF_UserAPIResponse
+		// switch on EGF_UserAPIResponse
 		case (EGFUserAPIResponseType::Login):
 			SetLoginInternal(JsonObject);
 			break;
@@ -522,7 +514,6 @@ void UGameFuseUser::InternalResponseManager(FGFAPIResponse ResponseData)
 			break;
 		default:
 			UE_LOG(LogGameFuse, Warning, TEXT("Unknown Response Data"));
-
 	}
 }
 
@@ -611,7 +602,7 @@ void UGameFuseUser::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObj
 		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray) {
 			size_t newIndex = PurchasedStoreItems.AddDefaulted();
 
-			//TODO: use json converter to Ustruct
+			// TODO: use json converter to Ustruct
 			bool bSuccess = GameFuseUtilities::ConvertJsonToStoreItem(PurchasedStoreItems[newIndex], AttributeValue);
 
 			if (!bSuccess) {
@@ -644,14 +635,11 @@ void UGameFuseUser::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonO
 
 	for (const TSharedPtr<FJsonValue>& AttributeValue : AttributeArray) {
 		size_t newIndex = LeaderboardEntries.AddDefaulted();
-		//TODO: use json converter to Ustruct, look into converting entire array from string
 		const bool bSuccess = GameFuseUtilities::ConvertJsonToLeaderboardItem(LeaderboardEntries[newIndex], AttributeValue);
 
 		if (!bSuccess) {
 			LeaderboardEntries.RemoveAt(newIndex);
 		}
-
 	}
 	UE_LOG(LogGameFuse, Log, TEXT("Fetched User Leaderboard Entries. Amount : %d"), LeaderboardEntries.Num());
-
 }
