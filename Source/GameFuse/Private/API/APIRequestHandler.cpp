@@ -95,7 +95,6 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid RequestId or OnResponseReceived callback, request not sent"));
 		return RequestId;
 	}
-
 	// Execute request asynchronously
 	HttpRequest->ProcessRequest();
 
@@ -120,8 +119,17 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 	}
 
 	if (!Response.IsValid()) {
-		UE_LOG(LogGameFuse, Error, TEXT("Invalid response for request:"));
+
+		ResponseDelegates.Contains(RequestId);
+		{
+			const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
+			FString ResponseContent = TEXT("Bad Response, Request is not valid");
+
+			Delegate.Broadcast(FGFAPIResponse(false, ResponseContent, RequestId.ToString(), 404));
+			ResponseDelegates.Remove(RequestId);
+		}
 		GameFuseUtilities::LogRequest(Request);
+		ActiveRequests.Remove(RequestId);
 		return;
 	}
 
