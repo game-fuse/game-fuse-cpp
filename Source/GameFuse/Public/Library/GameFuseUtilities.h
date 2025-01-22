@@ -77,13 +77,13 @@ public:
 	static bool ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
 
 	/**
-	 * Converts a json object into a TMap<FString, FString>
-	 * @param JsonObject Json Data
-	 * @param InMap Map to store converted data
-	 * @param FieldKey optional, if the data is nested in a field
-	 * @return true if successful, or FieldKey is a null field (no data to convert)
+	 * Converts a JSON value into a FriendRequest
+	 * @param OutRequest FriendRequest struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
 	 */
-	static bool ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObject>& JsonObject, TMap<FString, FString>& InMap, const FString& FieldKey = "");
+	static bool ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest, const TSharedPtr<FJsonObject>& JsonObject);
+
 
 #pragma endregion
 
@@ -196,6 +196,16 @@ public:
 	 * @return The JSON object
 	 */
 	static TSharedPtr<FJsonObject> ConvertMapToJsonObject(const TMap<FString, FString>& Map);
+
+	/**
+	 * Converts a json object into a TMap<FString, FString>
+	 * @param JsonObject Json Data
+	 * @param InMap Map to store converted data
+	 * @param FieldKey optional, if the data is nested in a field
+	 * @return true if successful, or FieldKey is a null field (no data to convert)
+	 */
+	static bool ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObject>& JsonObject, TMap<FString, FString>& InMap, const FString& FieldKey = "");
+
 
 #pragma endregion
 };

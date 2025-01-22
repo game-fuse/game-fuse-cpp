@@ -251,3 +251,21 @@ struct FGFGameRound
 	FGFGameRound()
 	{}
 };
+
+USTRUCT(BlueprintType)
+struct GAMEFUSE_API FGFFriendRequest
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
+	int32 OriginUserId = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
+	int32 FriendshipId = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
+	FString OriginUsername;
+
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
+	FString RequestCreatedDate;
+};

@@ -173,56 +173,19 @@ bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLead
 	return true;
 }
 
-bool GameFuseUtilities::ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObject>& JsonObject, TMap<FString, FString>& InMap, const FString& FieldKey)
+
+bool GameFuseUtilities::ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest, const TSharedPtr<FJsonObject>& JsonObject)
 {
-	InMap.Empty(); // Clear existing metadata
-
-	// if FieldKey is empty, assume the object is the map
-	// aka the json object looks like {"key1": "value1", "key2": "value2"}
-	if (FieldKey.IsEmpty()) {
-		// assume the object is the map
-		for (const auto& Pair : JsonObject->Values) {
-			if (Pair.Value.IsValid() && Pair.Value->Type == EJson::String) {
-				InMap.Add(Pair.Key, Pair.Value->AsString());
-			}
-		}
-		return true;
+	if (!JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for FriendRequest conversion"));
+		return false;
 	}
 
+	JsonObject->TryGetNumberField(TEXT("id"), OutRequest.OriginUserId);
+	JsonObject->TryGetNumberField(TEXT("friendship_id"), OutRequest.FriendshipId);
+	JsonObject->TryGetStringField(TEXT("username"), OutRequest.OriginUsername);
+	JsonObject->TryGetStringField(TEXT("requested_at"), OutRequest.RequestCreatedDate);
 
-	// if field is null, return success and skip
-	if (JsonObject->HasTypedField(FStringView(FieldKey), EJson::Null)) {
-		UE_LOG(LogGameFuse, Log, TEXT("ConvertJsonToGameRound: %s field is null, skipping"), *FieldKey);
-		return true;
-	}
-
-	// if FieldKey is not empty, assume the object is a field in the map
-	// aka the json object looks like {"field_key": {"key1": "value1", "key2": "value2"}}
-	const TSharedPtr<FJsonObject>* SrcJsonObject = nullptr;
-	if (JsonObject->TryGetObjectField(FStringView(FieldKey), SrcJsonObject)) {
-		if (!SrcJsonObject->IsValid()) {
-			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid object value for field: %s"), *FieldKey);
-			return false;
-		}
-
-		if ((*SrcJsonObject)->Values.Num() == 0) {
-			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: object was empty: %s"), *FieldKey);
-			return true;
-		}
-
-		for (const auto& Pair : (*SrcJsonObject)->Values) {
-			if (!Pair.Value.IsValid()) {
-				UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid object value for key: %s"), *Pair.Key);
-				continue;
-			}
-
-			FString ValueStr;
-			if (Pair.Value->TryGetString(ValueStr)) {
-				InMap.Add(Pair.Key, ValueStr);
-			}
-		}
-		return true;
-	}
 	return true;
 }
 
@@ -502,6 +465,59 @@ FDateTime GameFuseUtilities::StringToDateTime(const FString& DateTimeStr)
 	FDateTime Result;
 	FDateTime::ParseIso8601(*DateTimeStr, Result);
 	return Result;
+}
+
+bool GameFuseUtilities::ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObject>& JsonObject, TMap<FString, FString>& InMap, const FString& FieldKey)
+{
+	InMap.Empty(); // Clear existing metadata
+
+	// if FieldKey is empty, assume the object is the map
+	// aka the json object looks like {"key1": "value1", "key2": "value2"}
+	if (FieldKey.IsEmpty()) {
+		// assume the object is the map
+		for (const auto& Pair : JsonObject->Values) {
+			if (Pair.Value.IsValid() && Pair.Value->Type == EJson::String) {
+				InMap.Add(Pair.Key, Pair.Value->AsString());
+			}
+		}
+		return true;
+	}
+
+
+	// if field is null, return success and skip
+	if (JsonObject->HasTypedField(FStringView(FieldKey), EJson::Null)) {
+		UE_LOG(LogGameFuse, Log, TEXT("ConvertJsonToGameRound: %s field is null, skipping"), *FieldKey);
+		return true;
+	}
+
+	// if FieldKey is not empty, assume the object is a field in the map
+	// aka the json object looks like {"field_key": {"key1": "value1", "key2": "value2"}}
+	const TSharedPtr<FJsonObject>* SrcJsonObject = nullptr;
+	if (JsonObject->TryGetObjectField(FStringView(FieldKey), SrcJsonObject)) {
+		if (!SrcJsonObject->IsValid()) {
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid object value for field: %s"), *FieldKey);
+			return false;
+		}
+
+		if ((*SrcJsonObject)->Values.Num() == 0) {
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: object was empty: %s"), *FieldKey);
+			return true;
+		}
+
+		for (const auto& Pair : (*SrcJsonObject)->Values) {
+			if (!Pair.Value.IsValid()) {
+				UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid object value for key: %s"), *Pair.Key);
+				continue;
+			}
+
+			FString ValueStr;
+			if (Pair.Value->TryGetString(ValueStr)) {
+				InMap.Add(Pair.Key, ValueStr);
+			}
+		}
+		return true;
+	}
+	return true;
 }
 
 #pragma endregion
