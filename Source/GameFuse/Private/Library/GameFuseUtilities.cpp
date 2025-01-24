@@ -184,7 +184,10 @@ bool GameFuseUtilities::ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest,
 	JsonObject->TryGetNumberField(TEXT("id"), OutRequest.OriginUserId);
 	JsonObject->TryGetNumberField(TEXT("friendship_id"), OutRequest.FriendshipId);
 	JsonObject->TryGetStringField(TEXT("username"), OutRequest.OriginUsername);
-	JsonObject->TryGetStringField(TEXT("requested_at"), OutRequest.RequestCreatedDate);
+
+	FString RequestCreatedAtStr;
+	JsonObject->TryGetStringField(TEXT("requested_at"), RequestCreatedAtStr);
+	OutRequest.RequestCreatedAt = StringToDateTime(RequestCreatedAtStr);
 
 	return true;
 }
@@ -324,6 +327,141 @@ bool GameFuseUtilities::ConvertJsonArrayToGameRounds(TArray<FGFGameRound>& InGam
 		}
 	}
 
+	return true;
+}
+
+#pragma endregion
+
+#pragma region Friends
+
+bool GameFuseUtilities::ConvertJsonToFriendRequests(TArray<FGFFriendRequest>& OutRequests, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* JsonArray;
+	if (!JsonObject->TryGetArrayField(TEXT("incoming_friend_requests"), JsonArray) && 
+		!JsonObject->TryGetArrayField(TEXT("outgoing_friend_requests"), JsonArray))
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to get friend_requests array from JSON"));
+		return false;
+	}
+
+	OutRequests.Empty();
+	for (const TSharedPtr<FJsonValue>& JsonValue : *JsonArray)
+	{
+		if (const TSharedPtr<FJsonObject> RequestObject = JsonValue->AsObject())
+		{
+			FGFFriendRequest Request;
+			Request.FriendshipId = 0;
+			RequestObject->TryGetNumberField(TEXT("friendship_id"), Request.FriendshipId);
+			
+			Request.TargetUserId = 0;
+			RequestObject->TryGetNumberField(TEXT("id"), Request.TargetUserId);
+			
+			Request.TargetUsername = "";
+			RequestObject->TryGetStringField(TEXT("username"), Request.TargetUsername);
+
+			FString RequestedAt;
+			if (RequestObject->TryGetStringField(TEXT("requested_at"), RequestedAt))
+			{
+				FDateTime::ParseIso8601(*RequestedAt, Request.RequestCreatedAt);
+			}
+
+			OutRequests.Add(Request);
+		}
+	}
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToFriendsList(TArray<FGFUserData>& OutFriends, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* JsonArray;
+	if (!JsonObject->TryGetArrayField(TEXT("friends"), JsonArray))
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to get friends array from JSON"));
+		return false;
+	}
+
+	OutFriends.Empty();
+	for (const TSharedPtr<FJsonValue>& JsonValue : *JsonArray)
+	{
+		if (const TSharedPtr<FJsonObject> FriendObject = JsonValue->AsObject())
+		{
+			FGFUserData Friend;
+			if (ConvertJsonToUserData(Friend, FriendObject))
+			{
+				OutFriends.Add(Friend);
+			}
+		}
+	}
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertFriendsListToJson(const TArray<FGFUserData>& Friends, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (!JsonObject.IsValid())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for friends list conversion"));
+		return false;
+	}
+
+	TArray<TSharedPtr<FJsonValue>> FriendsArray;
+	for (const FGFUserData& Friend : Friends)
+	{
+		TSharedPtr<FJsonObject> FriendObject = MakeShared<FJsonObject>();
+		FriendObject->SetNumberField(TEXT("id"), Friend.Id);
+		FriendObject->SetStringField(TEXT("username"), Friend.Username);
+		FriendObject->SetNumberField(TEXT("credits"), Friend.Credits);
+		FriendObject->SetNumberField(TEXT("score"), Friend.Score);
+
+		FriendsArray.Add(MakeShared<FJsonValueObject>(FriendObject));
+	}
+
+	JsonObject->SetArrayField(TEXT("friends"), FriendsArray);
+	return true;
+}
+
+bool GameFuseUtilities::ConvertFriendRequestsToJson(const TArray<FGFFriendRequest>& Requests, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (!JsonObject.IsValid())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for friend requests conversion"));
+		return false;
+	}
+
+	TArray<TSharedPtr<FJsonValue>> RequestsArray;
+	for (const FGFFriendRequest& Request : Requests)
+	{
+		TSharedPtr<FJsonObject> RequestObject = MakeShared<FJsonObject>();
+		RequestObject->SetNumberField(TEXT("friendship_id"), Request.FriendshipId);
+		RequestObject->SetNumberField(TEXT("origin_user_id"), Request.OriginUserId);
+		RequestObject->SetStringField(TEXT("origin_username"), Request.OriginUsername);
+		RequestObject->SetNumberField(TEXT("target_user_id"), Request.TargetUserId);
+		RequestObject->SetStringField(TEXT("target_username"), Request.TargetUsername);
+		RequestObject->SetStringField(TEXT("status"), Request.Status);
+
+		RequestsArray.Add(MakeShared<FJsonValueObject>(RequestObject));
+	}
+
+	JsonObject->SetArrayField(TEXT("friend_requests"), RequestsArray);
 	return true;
 }
 

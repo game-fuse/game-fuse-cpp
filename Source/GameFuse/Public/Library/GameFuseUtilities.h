@@ -126,6 +126,40 @@ public:
 
 #pragma endregion
 
+#pragma region Friends
+	/**
+	 * Converts a JSON array into a list of friend requests
+	 * @param OutRequests Array to store the converted friend requests
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToFriendRequests(TArray<FGFFriendRequest>& OutRequests, const FString& JsonString);
+
+	/**
+	 * Converts a JSON array into a list of friends
+	 * @param OutFriends Array to store the converted friends list
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToFriendsList(TArray<FGFUserData>& OutFriends, const FString& JsonString);
+
+	/**
+	 * Converts a list of friends to a JSON object
+	 * @param Friends The friends list to convert
+	 * @param JsonObject The JSON object to store the data
+	 * @return true if successful
+	 */
+	static bool ConvertFriendsListToJson(const TArray<FGFUserData>& Friends, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a list of friend requests to a JSON object
+	 * @param Requests The friend requests to convert
+	 * @param JsonObject The JSON object to store the data
+	 * @return true if successful
+	 */
+	static bool ConvertFriendRequestsToJson(const TArray<FGFFriendRequest>& Requests, const TSharedPtr<FJsonObject>& JsonObject);
+#pragma endregion
+
 #pragma region Utility Functions
 
 	/**
