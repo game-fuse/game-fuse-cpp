@@ -146,16 +146,23 @@ void GameFuseFriendsSpec::Define()
 							FetchCallback.BindLambda([this](const TArray<FGFFriendRequest>& IncomingRequests) {
 								AddInfo("SendFriendRequest 4 :: Fetch Incoming Requests");
 								TestEqual("Should have exactly one incoming request", IncomingRequests.Num(), 1);
+								TestEqual("Callback matches internal state", IncomingRequests.Num(), GameFuseFriends->GetIncomingRequests().Num());
+
 								if (IncomingRequests.Num() != 1) {
 									AddError(FString::Printf(TEXT("Expected 1 incoming request, got %d"), IncomingRequests.Num()));
 									return;
 								}
 
-								// Verify incoming request details
+								// Verify incoming request details and internal state
 								const FGFFriendRequest& Request = IncomingRequests[0];
+								const TArray<FGFFriendRequest>& InternalRequests = GameFuseFriends->GetIncomingRequests();
+
 								TestEqual("Incoming request OtherUser Id", Request.OtherUser.Id, UserData1->Id);
 								TestEqual("Incoming request OtherUser Username", Request.OtherUser.Username, UserData1->Username);
 								TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+
+								// Verify internal state matches callback data
+								TestEqual("Internal request matches callback request", InternalRequests[0], Request);
 							});
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
@@ -183,15 +190,22 @@ void GameFuseFriendsSpec::Define()
 									FriendsCallback.BindLambda([this](const TArray<FGFUserData>& Friends) {
 										AddInfo("SendFriendRequest 6 :: Verify Friends List");
 										TestEqual("Should have exactly one friend", Friends.Num(), 1);
+										TestEqual("Callback friends count matches internal state", Friends.Num(), GameFuseFriends->GetFriendsList().Num());
+
 										if (Friends.Num() != 1) {
 											AddError(FString::Printf(TEXT("Expected 1 friend, got %d"), Friends.Num()));
 											return;
 										}
 
-										// Verify friend details
+										// Verify friend details and internal state
 										const FGFUserData& Friend = Friends[0];
+										const TArray<FGFUserData>& InternalFriends = GameFuseFriends->GetFriendsList();
+
 										TestEqual("Friend Id", Friend.Id, UserData1->Id);
 										TestEqual("Friend Username", Friend.Username, UserData1->Username);
+
+										// Verify internal state matches callback data
+										TestEqual("Internal friends list contains the same friend", InternalFriends[0], Friend);
 									});
 
 									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
@@ -229,16 +243,23 @@ void GameFuseFriendsSpec::Define()
 					OutgoingCallback.BindLambda([this](const TArray<FGFFriendRequest>& Requests) {
 						AddInfo("DeclineFriendRequest 2 :: Verify Outgoing Requests");
 						TestEqual("Should have exactly one outgoing request", Requests.Num(), 1);
+						TestEqual("Callback matches internal state", Requests.Num(), GameFuseFriends->GetOutgoingRequests().Num());
+
 						if (Requests.Num() != 1) {
 							AddError(FString::Printf(TEXT("Expected 1 outgoing request, got %d"), Requests.Num()));
 							return;
 						}
 
-						// Verify outgoing request details
+						// Verify outgoing request details and internal state
 						const FGFFriendRequest& Request = Requests[0];
+						const TArray<FGFFriendRequest>& InternalRequests = GameFuseFriends->GetOutgoingRequests();
+
 						TestEqual("Outgoing request OtherUser Id", Request.OtherUser.Id, UserData2->Id);
 						TestEqual("Outgoing request OtherUser Username", Request.OtherUser.Username, UserData2->Username);
 						TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+
+						// Verify internal state matches callback data
+						TestEqual("Internal request matches callback request", InternalRequests[0], Request);
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
@@ -264,16 +285,23 @@ void GameFuseFriendsSpec::Define()
 							FetchCallback.BindLambda([this](const TArray<FGFFriendRequest>& IncomingRequests) {
 								AddInfo("DeclineFriendRequest 4 :: Fetch Incoming Requests");
 								TestEqual("Should have exactly one incoming request", IncomingRequests.Num(), 1);
+								TestEqual("Callback matches internal state", IncomingRequests.Num(), GameFuseFriends->GetIncomingRequests().Num());
+
 								if (IncomingRequests.Num() != 1) {
 									AddError(FString::Printf(TEXT("Expected 1 incoming request, got %d"), IncomingRequests.Num()));
 									return;
 								}
 
-								// Verify incoming request details
+								// Verify incoming request details and internal state
 								const FGFFriendRequest& Request = IncomingRequests[0];
+								const TArray<FGFFriendRequest>& InternalRequests = GameFuseFriends->GetIncomingRequests();
+
 								TestEqual("Incoming request OtherUser Id", Request.OtherUser.Id, UserData1->Id);
 								TestEqual("Incoming request OtherUser Username", Request.OtherUser.Username, UserData1->Username);
 								TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+
+								// Verify internal state matches callback data
+								TestEqual("Internal request matches callback request", InternalRequests[0], Request);
 							});
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
@@ -301,6 +329,8 @@ void GameFuseFriendsSpec::Define()
 									VerifyCallback.BindLambda([this](const TArray<FGFFriendRequest>& Requests) {
 										AddInfo("DeclineFriendRequest 6 :: Verify Request Removed");
 										TestEqual("Should have no incoming requests", Requests.Num(), 0);
+										TestEqual("Internal incoming requests should be empty", GameFuseFriends->GetIncomingRequests().Num(), 0);
+										TestEqual("Callback matches internal state", Requests, GameFuseFriends->GetIncomingRequests());
 									});
 
 									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
@@ -365,6 +395,8 @@ void GameFuseFriendsSpec::Define()
 							VerifyCallback.BindLambda([this](const TArray<FGFFriendRequest>& Requests) {
 								AddInfo("CancelFriendRequest 4 :: Verify Request Removed");
 								TestEqual("Should have no outgoing requests", Requests.Num(), 0);
+								TestEqual("Internal outgoing requests should be empty", GameFuseFriends->GetOutgoingRequests().Num(), 0);
+								TestEqual("Callback matches internal state", Requests, GameFuseFriends->GetOutgoingRequests());
 							});
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
