@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "API/APIRequestHandler.h"
 #include "Library/GameFuseStructLibrary.h"
+#include "Library/GameFuseEnumLibrary.h"
 #include "FriendsAPIHandler.generated.h"
 
 /**
@@ -18,13 +19,13 @@ public:
 	FGuid SendFriendRequest(const FString& Username, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Accept or decline a friend request
-	FGuid RespondToFriendRequest(const int32 FriendshipId, const FString& Status, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid RespondToFriendRequest(int32 FriendshipId, EGFFriendRequestStatus Status, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Cancel a friend request
-	FGuid CancelFriendRequest(const int32 FriendshipId, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid CancelFriendRequest(int32 FriendshipId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Unfriend a player
-	FGuid UnfriendPlayer(const int32 UserId, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid UnfriendPlayer(int32 UserId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Get all friendship data
 	FGuid GetFriendshipData(const FGFUserData& UserData, const FGFApiCallback& Callback);

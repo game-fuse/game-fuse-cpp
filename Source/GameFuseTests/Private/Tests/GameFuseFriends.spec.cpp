@@ -39,6 +39,8 @@ void GameFuseFriendsSpec::Define()
 	bCleanupSuccess = false;
 
 	Describe("GameFuseFriends", [this]() {
+		// creates a game and 2 users to facilitate friend request testing
+		// user 1 is signed in, user 2 is just created
 		BeforeEach([this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 				if (GameFuseManager->IsSetUp()) {
@@ -92,13 +94,12 @@ void GameFuseFriendsSpec::Define()
 
 		It("sends and accepts a friend request", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				FGFApiCallback SendCallback;
-				SendCallback.AddLambda([this](const FGFAPIResponse& Response) {
+				FGFFriendRequestCallback SendCallback;
+				SendCallback.BindLambda([this](const FGFFriendRequest& Request) {
 					AddInfo("SendFriendRequest 1 :: Send Request");
-					TestTrue("Send friend request succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Send friend request failed: %s"), *Response.ResponseStr));
-					}
+					TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+					TestEqual("Request OriginUserId", Request.OriginUserId, UserData2->Id);
+					TestEqual("Request OriginUsername", Request.OriginUsername, UserData2->Username);
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
@@ -106,33 +107,27 @@ void GameFuseFriendsSpec::Define()
 
 				// Verify the request was sent
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-					FGFApiCallback OutgoingCallback;
-					OutgoingCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					FGFFriendRequestsCallback OutgoingCallback;
+					OutgoingCallback.BindLambda([this](const TArray<FGFFriendRequest>& Requests) {
 						AddInfo("SendFriendRequest 2 :: Verify Outgoing Requests");
-						TestTrue("Get outgoing requests succeeded", Response.bSuccess);
-						if (!Response.bSuccess) {
-							AddError(FString::Printf(TEXT("Get outgoing requests failed: %s"), *Response.ResponseStr));
-						}
-					});
-
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																	  GameFuseFriends->GetOutgoingFriendRequests(OutgoingCallback)));
-
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-						const TArray<FGFFriendRequest>& Requests = GameFuseFriends->GetOutgoingRequests();
 						TestEqual("Should have exactly one outgoing request", Requests.Num(), 1);
 						if (Requests.Num() != 1) {
 							AddError(FString::Printf(TEXT("Expected 1 outgoing request, got %d"), Requests.Num()));
-							return true;
+							return;
 						}
-						
+
 						// Verify outgoing request details
 						const FGFFriendRequest& Request = Requests[0];
 						TestEqual("Outgoing request OriginUserId", Request.OriginUserId, UserData2->Id);
 						TestEqual("Outgoing request OriginUsername", Request.OriginUsername, UserData2->Username);
 						TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+					});
 
-						// Sign in second user to accept request
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																	  GameFuseFriends->FetchOutgoingFriendRequests(OutgoingCallback)));
+
+					// Sign in second user to accept request
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 						FGFApiCallback SignInCallback;
 						SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
 							AddInfo("SendFriendRequest 3 :: Sign In Second User");
@@ -147,25 +142,13 @@ void GameFuseFriendsSpec::Define()
 
 						// Fetch incoming requests after sign in
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-							FGFApiCallback FetchCallback;
-							FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
+							FGFFriendRequestsCallback FetchCallback;
+							FetchCallback.BindLambda([this](const TArray<FGFFriendRequest>& IncomingRequests) {
 								AddInfo("SendFriendRequest 4 :: Fetch Incoming Requests");
-								TestTrue("Fetch incoming requests succeeded", Response.bSuccess);
-								if (!Response.bSuccess) {
-									AddError(FString::Printf(TEXT("Fetch incoming requests failed: %s"), *Response.ResponseStr));
-								}
-							});
-
-							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																			  GameFuseFriends->GetIncomingFriendRequests(FetchCallback)));
-
-							// Accept the friend request
-							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-								const TArray<FGFFriendRequest>& IncomingRequests = GameFuseFriends->GetIncomingRequests();
 								TestEqual("Should have exactly one incoming request", IncomingRequests.Num(), 1);
 								if (IncomingRequests.Num() != 1) {
 									AddError(FString::Printf(TEXT("Expected 1 incoming request, got %d"), IncomingRequests.Num()));
-									return true;
+									return;
 								}
 
 								// Verify incoming request details
@@ -173,49 +156,45 @@ void GameFuseFriendsSpec::Define()
 								TestEqual("Incoming request OriginUserId", Request.OriginUserId, UserData1->Id);
 								TestEqual("Incoming request OriginUsername", Request.OriginUsername, UserData1->Username);
 								TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+							});
 
-								FGFApiCallback AcceptCallback;
-								AcceptCallback.AddLambda([this](const FGFAPIResponse& Response) {
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																			  GameFuseFriends->FetchIncomingFriendRequests(FetchCallback)));
+
+							// Accept the friend request
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+								const TArray<FGFFriendRequest>& IncomingRequests = GameFuseFriends->GetIncomingRequests();
+								if (IncomingRequests.Num() != 1) {
+									return true;
+								}
+
+								FGFFriendActionCallback AcceptCallback;
+								AcceptCallback.BindLambda([this](bool bSuccess) {
 									AddInfo("SendFriendRequest 5 :: Accept Request");
-									TestTrue("Accept friend request succeeded", Response.bSuccess);
-									if (!Response.bSuccess) {
-										AddError(FString::Printf(TEXT("Accept friend request failed: %s"), *Response.ResponseStr));
-									}
+									TestTrue("Accept friend request succeeded", bSuccess);
 								});
 
 								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
 																				  GameFuseFriends->AcceptFriendRequest(IncomingRequests[0].FriendshipId, AcceptCallback)));
 
 								// Verify friendship was established
-								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-									FGFApiCallback FriendsCallback;
-									FriendsCallback.AddLambda([this](const FGFAPIResponse& Response) {
-										AddInfo("SendFriendRequest 6 :: Verify Friends List");
-										TestTrue("Get friends list succeeded", Response.bSuccess);
-										if (!Response.bSuccess) {
-											AddError(FString::Printf(TEXT("Get friends list failed: %s"), *Response.ResponseStr));
-										}
-									});
+								FGFFriendsCallback FriendsCallback;
+								FriendsCallback.BindLambda([this](const TArray<FGFUserData>& Friends) {
+									AddInfo("SendFriendRequest 6 :: Verify Friends List");
+									TestEqual("Should have exactly one friend", Friends.Num(), 1);
+									if (Friends.Num() != 1) {
+										AddError(FString::Printf(TEXT("Expected 1 friend, got %d"), Friends.Num()));
+										return;
+									}
 
-									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																					  GameFuseFriends->GetFriendsList(FriendsCallback)));
+									// Verify friend details
+									const FGFUserData& Friend = Friends[0];
+									TestEqual("Friend Id", Friend.Id, UserData1->Id);
+									TestEqual("Friend Username", Friend.Username, UserData1->Username);
+								});
 
-									ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-										const TArray<FGFUserData>& Friends = GameFuseFriends->GetFriends();
-										TestEqual("Should have exactly one friend", Friends.Num(), 1);
-										if (Friends.Num() != 1) {
-											AddError(FString::Printf(TEXT("Expected 1 friend, got %d"), Friends.Num()));
-											return true;
-										}
-
-										// Verify friend details
-										const FGFUserData& Friend = Friends[0];
-										TestEqual("Friend Id", Friend.Id, UserData1->Id);
-										TestEqual("Friend Username", Friend.Username, UserData1->Username);
-										return true;
-									}));
-									return true;
-								}));
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																				  GameFuseFriends->FetchFriendsList(FriendsCallback)));
 								return true;
 							}));
 							return true;
@@ -230,13 +209,12 @@ void GameFuseFriendsSpec::Define()
 
 		It("sends and declines a friend request", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				FGFApiCallback SendCallback;
-				SendCallback.AddLambda([this](const FGFAPIResponse& Response) {
+				FGFFriendRequestCallback SendCallback;
+				SendCallback.BindLambda([this](const FGFFriendRequest& Request) {
 					AddInfo("DeclineFriendRequest 1 :: Send Request");
-					TestTrue("Send friend request succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Send friend request failed: %s"), *Response.ResponseStr));
-					}
+					TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+					TestEqual("Request OriginUserId", Request.OriginUserId, UserData2->Id);
+					TestEqual("Request OriginUsername", Request.OriginUsername, UserData2->Username);
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
@@ -244,24 +222,13 @@ void GameFuseFriendsSpec::Define()
 
 				// Verify the request was sent
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-					FGFApiCallback OutgoingCallback;
-					OutgoingCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					FGFFriendRequestsCallback OutgoingCallback;
+					OutgoingCallback.BindLambda([this](const TArray<FGFFriendRequest>& Requests) {
 						AddInfo("DeclineFriendRequest 2 :: Verify Outgoing Requests");
-						TestTrue("Get outgoing requests succeeded", Response.bSuccess);
-						if (!Response.bSuccess) {
-							AddError(FString::Printf(TEXT("Get outgoing requests failed: %s"), *Response.ResponseStr));
-						}
-					});
-
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																	  GameFuseFriends->GetOutgoingFriendRequests(OutgoingCallback)));
-
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-						const TArray<FGFFriendRequest>& Requests = GameFuseFriends->GetOutgoingRequests();
 						TestEqual("Should have exactly one outgoing request", Requests.Num(), 1);
 						if (Requests.Num() != 1) {
 							AddError(FString::Printf(TEXT("Expected 1 outgoing request, got %d"), Requests.Num()));
-							return true;
+							return;
 						}
 
 						// Verify outgoing request details
@@ -269,8 +236,13 @@ void GameFuseFriendsSpec::Define()
 						TestEqual("Outgoing request OriginUserId", Request.OriginUserId, UserData2->Id);
 						TestEqual("Outgoing request OriginUsername", Request.OriginUsername, UserData2->Username);
 						TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+					});
 
-						// Sign in second user to decline request
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																	  GameFuseFriends->FetchOutgoingFriendRequests(OutgoingCallback)));
+
+					// Sign in second user to decline request
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 						FGFApiCallback SignInCallback;
 						SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
 							AddInfo("DeclineFriendRequest 3 :: Sign In Second User");
@@ -285,25 +257,13 @@ void GameFuseFriendsSpec::Define()
 
 						// Fetch incoming requests after sign in
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-							FGFApiCallback FetchCallback;
-							FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
+							FGFFriendRequestsCallback FetchCallback;
+							FetchCallback.BindLambda([this](const TArray<FGFFriendRequest>& IncomingRequests) {
 								AddInfo("DeclineFriendRequest 4 :: Fetch Incoming Requests");
-								TestTrue("Fetch incoming requests succeeded", Response.bSuccess);
-								if (!Response.bSuccess) {
-									AddError(FString::Printf(TEXT("Fetch incoming requests failed: %s"), *Response.ResponseStr));
-								}
-							});
-
-							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																			  GameFuseFriends->GetIncomingFriendRequests(FetchCallback)));
-
-							// Decline the friend request
-							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-								const TArray<FGFFriendRequest>& IncomingRequests = GameFuseFriends->GetIncomingRequests();
 								TestEqual("Should have exactly one incoming request", IncomingRequests.Num(), 1);
 								if (IncomingRequests.Num() != 1) {
 									AddError(FString::Printf(TEXT("Expected 1 incoming request, got %d"), IncomingRequests.Num()));
-									return true;
+									return;
 								}
 
 								// Verify incoming request details
@@ -311,14 +271,22 @@ void GameFuseFriendsSpec::Define()
 								TestEqual("Incoming request OriginUserId", Request.OriginUserId, UserData1->Id);
 								TestEqual("Incoming request OriginUsername", Request.OriginUsername, UserData1->Username);
 								TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+							});
 
-								FGFApiCallback DeclineCallback;
-								DeclineCallback.AddLambda([this](const FGFAPIResponse& Response) {
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																			  GameFuseFriends->FetchIncomingFriendRequests(FetchCallback)));
+
+							// Decline the friend request
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+								const TArray<FGFFriendRequest>& IncomingRequests = GameFuseFriends->GetIncomingRequests();
+								if (IncomingRequests.Num() != 1) {
+									return true;
+								}
+
+								FGFFriendActionCallback DeclineCallback;
+								DeclineCallback.BindLambda([this](bool bSuccess) {
 									AddInfo("DeclineFriendRequest 5 :: Decline Request");
-									TestTrue("Decline friend request succeeded", Response.bSuccess);
-									if (!Response.bSuccess) {
-										AddError(FString::Printf(TEXT("Decline friend request failed: %s"), *Response.ResponseStr));
-									}
+									TestTrue("Decline friend request succeeded", bSuccess);
 								});
 
 								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
@@ -326,22 +294,14 @@ void GameFuseFriendsSpec::Define()
 
 								// Verify request was removed
 								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-									FGFApiCallback VerifyCallback;
-									VerifyCallback.AddLambda([this](const FGFAPIResponse& Response) {
+									FGFFriendRequestsCallback VerifyCallback;
+									VerifyCallback.BindLambda([this](const TArray<FGFFriendRequest>& Requests) {
 										AddInfo("DeclineFriendRequest 6 :: Verify Request Removed");
-										TestTrue("Get incoming requests succeeded", Response.bSuccess);
-										if (!Response.bSuccess) {
-											AddError(FString::Printf(TEXT("Get incoming requests failed: %s"), *Response.ResponseStr));
-										}
+										TestEqual("Should have no incoming requests", Requests.Num(), 0);
 									});
 
 									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																					  GameFuseFriends->GetIncomingFriendRequests(VerifyCallback)));
-
-									ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-										TestEqual("Should have no incoming requests", GameFuseFriends->GetIncomingRequests().Num(), 0);
-										return true;
-									}));
+																					  GameFuseFriends->FetchIncomingFriendRequests(VerifyCallback)));
 									return true;
 								}));
 								return true;
@@ -358,80 +318,12 @@ void GameFuseFriendsSpec::Define()
 
 		It("sends and cancels a friend request", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				FGFApiCallback SendCallback;
-				SendCallback.AddLambda([this](const FGFAPIResponse& Response) {
+				FGFFriendRequestCallback SendCallback;
+				SendCallback.BindLambda([this](const FGFFriendRequest& Request) {
 					AddInfo("CancelFriendRequest 1 :: Send Request");
-					TestTrue("Send friend request succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Send friend request failed: %s"), *Response.ResponseStr));
-					}
-				});
-
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																  GameFuseFriends->SendFriendRequest(UserData2->Username, SendCallback)));
-
-				// Verify the request was sent
-				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-					const TArray<FGFFriendRequest>& OutgoingRequests = GameFuseFriends->GetOutgoingRequests();
-					TestEqual("Should have exactly one outgoing request", OutgoingRequests.Num(), 1);
-					if (OutgoingRequests.Num() != 1) {
-						AddError(FString::Printf(TEXT("Expected 1 outgoing request, got %d"), OutgoingRequests.Num()));
-						return true;
-					}
-
-					// Verify outgoing request details
-					const FGFFriendRequest& Request = OutgoingRequests[0];
-					TestEqual("Outgoing request OriginUserId", Request.OriginUserId, UserData2->Id);
-					TestEqual("Outgoing request OriginUsername", Request.OriginUsername, UserData2->Username);
 					TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
-
-					FGFApiCallback CancelCallback;
-					CancelCallback.AddLambda([this](const FGFAPIResponse& Response) {
-						AddInfo("CancelFriendRequest 2 :: Cancel Request");
-						TestTrue("Cancel friend request succeeded", Response.bSuccess);
-						if (!Response.bSuccess) {
-							AddError(FString::Printf(TEXT("Cancel friend request failed: %s"), *Response.ResponseStr));
-						}
-					});
-
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																	  GameFuseFriends->CancelFriendRequest(Request.FriendshipId, CancelCallback)));
-
-					// Verify request was removed
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-						FGFApiCallback VerifyCallback;
-						VerifyCallback.AddLambda([this](const FGFAPIResponse& Response) {
-							AddInfo("CancelFriendRequest 3 :: Verify Request Removed");
-							TestTrue("Get outgoing requests succeeded", Response.bSuccess);
-							if (!Response.bSuccess) {
-								AddError(FString::Printf(TEXT("Get outgoing requests failed: %s"), *Response.ResponseStr));
-							}
-						});
-
-						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																		  GameFuseFriends->GetOutgoingFriendRequests(VerifyCallback)));
-
-						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-							TestEqual("Should have no outgoing requests", GameFuseFriends->GetOutgoingRequests().Num(), 0);
-							return true;
-						}));
-						return true;
-					}));
-					return true;
-				}));
-				return true;
-			}));
-		});
-
-		It("unfriends a player", [this]() {
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				FGFApiCallback SendCallback;
-				SendCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					AddInfo("UnfriendPlayer 1 :: Send Request");
-					TestTrue("Send friend request succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Send friend request failed: %s"), *Response.ResponseStr));
-					}
+					TestEqual("Request OriginUserId", Request.OriginUserId, UserData2->Id);
+					TestEqual("Request OriginUsername", Request.OriginUsername, UserData2->Username);
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
@@ -439,24 +331,13 @@ void GameFuseFriendsSpec::Define()
 
 				// Verify the request was sent
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-					FGFApiCallback OutgoingCallback;
-					OutgoingCallback.AddLambda([this](const FGFAPIResponse& Response) {
-						AddInfo("UnfriendPlayer 2 :: Verify Outgoing Requests");
-						TestTrue("Get outgoing requests succeeded", Response.bSuccess);
-						if (!Response.bSuccess) {
-							AddError(FString::Printf(TEXT("Get outgoing requests failed: %s"), *Response.ResponseStr));
-						}
-					});
-
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																	  GameFuseFriends->GetOutgoingFriendRequests(OutgoingCallback)));
-
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-						const TArray<FGFFriendRequest>& Requests = GameFuseFriends->GetOutgoingRequests();
+					FGFFriendRequestsCallback OutgoingCallback;
+					OutgoingCallback.BindLambda([this](const TArray<FGFFriendRequest>& Requests) {
+						AddInfo("CancelFriendRequest 2 :: Verify Outgoing Requests");
 						TestEqual("Should have exactly one outgoing request", Requests.Num(), 1);
 						if (Requests.Num() != 1) {
 							AddError(FString::Printf(TEXT("Expected 1 outgoing request, got %d"), Requests.Num()));
-							return true;
+							return;
 						}
 
 						// Verify outgoing request details
@@ -465,7 +346,81 @@ void GameFuseFriendsSpec::Define()
 						TestEqual("Outgoing request OriginUsername", Request.OriginUsername, UserData2->Username);
 						TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
 
-						// Sign in second user to accept request
+						// Cancel the request
+						FGFFriendActionCallback CancelCallback;
+						CancelCallback.BindLambda([this](bool bSuccess) {
+							AddInfo("CancelFriendRequest 3 :: Cancel Request");
+							TestTrue("Cancel friend request succeeded", bSuccess);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																		  GameFuseFriends->CancelFriendRequest(Request.FriendshipId, CancelCallback)));
+
+						// Verify request was removed
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+							FGFFriendRequestsCallback VerifyCallback;
+							VerifyCallback.BindLambda([this](const TArray<FGFFriendRequest>& Requests) {
+								AddInfo("CancelFriendRequest 4 :: Verify Request Removed");
+								TestEqual("Should have no outgoing requests", Requests.Num(), 0);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																			  GameFuseFriends->FetchOutgoingFriendRequests(VerifyCallback)));
+							return true;
+						}));
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																	  GameFuseFriends->FetchOutgoingFriendRequests(OutgoingCallback)));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("unfriends a player", [this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				FGFFriendRequestCallback SendCallback;
+				SendCallback.BindLambda([this](const FGFFriendRequest& Request) {
+					AddInfo("UnfriendPlayer 1 :: Send Request");
+					TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+					TestEqual("Request OriginUserId", Request.OriginUserId, UserData2->Id);
+					TestEqual("Request OriginUsername", Request.OriginUsername, UserData2->Username);
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																  GameFuseFriends->SendFriendRequest(UserData2->Username, SendCallback)));
+
+				// Verify the request was sent
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					FGFFriendRequestsCallback OutgoingCallback;
+					OutgoingCallback.BindLambda([this](const TArray<FGFFriendRequest>& Requests) {
+						AddInfo("UnfriendPlayer 2 :: Verify Outgoing Requests");
+						TestEqual("Should have exactly one outgoing request", Requests.Num(), 1);
+						TestEqual("Callback matches internal state", Requests.Num(), GameFuseFriends->GetOutgoingRequests().Num());
+						
+						if (Requests.Num() != 1) {
+							AddError(FString::Printf(TEXT("Expected 1 outgoing request, got %d"), Requests.Num()));
+							return;
+						}
+
+						// Verify outgoing request details and internal state
+						const FGFFriendRequest& Request = Requests[0];
+						const TArray<FGFFriendRequest>& InternalRequests = GameFuseFriends->GetOutgoingRequests();
+						
+						TestEqual("Outgoing request OriginUserId", Request.OriginUserId, UserData2->Id);
+						TestEqual("Outgoing request OriginUsername", Request.OriginUsername, UserData2->Username);
+						TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+						
+						// Verify internal state matches callback data
+						TestEqual("Internal request matches callback request", InternalRequests[0], Request);
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																	  GameFuseFriends->FetchOutgoingFriendRequests(OutgoingCallback)));
+
+					// Sign in second user to accept request
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 						FGFApiCallback SignInCallback;
 						SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
 							AddInfo("UnfriendPlayer 3 :: Sign In Second User");
@@ -480,108 +435,97 @@ void GameFuseFriendsSpec::Define()
 
 						// Fetch incoming requests after sign in
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-							FGFApiCallback FetchCallback;
-							FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
+							FGFFriendRequestsCallback FetchCallback;
+							FetchCallback.BindLambda([this](const TArray<FGFFriendRequest>& IncomingRequests) {
 								AddInfo("UnfriendPlayer 4 :: Fetch Incoming Requests");
-								TestTrue("Fetch incoming requests succeeded", Response.bSuccess);
-								if (!Response.bSuccess) {
-									AddError(FString::Printf(TEXT("Fetch incoming requests failed: %s"), *Response.ResponseStr));
+								TestEqual("Should have exactly one incoming request", IncomingRequests.Num(), 1);
+								TestEqual("Callback matches internal state", IncomingRequests.Num(), GameFuseFriends->GetIncomingRequests().Num());
+								
+								if (IncomingRequests.Num() != 1) {
+									AddError(FString::Printf(TEXT("Expected 1 incoming request, got %d"), IncomingRequests.Num()));
+									return;
 								}
+
+								// Verify incoming request details and internal state
+								const FGFFriendRequest& Request = IncomingRequests[0];
+								const TArray<FGFFriendRequest>& InternalRequests = GameFuseFriends->GetIncomingRequests();
+								
+								TestEqual("Incoming request OriginUserId", Request.OriginUserId, UserData1->Id);
+								TestEqual("Incoming request OriginUsername", Request.OriginUsername, UserData1->Username);
+								TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+								
+								// Verify internal state matches callback data
+								TestEqual("Internal request matches callback request", InternalRequests[0], Request);
 							});
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																			  GameFuseFriends->GetIncomingFriendRequests(FetchCallback)));
+																			  GameFuseFriends->FetchIncomingFriendRequests(FetchCallback)));
 
 							// Accept the friend request
 							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 								const TArray<FGFFriendRequest>& IncomingRequests = GameFuseFriends->GetIncomingRequests();
-								TestEqual("Should have exactly one incoming request", IncomingRequests.Num(), 1);
 								if (IncomingRequests.Num() != 1) {
-									AddError(FString::Printf(TEXT("Expected 1 incoming request, got %d"), IncomingRequests.Num()));
 									return true;
 								}
 
-								// Verify incoming request details
-								const FGFFriendRequest& Request = IncomingRequests[0];
-								TestEqual("Incoming request OriginUserId", Request.OriginUserId, UserData1->Id);
-								TestEqual("Incoming request OriginUsername", Request.OriginUsername, UserData1->Username);
-								TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
-
-								FGFApiCallback AcceptCallback;
-								AcceptCallback.AddLambda([this](const FGFAPIResponse& Response) {
+								FGFFriendActionCallback AcceptCallback;
+								AcceptCallback.BindLambda([this](bool bSuccess) {
 									AddInfo("UnfriendPlayer 5 :: Accept Request");
-									TestTrue("Accept friend request succeeded", Response.bSuccess);
-									if (!Response.bSuccess) {
-										AddError(FString::Printf(TEXT("Accept friend request failed: %s"), *Response.ResponseStr));
-									}
+									TestTrue("Accept friend request succeeded", bSuccess);
 								});
 
 								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
 																				  GameFuseFriends->AcceptFriendRequest(IncomingRequests[0].FriendshipId, AcceptCallback)));
 
 								// Verify friendship was established and unfriend
-								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-									FGFApiCallback FriendsCallback;
-									FriendsCallback.AddLambda([this](const FGFAPIResponse& Response) {
-										AddInfo("UnfriendPlayer 6 :: Verify Friends List");
-										TestTrue("Get friends list succeeded", Response.bSuccess);
-										if (!Response.bSuccess) {
-											AddError(FString::Printf(TEXT("Get friends list failed: %s"), *Response.ResponseStr));
-										}
+								FGFFriendsCallback FriendsCallback;
+								FriendsCallback.BindLambda([this](const TArray<FGFUserData>& Friends) {
+									AddInfo("UnfriendPlayer 6 :: Verify Friends List");
+									TestEqual("Should have exactly one friend", Friends.Num(), 1);
+									TestEqual("Callback friends count matches internal state", Friends.Num(), GameFuseFriends->GetFriendsList().Num());
+									
+									if (Friends.Num() != 1) {
+										AddError(FString::Printf(TEXT("Expected 1 friend, got %d"), Friends.Num()));
+										return;
+									}
+
+									// Verify friend details and unfriend
+									const FGFUserData& Friend = Friends[0];
+									const TArray<FGFUserData>& InternalFriends = GameFuseFriends->GetFriendsList();
+									
+									TestEqual("Friend Id", Friend.Id, UserData1->Id);
+									TestEqual("Friend Username", Friend.Username, UserData1->Username);
+									
+									// Verify internal state matches callback data
+									TestEqual("Internal friends list contains the same friend", InternalFriends[0], Friend);
+
+									// Unfriend the player
+									FGFFriendActionCallback UnfriendCallback;
+									UnfriendCallback.BindLambda([this](bool bSuccess) {
+										AddInfo("UnfriendPlayer 7 :: Unfriend Player");
+										TestTrue("Unfriend player succeeded", bSuccess);
 									});
 
 									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																					  GameFuseFriends->GetFriendsList(FriendsCallback)));
+																					  GameFuseFriends->UnfriendPlayer(Friend.Id, UnfriendCallback)));
 
+									// Verify friend was removed
 									ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-										const TArray<FGFUserData>& Friends = GameFuseFriends->GetFriends();
-										TestEqual("Should have exactly one friend", Friends.Num(), 1);
-										if (Friends.Num() != 1) {
-											AddError(FString::Printf(TEXT("Expected 1 friend, got %d"), Friends.Num()));
-											return true;
-										}
-
-										// Verify friend details and unfriend
-										const FGFUserData& Friend = Friends[0];
-										TestEqual("Friend Id", Friend.Id, UserData1->Id);
-										TestEqual("Friend Username", Friend.Username, UserData1->Username);
-
-										FGFApiCallback UnfriendCallback;
-										UnfriendCallback.AddLambda([this](const FGFAPIResponse& Response) {
-											AddInfo("UnfriendPlayer 7 :: Unfriend Player");
-											TestTrue("Unfriend player succeeded", Response.bSuccess);
-											if (!Response.bSuccess) {
-												AddError(FString::Printf(TEXT("Unfriend player failed: %s"), *Response.ResponseStr));
-											}
+										FGFFriendsCallback VerifyCallback;
+										VerifyCallback.BindLambda([this](const TArray<FGFUserData>& VerifyFriends) {
+											AddInfo("UnfriendPlayer 8 :: Verify Empty Friends List");
+											TestEqual("Should have no friends after unfriending", VerifyFriends.Num(), 0);
+											TestEqual("Internal friends list should be empty", GameFuseFriends->GetFriendsList().Num(), 0);
+											TestEqual("Callback matches internal state", VerifyFriends, GameFuseFriends->GetFriendsList());
 										});
-
 										ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																						  GameFuseFriends->UnfriendPlayer(Friend.Id, UnfriendCallback)));
-
-										// Verify friend was removed
-										ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-											FGFApiCallback VerifyCallback;
-											VerifyCallback.AddLambda([this](const FGFAPIResponse& Response) {
-												AddInfo("UnfriendPlayer 8 :: Verify Friend Removed");
-												TestTrue("Get friends list succeeded", Response.bSuccess);
-												if (!Response.bSuccess) {
-													AddError(FString::Printf(TEXT("Get friends list failed: %s"), *Response.ResponseStr));
-												}
-											});
-
-											ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																							  GameFuseFriends->GetFriendsList(VerifyCallback)));
-
-											ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-												TestEqual("Should have no friends", GameFuseFriends->GetFriends().Num(), 0);
-												return true;
-											}));
-											return true;
-										}));
+																						  GameFuseFriends->FetchFriendsList(VerifyCallback)));
 										return true;
 									}));
-									return true;
-								}));
+								});
+
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																				  GameFuseFriends->FetchFriendsList(FriendsCallback)));
 								return true;
 							}));
 							return true;

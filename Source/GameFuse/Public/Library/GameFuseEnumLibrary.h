@@ -27,7 +27,7 @@ static FORCEINLINE FString GetEnumerationToString(const Enumeration InValue)
 	return StaticEnum<Enumeration>()->GetNameStringByValue(static_cast<int64>(InValue));
 }
 
-UENUM(meta = (ScriptName = "GF_UserAPIResponseType"))
+UENUM(meta = (ScriptName = "GF_UserAPIResponseType"), category = "GameFuse")
 enum class EGFUserAPIResponseType : uint8
 {
 	None,
@@ -47,4 +47,12 @@ enum class EGFCoreAPIResponseType : uint8
 	ListLeaderboardEntries,
 	ListStoreItems,
 	ForgotPassword,
+};
+
+UENUM(meta = (ScriptName = "GF_FriendRequestStatus"))
+enum class EGFFriendRequestStatus : uint8
+{
+	None,
+	Accepted,
+	Declined
 };

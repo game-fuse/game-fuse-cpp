@@ -277,4 +277,14 @@ struct GAMEFUSE_API FGFFriendRequest
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
 	FDateTime RequestCreatedAt;
+
+	bool operator==(const FGFFriendRequest& Other) const
+	{
+		return OriginUserId == Other.OriginUserId &&
+			   FriendshipId == Other.FriendshipId &&
+			   OriginUsername == Other.OriginUsername &&
+			   TargetUserId == Other.TargetUserId &&
+			   TargetUsername == Other.TargetUsername &&
+			   Status == Other.Status;
+	}
 };
