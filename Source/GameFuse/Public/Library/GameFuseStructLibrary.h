@@ -169,13 +169,13 @@ struct FGFAPIResponse
 	FString ResponseStr = "";
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
-	FString RequestId = "";
+	FGuid RequestId;
 	FGFAPIResponse() = default;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
 	int ResponseCode = 0;
 
-	FGFAPIResponse(bool _bSuccess, const FString& _Response, const FString& _RequestId = "", int _ResponseCode = 0)
+	FGFAPIResponse(bool _bSuccess, const FString& _Response, const FGuid& _RequestId = FGuid(), int _ResponseCode = 0)
 	{
 		bSuccess = _bSuccess;
 		ResponseStr = _Response;
@@ -267,5 +267,14 @@ struct GAMEFUSE_API FGFFriendRequest
 	FString OriginUsername;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
-	FString RequestCreatedDate;
+	int32 TargetUserId = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
+	FString TargetUsername;
+
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
+	FString Status;
+
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
+	FDateTime RequestCreatedAt;
 };

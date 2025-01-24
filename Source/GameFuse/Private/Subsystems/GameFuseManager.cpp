@@ -1,5 +1,5 @@
 /**
-*  Copyright (c) 2023-11-06 GameFuse
+ *  Copyright (c) 2023-11-06 GameFuse
  *  All rights reserved.
  *
  *  https://GameFuse.co/
@@ -26,7 +26,7 @@ void UGameFuseManager::Initialize(FSubsystemCollectionBase& Collection)
 
 void UGameFuseManager::Deinitialize()
 {
-	//do some sort of specific cleanup of request handler?
+	// do some sort of specific cleanup of request handler?
 	RequestHandler = nullptr;
 	Super::Deinitialize();
 }
@@ -171,7 +171,6 @@ FGuid UGameFuseManager::SendPasswordResetEmail(const FString& Email, FGFApiCallb
 }
 
 
-
 FGuid UGameFuseManager::FetchGameVariables(FGFApiCallback Callback)
 {
 	if (!SetupCheck()) {
@@ -241,7 +240,7 @@ void UGameFuseManager::ClearGameData()
 void UGameFuseManager::InternalResponseManager(FGFAPIResponse ResponseData)
 {
 	if (!ResponseData.bSuccess) {
-		UE_LOG(LogGameFuse, Warning, TEXT("THERE SHOULD BE ANOTHER ERROR BEFORE THIS. Core API Request Failed. ID : %s"), *ResponseData.RequestId);
+		UE_LOG(LogGameFuse, Warning, TEXT("THERE SHOULD BE ANOTHER ERROR BEFORE THIS. Core API Request Failed. ID : %s"), *ResponseData.RequestId.ToString());
 		return;
 	}
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseData.ResponseStr);
@@ -343,9 +342,7 @@ void UGameFuseManager::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& Js
 		}
 	}
 	UE_LOG(LogGameFuse, Log, TEXT("Fetched Leaderboards amount of : %d"), CurrLeaderboardEntries.Num());
-
 }
-
 
 
 void UGameFuseManager::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObject)
@@ -355,7 +352,7 @@ void UGameFuseManager::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& Json
 	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("store_items"), AttributeArray)) {
 		StoreItems.Reserve(AttributeArray->Num());
 		for (const TSharedPtr<FJsonValue>& AttributeValue : *AttributeArray) {
-			//create store items in place
+			// create store items in place
 			const size_t newIndex = StoreItems.AddDefaulted();
 
 			bool bSuccess = GameFuseUtilities::ConvertJsonToStoreItem(StoreItems[newIndex], AttributeValue);

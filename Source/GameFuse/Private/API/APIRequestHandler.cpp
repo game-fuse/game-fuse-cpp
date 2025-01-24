@@ -125,7 +125,7 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 			const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 			FString ResponseContent = TEXT("Bad Response, Request is not valid");
 
-			Delegate.Broadcast(FGFAPIResponse(false, ResponseContent, RequestId.ToString(), 404));
+			Delegate.Broadcast(FGFAPIResponse(false, ResponseContent, RequestId, 404));
 			ResponseDelegates.Remove(RequestId);
 		}
 		GameFuseUtilities::LogRequest(Request);
@@ -145,7 +145,7 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 		const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 		FString ResponseContent = bSuccessfulAndValid ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
 
-		Delegate.Broadcast(FGFAPIResponse(bSuccessfulAndValid && bIsGoodResponse, ResponseContent, RequestId.ToString(), ResponseCode));
+		Delegate.Broadcast(FGFAPIResponse(bSuccessfulAndValid && bIsGoodResponse, ResponseContent, RequestId, ResponseCode));
 		ResponseDelegates.Remove(RequestId);
 	}
 
