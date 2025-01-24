@@ -18,119 +18,7 @@ void UGameFuseFriends::Deinitialize()
 	Super::Deinitialize();
 }
 
-void UGameFuseFriends::WrapBlueprintCallback(const FBP_GFApiCallback& Callback, FGFApiCallback& InternalCallback)
-{
-	InternalCallback.AddLambda([Callback](const FGFAPIResponse& ResponseData) {
-		Callback.ExecuteIfBound(ResponseData);
-	});
-}
-
-#pragma region Blueprint Wrapper Functions
-
-void UGameFuseFriends::BP_SendFriendRequest(const FString& Username, FBP_GFApiCallback Callback)
-{
-	FGFFriendRequestCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const FGFFriendRequest& Request) {
-		FGFAPIResponse Response;
-		Response.bSuccess = true;
-		Callback.ExecuteIfBound(Response);
-	});
-	SendFriendRequest(Username, TypedCallback);
-}
-
-void UGameFuseFriends::BP_AcceptFriendRequest(int32 FriendshipId, FBP_GFApiCallback Callback)
-{
-	FGFFriendActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		FGFAPIResponse Response;
-		Response.bSuccess = bSuccess;
-		Callback.ExecuteIfBound(Response);
-	});
-	AcceptFriendRequest(FriendshipId, TypedCallback);
-}
-
-void UGameFuseFriends::BP_DeclineFriendRequest(int32 FriendshipId, FBP_GFApiCallback Callback)
-{
-	FGFFriendActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		FGFAPIResponse Response;
-		Response.bSuccess = bSuccess;
-		Callback.ExecuteIfBound(Response);
-	});
-	DeclineFriendRequest(FriendshipId, TypedCallback);
-}
-
-void UGameFuseFriends::BP_CancelFriendRequest(int32 FriendshipId, FBP_GFApiCallback Callback)
-{
-	FGFFriendActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		FGFAPIResponse Response;
-		Response.bSuccess = bSuccess;
-		Callback.ExecuteIfBound(Response);
-	});
-	CancelFriendRequest(FriendshipId, TypedCallback);
-}
-
-void UGameFuseFriends::BP_UnfriendPlayer(int32 UserId, FBP_GFApiCallback Callback)
-{
-	FGFFriendActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		FGFAPIResponse Response;
-		Response.bSuccess = bSuccess;
-		Callback.ExecuteIfBound(Response);
-	});
-	UnfriendPlayer(UserId, TypedCallback);
-}
-
-void UGameFuseFriends::BP_FetchFriendshipData(FBP_GFApiCallback Callback)
-{
-	FGFFriendsCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFUserData>& Friends) {
-		FGFAPIResponse Response;
-		Response.bSuccess = true;
-		Callback.ExecuteIfBound(Response);
-	});
-	FetchFriendshipData(TypedCallback);
-}
-
-void UGameFuseFriends::BP_FetchFriendsList(FBP_GFApiCallback Callback)
-{
-	FGFFriendsCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFUserData>& Friends) {
-		FGFAPIResponse Response;
-		Response.bSuccess = true;
-		Callback.ExecuteIfBound(Response);
-	});
-	FetchFriendsList(TypedCallback);
-}
-
-void UGameFuseFriends::BP_FetchOutgoingFriendRequests(FBP_GFApiCallback Callback)
-{
-	FGFFriendRequestsCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFFriendRequest>& Requests) {
-		FGFAPIResponse Response;
-		Response.bSuccess = true;
-		Callback.ExecuteIfBound(Response);
-	});
-	FetchOutgoingFriendRequests(TypedCallback);
-}
-
-void UGameFuseFriends::BP_FetchIncomingFriendRequests(FBP_GFApiCallback Callback)
-{
-	FGFFriendRequestsCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFFriendRequest>& Requests) {
-		FGFAPIResponse Response;
-		Response.bSuccess = true;
-		Callback.ExecuteIfBound(Response);
-	});
-	FetchIncomingFriendRequests(TypedCallback);
-}
-
-#pragma endregion
-
-#pragma region C++ Functions
-
-FGuid UGameFuseFriends::SendFriendRequest(const FString& Username, FGFFriendRequestCallback Callback)
+FGuid UGameFuseFriends::SendFriendRequest(const FString& Username, FGFFriendRequestCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
@@ -138,214 +26,186 @@ FGuid UGameFuseFriends::SendFriendRequest(const FString& Username, FGFFriendRequ
 		return FGuid();
 	}
 
-	FGuid RequestId = FGuid::NewGuid();
-	if (Callback.IsBound()) {
-		FriendRequestCallbacks.Add(RequestId, Callback);
-	}
-
 	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this, RequestId](const FGFAPIResponse& Response) {
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleFriendRequestResponse(Response);
 	});
 
-	return RequestHandler->SendFriendRequest(Username, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->SendFriendRequest(Username, GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		FriendRequestCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
-FGuid UGameFuseFriends::AcceptFriendRequest(int32 FriendshipId, FGFFriendActionCallback Callback)
+FGuid UGameFuseFriends::AcceptFriendRequest(const int32 FriendshipId, FGFFriendActionCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
-	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn())
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to accept friend request"));
 		return FGuid();
 	}
 
-	FGuid RequestId = FGuid::NewGuid();
-	if (Callback.IsBound()) {
-		FriendActionCallbacks.Add(RequestId, Callback);
-	}
-
 	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this, RequestId](const FGFAPIResponse& Response) {
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleFriendActionResponse(Response);
 	});
 
-	return RequestHandler->RespondToFriendRequest(FriendshipId, EGFFriendRequestStatus::Accepted, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->RespondToFriendRequest(FriendshipId, EGFFriendRequestStatus::Accepted, GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		FriendActionCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
-FGuid UGameFuseFriends::DeclineFriendRequest(int32 FriendshipId, FGFFriendActionCallback Callback)
+FGuid UGameFuseFriends::DeclineFriendRequest(const int32 FriendshipId, FGFFriendActionCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
-	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn())
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to decline friend request"));
 		return FGuid();
 	}
 
-	FGuid RequestId = FGuid::NewGuid();
-	if (Callback.IsBound()) {
-		FriendActionCallbacks.Add(RequestId, Callback);
-	}
-
 	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this, RequestId](const FGFAPIResponse& Response) {
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleFriendActionResponse(Response);
 	});
 
-	return RequestHandler->RespondToFriendRequest(FriendshipId, EGFFriendRequestStatus::Declined, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->RespondToFriendRequest(FriendshipId, EGFFriendRequestStatus::Declined, GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		FriendActionCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
-FGuid UGameFuseFriends::CancelFriendRequest(int32 FriendshipId, FGFFriendActionCallback Callback)
+FGuid UGameFuseFriends::CancelFriendRequest(const int32 FriendshipId, FGFFriendActionCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
-	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn())
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to cancel friend request"));
 		return FGuid();
 	}
 
 	FGFApiCallback InternalCallback;
-	FGuid RequestId = FGuid::NewGuid();
-	if (Callback.IsBound()) {
-		FriendActionCallbacks.Add(RequestId, Callback);
-	}
-
-	InternalCallback.AddLambda([this, RequestId](const FGFAPIResponse& Response) {
-		if (!Response.bSuccess) {
-			UE_LOG(LogGameFuse, Error, TEXT("Failed to cancel friend request: %s"), *Response.ResponseStr);
-			if (FriendActionCallbacks.Contains(RequestId)) {
-				FriendActionCallbacks[RequestId].ExecuteIfBound(false);
-				FriendActionCallbacks.Remove(RequestId);
-			}
-			return;
-		}
-
-		if (FriendActionCallbacks.Contains(RequestId)) {
-			FriendActionCallbacks[RequestId].ExecuteIfBound(true);
-			FriendActionCallbacks.Remove(RequestId);
-		}
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleFriendActionResponse(Response);
 	});
 
-	return RequestHandler->CancelFriendRequest(FriendshipId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->CancelFriendRequest(FriendshipId, GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		FriendActionCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
-FGuid UGameFuseFriends::UnfriendPlayer(int32 UserId, FGFFriendActionCallback Callback)
+FGuid UGameFuseFriends::UnfriendPlayer(const int32 UserId, FGFFriendActionCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
-	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn())
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to unfriend player"));
 		return FGuid();
 	}
 
 	FGFApiCallback InternalCallback;
-	FGuid RequestId = FGuid::NewGuid();
-	if (Callback.IsBound()) {
-		FriendActionCallbacks.Add(RequestId, Callback);
-	}
-
-	InternalCallback.AddLambda([this, RequestId](const FGFAPIResponse& Response) {
-		if (!Response.bSuccess) {
-			UE_LOG(LogGameFuse, Error, TEXT("Failed to unfriend player: %s"), *Response.ResponseStr);
-			if (FriendActionCallbacks.Contains(RequestId)) {
-				FriendActionCallbacks[RequestId].ExecuteIfBound(false);
-				FriendActionCallbacks.Remove(RequestId);
-			}
-			return;
-		}
-
-		if (FriendActionCallbacks.Contains(RequestId)) {
-			FriendActionCallbacks[RequestId].ExecuteIfBound(true);
-			FriendActionCallbacks.Remove(RequestId);
-		}
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleFriendActionResponse(Response);
 	});
 
-	return RequestHandler->UnfriendPlayer(UserId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->UnfriendPlayer(UserId, GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		FriendActionCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
-FGuid UGameFuseFriends::FetchFriendshipData(FGFFriendsCallback Callback)
+FGuid UGameFuseFriends::FetchFriendshipData(FGFFriendsCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
-	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
-		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to get friendship data"));
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch friendship data"));
 		return FGuid();
 	}
 
-	FGuid RequestId = FGuid::NewGuid();
-	if (Callback.IsBound()) {
-		FriendsCallbacks.Add(RequestId, Callback);
-	}
-
 	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this, RequestId](const FGFAPIResponse& Response) {
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleFriendshipDataResponse(Response);
 	});
 
-	return RequestHandler->GetFriendshipData(GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->GetFriendshipData(GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		FriendsCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
-FGuid UGameFuseFriends::FetchFriendsList(FGFFriendsCallback Callback)
+FGuid UGameFuseFriends::FetchFriendsList(FGFFriendsCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
-	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
-		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to get friends list"));
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch friends list"));
 		return FGuid();
 	}
 
-	FGuid RequestId = FGuid::NewGuid();
-	if (Callback.IsBound()) {
-		FriendsCallbacks.Add(RequestId, Callback);
-	}
-
 	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this, RequestId](const FGFAPIResponse& Response) {
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleFriendsListResponse(Response);
 	});
 
-	return RequestHandler->GetFriendsList(GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->GetFriendsList(GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		FriendsCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
-FGuid UGameFuseFriends::FetchOutgoingFriendRequests(FGFFriendRequestsCallback Callback)
+FGuid UGameFuseFriends::FetchOutgoingFriendRequests(FGFFriendRequestsCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
-	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
-		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to get outgoing friend requests"));
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch outgoing friend requests"));
 		return FGuid();
 	}
 
-	FGuid RequestId = FGuid::NewGuid();
-	if (Callback.IsBound()) {
-		FriendRequestsCallbacks.Add(RequestId, Callback);
-	}
-
 	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this, RequestId](const FGFAPIResponse& Response) {
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleOutgoingRequestsResponse(Response);
 	});
 
-	return RequestHandler->GetOutgoingFriendRequests(GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->GetOutgoingFriendRequests(GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		FriendRequestsCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
-FGuid UGameFuseFriends::FetchIncomingFriendRequests(FGFFriendRequestsCallback Callback)
+FGuid UGameFuseFriends::FetchIncomingFriendRequests(FGFFriendRequestsCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
-	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
-		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to get incoming friend requests"));
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch incoming friend requests"));
 		return FGuid();
 	}
 
-	FGuid RequestId = FGuid::NewGuid();
-	if (Callback.IsBound()) {
-		FriendRequestsCallbacks.Add(RequestId, Callback);
-	}
-
 	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this, RequestId](const FGFAPIResponse& Response) {
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleIncomingRequestsResponse(Response);
 	});
+	FGuid RequestId =RequestHandler->GetIncomingFriendRequests(GameFuseUser->GetUserData(), InternalCallback);
 
-	return RequestHandler->GetIncomingFriendRequests(GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		FriendRequestsCallbacks.Add(RequestId, TypedCallback);
+	}
+
+	return RequestId;
 }
-
-#pragma endregion
-
-#pragma region Response Handlers
 
 void UGameFuseFriends::HandleFriendshipDataResponse(FGFAPIResponse Response)
 {
@@ -359,8 +219,7 @@ void UGameFuseFriends::HandleFriendshipDataResponse(FGFAPIResponse Response)
 	}
 
 	// Parse friends list
-	if (!GameFuseUtilities::ConvertJsonToFriendsList(FriendsList, Response.ResponseStr))
-	{
+	if (!GameFuseUtilities::ConvertJsonToFriendsList(FriendsList, Response.ResponseStr)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse friends list from friendship data"));
 		if (FriendsCallbacks.Contains(Response.RequestId)) {
 			FriendsCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFUserData>());
@@ -370,14 +229,12 @@ void UGameFuseFriends::HandleFriendshipDataResponse(FGFAPIResponse Response)
 	}
 
 	// Parse outgoing requests
-	if (!GameFuseUtilities::ConvertJsonToFriendRequests(OutgoingRequests, Response.ResponseStr))
-	{
+	if (!GameFuseUtilities::ConvertJsonToFriendRequests(OutgoingRequests, Response.ResponseStr)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse outgoing requests from friendship data"));
 	}
 
 	// Parse incoming requests
-	if (!GameFuseUtilities::ConvertJsonToFriendRequests(IncomingRequests, Response.ResponseStr))
-	{
+	if (!GameFuseUtilities::ConvertJsonToFriendRequests(IncomingRequests, Response.ResponseStr)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse incoming requests from friendship data"));
 	}
 
@@ -398,8 +255,7 @@ void UGameFuseFriends::HandleFriendsListResponse(FGFAPIResponse Response)
 		return;
 	}
 
-	if (!GameFuseUtilities::ConvertJsonToFriendsList(FriendsList, Response.ResponseStr))
-	{
+	if (!GameFuseUtilities::ConvertJsonToFriendsList(FriendsList, Response.ResponseStr)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse friends list"));
 		if (FriendsCallbacks.Contains(Response.RequestId)) {
 			FriendsCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFUserData>());
@@ -425,8 +281,7 @@ void UGameFuseFriends::HandleOutgoingRequestsResponse(FGFAPIResponse Response)
 		return;
 	}
 
-	if (!GameFuseUtilities::ConvertJsonToFriendRequests(OutgoingRequests, Response.ResponseStr))
-	{
+	if (!GameFuseUtilities::ConvertJsonToFriendRequests(OutgoingRequests, Response.ResponseStr)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse outgoing requests"));
 		if (FriendRequestsCallbacks.Contains(Response.RequestId)) {
 			FriendRequestsCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFFriendRequest>());
@@ -452,8 +307,7 @@ void UGameFuseFriends::HandleIncomingRequestsResponse(FGFAPIResponse Response)
 		return;
 	}
 
-	if (!GameFuseUtilities::ConvertJsonToFriendRequests(IncomingRequests, Response.ResponseStr))
-	{
+	if (!GameFuseUtilities::ConvertJsonToFriendRequests(IncomingRequests, Response.ResponseStr)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse incoming requests"));
 		if (FriendRequestsCallbacks.Contains(Response.RequestId)) {
 			FriendRequestsCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFFriendRequest>());
@@ -491,8 +345,7 @@ void UGameFuseFriends::HandleFriendRequestResponse(FGFAPIResponse Response)
 	}
 
 	FGFFriendRequest Request;
-	if (!GameFuseUtilities::ConvertJsonToFriendRequest(Request, JsonObject))
-	{
+	if (!GameFuseUtilities::ConvertJsonToFriendRequest(Request, JsonObject)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse friend request"));
 		if (FriendRequestCallbacks.Contains(Response.RequestId)) {
 			FriendRequestCallbacks[Response.RequestId].ExecuteIfBound(FGFFriendRequest());
@@ -524,8 +377,83 @@ void UGameFuseFriends::HandleFriendActionResponse(FGFAPIResponse Response)
 	}
 }
 
-#pragma endregion
+void UGameFuseFriends::BP_SendFriendRequest(const FString& Username, FBP_GFFriendCallback Callback)
+{
+	FGFFriendRequestCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](const FGFFriendRequest&) {
+		Callback.ExecuteIfBound(true);
+	});
+	SendFriendRequest(Username, TypedCallback);
+}
 
-#pragma endregion
-#pragma endregion
-#pragma endregion
+void UGameFuseFriends::BP_AcceptFriendRequest(int32 FriendshipId, FBP_GFFriendCallback Callback)
+{
+	FGFFriendActionCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](bool bSuccess) {
+		Callback.ExecuteIfBound(bSuccess);
+	});
+	AcceptFriendRequest(FriendshipId, TypedCallback);
+}
+
+void UGameFuseFriends::BP_DeclineFriendRequest(int32 FriendshipId, FBP_GFFriendCallback Callback)
+{
+	FGFFriendActionCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](bool bSuccess) {
+		Callback.ExecuteIfBound(bSuccess);
+	});
+	DeclineFriendRequest(FriendshipId, TypedCallback);
+}
+
+void UGameFuseFriends::BP_CancelFriendRequest(int32 FriendshipId, FBP_GFFriendCallback Callback)
+{
+	FGFFriendActionCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](bool bSuccess) {
+		Callback.ExecuteIfBound(bSuccess);
+	});
+	CancelFriendRequest(FriendshipId, TypedCallback);
+}
+
+void UGameFuseFriends::BP_UnfriendPlayer(int32 UserId, FBP_GFFriendCallback Callback)
+{
+	FGFFriendActionCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](bool bSuccess) {
+		Callback.ExecuteIfBound(bSuccess);
+	});
+	UnfriendPlayer(UserId, TypedCallback);
+}
+
+void UGameFuseFriends::BP_FetchFriendshipData(FBP_GFFriendCallback Callback)
+{
+	FGFFriendsCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](const TArray<FGFUserData>&) {
+		Callback.ExecuteIfBound(true);
+	});
+	FetchFriendshipData(TypedCallback);
+}
+
+void UGameFuseFriends::BP_FetchFriendsList(FBP_GFFriendCallback Callback)
+{
+	FGFFriendsCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](const TArray<FGFUserData>&) {
+		Callback.ExecuteIfBound(true);
+	});
+	FetchFriendsList(TypedCallback);
+}
+
+void UGameFuseFriends::BP_FetchOutgoingFriendRequests(FBP_GFFriendCallback Callback)
+{
+	FGFFriendRequestsCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](const TArray<FGFFriendRequest>&) {
+		Callback.ExecuteIfBound(true);
+	});
+	FetchOutgoingFriendRequests(TypedCallback);
+}
+
+void UGameFuseFriends::BP_FetchIncomingFriendRequests(FBP_GFFriendCallback Callback)
+{
+	FGFFriendRequestsCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](const TArray<FGFFriendRequest>&) {
+		Callback.ExecuteIfBound(true);
+	});
+	FetchIncomingFriendRequests(TypedCallback);
+}

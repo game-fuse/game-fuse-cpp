@@ -77,7 +77,7 @@ public:
 	static bool ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
 
 	/**
-	 * Converts a JSON value into a FriendRequest
+	 * Converts a JSON object into a single friend request
 	 * @param OutRequest FriendRequest struct to store converted data
 	 * @param JsonObject The JSON object to convert
 	 * @return true if successful
@@ -143,21 +143,6 @@ public:
 	 */
 	static bool ConvertJsonToFriendsList(TArray<FGFUserData>& OutFriends, const FString& JsonString);
 
-	/**
-	 * Converts a list of friends to a JSON object
-	 * @param Friends The friends list to convert
-	 * @param JsonObject The JSON object to store the data
-	 * @return true if successful
-	 */
-	static bool ConvertFriendsListToJson(const TArray<FGFUserData>& Friends, const TSharedPtr<FJsonObject>& JsonObject);
-
-	/**
-	 * Converts a list of friend requests to a JSON object
-	 * @param Requests The friend requests to convert
-	 * @param JsonObject The JSON object to store the data
-	 * @return true if successful
-	 */
-	static bool ConvertFriendRequestsToJson(const TArray<FGFFriendRequest>& Requests, const TSharedPtr<FJsonObject>& JsonObject);
 #pragma endregion
 
 #pragma region Utility Functions

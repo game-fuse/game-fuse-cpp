@@ -8,6 +8,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameFuseEnumLibrary.h"
 #include "GameFuseStructLibrary.generated.h"
 
 // Add this new struct to the file
@@ -258,33 +259,21 @@ struct GAMEFUSE_API FGFFriendRequest
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
-	int32 OriginUserId = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
 	int32 FriendshipId = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
-	FString OriginUsername;
+	FGFUserData OtherUser;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
-	int32 TargetUserId = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
-	FString TargetUsername;
-
-	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
-	FString Status;
+	EGFFriendRequestStatus Status = EGFFriendRequestStatus::None;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
 	FDateTime RequestCreatedAt;
 
 	bool operator==(const FGFFriendRequest& Other) const
 	{
-		return OriginUserId == Other.OriginUserId &&
-			   FriendshipId == Other.FriendshipId &&
-			   OriginUsername == Other.OriginUsername &&
-			   TargetUserId == Other.TargetUserId &&
-			   TargetUsername == Other.TargetUsername &&
-			   Status == Other.Status;
+		return FriendshipId == Other.FriendshipId &&
+		OtherUser == Other.OtherUser &&
+		Status == Other.Status;
 	}
 };

@@ -13,6 +13,9 @@ DECLARE_DELEGATE_OneParam(FGFFriendRequestsCallback, const TArray<FGFFriendReque
 DECLARE_DELEGATE_OneParam(FGFFriendsCallback, const TArray<FGFUserData>&);
 DECLARE_DELEGATE_OneParam(FGFFriendActionCallback, bool);
 
+// Blueprint callback
+DECLARE_DYNAMIC_DELEGATE_OneParam(FBP_GFFriendCallback, bool, bSuccess);
+
 UCLASS()
 class GAMEFUSE_API UGameFuseFriends : public UGameInstanceSubsystem
 {
@@ -25,42 +28,42 @@ public:
 
 	//> Blueprint Callable Functions
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
-	void BP_SendFriendRequest(const FString& Username, FBP_GFApiCallback Callback);
+	void BP_SendFriendRequest(const FString& Username, FBP_GFFriendCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
-	void BP_AcceptFriendRequest(int32 FriendshipId, FBP_GFApiCallback Callback);
+	void BP_AcceptFriendRequest(int32 FriendshipId, FBP_GFFriendCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
-	void BP_DeclineFriendRequest(int32 FriendshipId, FBP_GFApiCallback Callback);
+	void BP_DeclineFriendRequest(int32 FriendshipId, FBP_GFFriendCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
-	void BP_CancelFriendRequest(int32 FriendshipId, FBP_GFApiCallback Callback);
+	void BP_CancelFriendRequest(int32 FriendshipId, FBP_GFFriendCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
-	void BP_UnfriendPlayer(int32 UserId, FBP_GFApiCallback Callback);
+	void BP_UnfriendPlayer(int32 UserId, FBP_GFFriendCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
-	void BP_FetchFriendshipData(FBP_GFApiCallback Callback);
+	void BP_FetchFriendshipData(FBP_GFFriendCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
-	void BP_FetchFriendsList(FBP_GFApiCallback Callback);
+	void BP_FetchFriendsList(FBP_GFFriendCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
-	void BP_FetchOutgoingFriendRequests(FBP_GFApiCallback Callback);
+	void BP_FetchOutgoingFriendRequests(FBP_GFFriendCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
-	void BP_FetchIncomingFriendRequests(FBP_GFApiCallback Callback);
+	void BP_FetchIncomingFriendRequests(FBP_GFFriendCallback Callback);
 
 	// C++ callable functions with typed callbacks
-	FGuid SendFriendRequest(const FString& Username, FGFFriendRequestCallback Callback);
-	FGuid AcceptFriendRequest(int32 FriendshipId, FGFFriendActionCallback Callback);
-	FGuid DeclineFriendRequest(int32 FriendshipId, FGFFriendActionCallback Callback);
-	FGuid CancelFriendRequest(int32 FriendshipId, FGFFriendActionCallback Callback);
-	FGuid UnfriendPlayer(int32 UserId, FGFFriendActionCallback Callback);
-	FGuid FetchFriendshipData(FGFFriendsCallback Callback);
-	FGuid FetchFriendsList(FGFFriendsCallback Callback);
-	FGuid FetchOutgoingFriendRequests(FGFFriendRequestsCallback Callback);
-	FGuid FetchIncomingFriendRequests(FGFFriendRequestsCallback Callback);
+	FGuid SendFriendRequest(const FString& Username, FGFFriendRequestCallback TypedCallback);
+	FGuid AcceptFriendRequest(const int32 FriendshipId, FGFFriendActionCallback TypedCallback);
+	FGuid DeclineFriendRequest(const int32 FriendshipId, FGFFriendActionCallback TypedCallback);
+	FGuid CancelFriendRequest(const int32 FriendshipId, FGFFriendActionCallback TypedCallback);
+	FGuid UnfriendPlayer(const int32 UserId, FGFFriendActionCallback TypedCallback);
+	FGuid FetchFriendshipData(FGFFriendsCallback TypedCallback);
+	FGuid FetchFriendsList(FGFFriendsCallback TypedCallback);
+	FGuid FetchOutgoingFriendRequests(FGFFriendRequestsCallback TypedCallback);
+	FGuid FetchIncomingFriendRequests(FGFFriendRequestsCallback TypedCallback);
 
 	// Getters for cached data
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
