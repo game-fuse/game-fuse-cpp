@@ -1,4 +1,6 @@
 #include "Commands/TestSuiteCommands.h"
+
+#include "JsonObjectConverter.h"
 #include "Library/GameFuseLog.h"
 #include "Library/GameFuseUtilities.h"
 

@@ -4,7 +4,6 @@
 #include "API/TestAPIHandler.h"
 #include "Library/GameFuseStructLibrary.h"
 #include "Misc/AutomationTest.h"
-#include "JsonObjectConverter.h"
 
 DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
 FCreateGame,
