@@ -6,6 +6,7 @@ AlignOperands: DontAlign
 AllowShortBlocksOnASingleLine: Never
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: WithoutElse
+LineEnding: DeriveCRLF
 BraceWrapping:
   AfterCaseLabel: false
   AfterClass: true
