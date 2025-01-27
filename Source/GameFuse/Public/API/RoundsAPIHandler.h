@@ -18,15 +18,15 @@ public:
 	// Create a new game round
 	FGuid CreateGameRound(const FGFUserData& UserData, const FGFGameRound& GameRound, const FGFApiCallback& Callback);
 
-	// Get a specific game round
-	FGuid GetGameRound(const int32 RoundId, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	// Fetch a specific game round
+	FGuid FetchGameRound(const int32 RoundId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Update a game round
 	FGuid UpdateGameRound(const int32 RoundId, const FGFUserData& UserData,
 	                      const FGFGameRound& GameRound, const FGFApiCallback& Callback);
 
-	// Get user's game rounds
-	FGuid GetUserGameRounds(const FGFUserData& UserData, const FGFApiCallback& Callback);
+	// Fetch user's game rounds
+	FGuid FetchUserGameRounds(const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Delete a game round
 	FGuid DeleteGameRound(const int32 RoundId, const FGFUserData& UserData, const FGFApiCallback& Callback);

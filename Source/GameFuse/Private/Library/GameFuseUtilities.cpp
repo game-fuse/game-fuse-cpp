@@ -20,7 +20,7 @@
 bool GameFuseUtilities::ConvertGameRoundToJson(const FGFGameRound& GameRound, const TSharedPtr<FJsonObject>& JsonObject)
 {
 	// required fields
-	JsonObject->SetStringField("game_user_id", FString::FromInt(GameRound.GameUserId));
+	JsonObject->SetNumberField("game_user_id", GameRound.GameUserId);
 
 	if (GameRound.StartTime != FDateTime()) {
 		JsonObject->SetStringField("start_time", GameRound.StartTime.ToIso8601());
@@ -30,9 +30,11 @@ bool GameFuseUtilities::ConvertGameRoundToJson(const FGFGameRound& GameRound, co
 	}
 
 	JsonObject->SetNumberField("score", GameRound.Score);
+
 	if (GameRound.Place >= 0) {
 		JsonObject->SetNumberField("place", GameRound.Place);
 	}
+
 	if (!GameRound.GameType.IsEmpty()) {
 		JsonObject->SetStringField("game_type", GameRound.GameType);
 	} else { // special case since it's marked as not required, but the request will fail without it

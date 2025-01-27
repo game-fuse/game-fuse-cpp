@@ -1,3 +1,4 @@
+#include "Tests/AutomationCommon.h"
 #if WITH_AUTOMATION_TESTS
 
 #include "Subsystems/GameFuseRounds.h"
@@ -63,7 +64,6 @@ void GameFuseRoundsSpec::Define()
 			// Create and setup game
 			ADD_LATENT_AUTOMATION_COMMAND(FSetupGame(TestAPIHandler, GameData, GameFuseManager, this, FGuid()));
 
-
 			// Wait for GameFuseManager to be fully set up
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 				if (!GameFuseManager->IsSetUp()) {
@@ -75,7 +75,6 @@ void GameFuseRoundsSpec::Define()
 			}));
 
 			// Create and sign in user
-
 			ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, UserData, GameFuseUser, this));
 
 			// Wait for user to be fully signed in
@@ -90,7 +89,6 @@ void GameFuseRoundsSpec::Define()
 		});
 
 		It("creates a game round", [this]() {
-			// Create round data
 			TSharedPtr<FGFGameRound> RoundData = MakeShared<FGFGameRound>();
 			RoundData->Score = 100;
 			RoundData->StartTime = FDateTime::Now();
@@ -98,32 +96,23 @@ void GameFuseRoundsSpec::Define()
 			RoundData->GameType = "SinglePlayer";
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
-				GameFuseRounds->OnGameRoundResponse.AddLambda([this](const FGFGameRound& _RoundData) {
+				FGFGameRoundCallback TypedCallback;
+				TypedCallback.BindLambda([this](const FGFGameRound& _RoundData) {
+					AddInfo("CreateGameRound 1 :: Create Basic Round");
 					TestTrue("has good id", _RoundData.Id != 0);
 					TestTrue("has good score", _RoundData.Score == 100);
 					TestTrue("has good game type", _RoundData.GameType == "SinglePlayer");
 					TestTrue("has valid start time", _RoundData.StartTime != FDateTime());
 					TestTrue("has valid end time", _RoundData.EndTime != FDateTime());
 					TestTrue("keeps end time difference", _RoundData.EndTime - _RoundData.StartTime == FTimespan::FromMinutes(1));
-
-					GameFuseRounds->OnGameRoundResponse.Clear();
 				});
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, FGFApiCallback())));
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, TypedCallback)));
 				return true;
 			}));
-
-			// ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
-			//
-			//
-			//
-			// 	}));
-
-			// ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("creates a game round with metadata", [this]() {
-			// Create round data
-
 			TSharedPtr<FGFGameRound> RoundData = MakeShared<FGFGameRound>();
 			RoundData->Score = 100;
 			RoundData->StartTime = FDateTime::Now();
@@ -134,25 +123,21 @@ void GameFuseRoundsSpec::Define()
 			RoundData->Metadata.Add("key2", "value2");
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
-				GameFuseRounds->OnGameRoundResponse.AddLambda([this](const FGFGameRound& _RoundData) {
+				FGFGameRoundCallback TypedCallback;
+				TypedCallback.BindLambda([this](const FGFGameRound& _RoundData) {
+					AddInfo("CreateGameRound 1 :: Create Round with Metadata");
 					AddErrorIfFalse(!_RoundData.Metadata.IsEmpty(), "metadata should be present");
 					TestTrue("metadata has the right number of keys", _RoundData.Metadata.Num() == 2);
 
 					TestTrue("metadata has the right key", _RoundData.Metadata.Contains("key1"));
 					TestTrue("metadata has the right value", _RoundData.Metadata["key1"] == "value1");
-
-					GameFuseRounds->OnGameRoundResponse.Clear();
 				});
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, FGFApiCallback())));
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, TypedCallback)));
 				return true;
 			}));
-
-			// ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("creates a multiplayer game round", [this]() {
-			// Create round data
-
 			TSharedPtr<FGFGameRound> OriginalRoundData = MakeShared<FGFGameRound>();
 			OriginalRoundData->Score = 100;
 			OriginalRoundData->StartTime = FDateTime::Now();
@@ -167,7 +152,9 @@ void GameFuseRoundsSpec::Define()
 			}));
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OriginalRoundData]() -> bool {
-				GameFuseRounds->OnGameRoundResponse.AddLambda([this, OriginalRoundData](const FGFGameRound& _RoundData) {
+				FGFGameRoundCallback TypedCallback;
+				TypedCallback.BindLambda([this, OriginalRoundData](const FGFGameRound& _RoundData) {
+					AddInfo("CreateGameRound 1 :: Create Multiplayer Round");
 					TestTrue("has good id", _RoundData.Id != 0);
 					TestTrue("has good score", _RoundData.Score == 100);
 					TestTrue("has good multiplayer game round id", _RoundData.MultiplayerGameRoundId != 0);
@@ -176,24 +163,20 @@ void GameFuseRoundsSpec::Define()
 
 					if (!_RoundData.Rankings.IsEmpty()) {
 						const FGFGameRoundRanking& Ranking = _RoundData.Rankings[0];
-						// test place == -1
 						TestTrue("has good ranking place", Ranking.Place == 10);
 						TestTrue("has good ranking score", Ranking.Score == 100);
 
-						// test user obj
 						TestTrue("has good ranking user id", Ranking.User.Id == UserData->Id);
 						TestTrue("has good credits", Ranking.User.Credits == 888);
 					}
-					GameFuseRounds->OnGameRoundResponse.Clear();
 				});
 
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*OriginalRoundData, FGFApiCallback())));
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*OriginalRoundData, TypedCallback)));
 				return true;
 			}));
 		});
 
 		It("adds multiple players to 1 GameRound", [this]() {
-			// Create round data
 			TSharedPtr<FGFUserData> OtherUser = MakeShared<FGFUserData>();
 			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, OtherUser, this, FGuid()));
 
@@ -207,7 +190,8 @@ void GameFuseRoundsSpec::Define()
 			OriginalRoundData->Place = 1;
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OriginalRoundData, OtherUser]() -> bool {
-				GameFuseRounds->OnGameRoundResponse.AddLambda([this, OriginalRoundData](const FGFGameRound& _RoundData) {
+				FGFGameRoundCallback TypedCallback;
+				TypedCallback.BindLambda([this, OriginalRoundData](const FGFGameRound& _RoundData) {
 					AddInfo("OnGameRoundResponse 1");
 					TestTrue("has good id", _RoundData.Id != 0);
 					TestTrue("has good score", _RoundData.Score == 100);
@@ -216,26 +200,25 @@ void GameFuseRoundsSpec::Define()
 					OriginalRoundData->MultiplayerGameRoundId = _RoundData.MultiplayerGameRoundId;
 					TestTrue("updates original round data with multiplayer game round id", OriginalRoundData->MultiplayerGameRoundId == _RoundData.MultiplayerGameRoundId);
 					TestTrue("has round rankings", !_RoundData.Rankings.IsEmpty());
-					GameFuseRounds->OnGameRoundResponse.Clear();
 				});
 
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*OriginalRoundData, FGFApiCallback())));
-
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*OriginalRoundData, TypedCallback)));
 
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OriginalRoundData, OtherUser]() -> bool {
 					TSharedPtr<FGFGameRound> SecondPlayerRoundData = MakeShared<FGFGameRound>();
 					TestTrue("has updated original multiplayer game round id", OriginalRoundData->MultiplayerGameRoundId != 0);
 					TestTrue("Other User has good id", OtherUser->Id != 0);
 
-					SecondPlayerRoundData->MultiplayerGameRoundId = OriginalRoundData->MultiplayerGameRoundId; // required for multiplayer rounds
+					SecondPlayerRoundData->MultiplayerGameRoundId = OriginalRoundData->MultiplayerGameRoundId;
 					SecondPlayerRoundData->GameUserId = OtherUser->Id;
-					SecondPlayerRoundData->Score = 50; // lower score
+					SecondPlayerRoundData->Score = 50;
 					SecondPlayerRoundData->StartTime = FDateTime::Now();
 					SecondPlayerRoundData->EndTime = SecondPlayerRoundData->StartTime + FTimespan::FromMinutes(1);
 					SecondPlayerRoundData->GameType = "Multiplayer";
 					SecondPlayerRoundData->Place = 10;
 
-					GameFuseRounds->OnGameRoundResponse.AddLambda([this, SecondPlayerRoundData](const FGFGameRound& _RoundData) {
+					FGFGameRoundCallback SecondPlayerTypedCallback;
+					SecondPlayerTypedCallback.BindLambda([this, SecondPlayerRoundData](const FGFGameRound& _RoundData) {
 						AddInfo("OnGameRoundResponse 2");
 
 						TestTrue("still has good multiplayer game round id", _RoundData.MultiplayerGameRoundId == SecondPlayerRoundData->MultiplayerGameRoundId);
@@ -245,9 +228,8 @@ void GameFuseRoundsSpec::Define()
 
 						int NumRankings = _RoundData.Rankings.Num();
 						TestTrue("has 2 rankings", NumRankings == 2);
-						GameFuseRounds->OnGameRoundResponse.Clear();
 					});
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*SecondPlayerRoundData, *OtherUser, FGFApiCallback())));
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*SecondPlayerRoundData, *OtherUser, SecondPlayerTypedCallback)));
 					return true;
 				}));
 				return true;
@@ -256,7 +238,6 @@ void GameFuseRoundsSpec::Define()
 		// ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 
 		It("updates game rounds", [this]() {
-			// Create round data
 			TSharedPtr<FGFGameRound> RoundData = MakeShared<FGFGameRound>();
 			RoundData->Score = 100;
 			RoundData->Place = 2;
@@ -265,9 +246,9 @@ void GameFuseRoundsSpec::Define()
 			RoundData->GameType = "SinglePlayer";
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
-				GameFuseRounds->OnGameRoundResponse.AddLambda([this, RoundData](const FGFGameRound& _RoundData) {
-					AddInfo("UpdateGameRound 1");
-
+				FGFGameRoundCallback TypedCallback;
+				TypedCallback.BindLambda([this, RoundData](const FGFGameRound& _RoundData) {
+					AddInfo("UpdateGameRound 1 :: Create Initial Round");
 					TestTrue("has good id", _RoundData.Id != 0);
 					TestTrue("has good score", _RoundData.Score == 100);
 					TestTrue("has good game type", _RoundData.GameType == "SinglePlayer");
@@ -275,15 +256,10 @@ void GameFuseRoundsSpec::Define()
 					TestTrue("has valid end time", _RoundData.EndTime != FDateTime());
 					TestTrue("keeps end time difference", _RoundData.EndTime - _RoundData.StartTime == FTimespan::FromMinutes(1));
 
-					// RoundData->MultiplayerGameRoundId = _RoundData.MultiplayerGameRoundId;
 					RoundData->Id = _RoundData.Id;
-
-					GameFuseRounds->OnGameRoundResponse.Clear();
 				});
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, FGFApiCallback())));
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, TypedCallback)));
 
-
-				// update round data
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
 					RoundData->Score = 200;
 					RoundData->Place = 1;
@@ -292,18 +268,16 @@ void GameFuseRoundsSpec::Define()
 
 					TestTrue("has updated round id", RoundData->Id != 0);
 
-					GameFuseRounds->OnGameRoundResponse.AddLambda([this, RoundData](const FGFGameRound& _RoundData) {
-						AddInfo("UpdateGameRound 2");
-
+					FGFGameRoundCallback UpdateTypedCallback;
+					UpdateTypedCallback.BindLambda([this, RoundData](const FGFGameRound& _RoundData) {
+						AddInfo("UpdateGameRound 2 :: Verify Updated Round");
 						TestTrue("has good id", _RoundData.Id != 0);
 						TestTrue("has updated score", _RoundData.Score == 200);
 						TestTrue("has updated place", _RoundData.Place == 1);
 						TestTrue("has good game type", _RoundData.GameType == "SinglePlayerUpdated");
 						TestTrue("has updated end time", _RoundData.EndTime - _RoundData.StartTime == FTimespan::FromMinutes(2));
-
-						GameFuseRounds->OnGameRoundResponse.Clear();
 					});
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->UpdateGameRound(RoundData->Id, *RoundData, FGFApiCallback())));
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->UpdateGameRound(RoundData->Id, *RoundData, UpdateTypedCallback)));
 					return true;
 				}));
 
@@ -312,7 +286,6 @@ void GameFuseRoundsSpec::Define()
 		});
 
 		It("deletes a game round", [this]() {
-			// Create round data
 			TSharedPtr<FGFGameRound> RoundData = MakeShared<FGFGameRound>();
 			RoundData->Score = 100;
 			RoundData->StartTime = FDateTime::Now();
@@ -320,20 +293,23 @@ void GameFuseRoundsSpec::Define()
 			RoundData->GameType = "SinglePlayer";
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
-				GameFuseRounds->OnGameRoundResponse.AddLambda([this, RoundData](const FGFGameRound& _RoundData) {
+				FGFGameRoundCallback TypedCallback;
+				TypedCallback.BindLambda([this, RoundData](const FGFGameRound& _RoundData) {
+					AddInfo("DeleteGameRound 1 :: Create Round");
 					TestTrue("has good id", _RoundData.Id != 0);
 					RoundData->Id = _RoundData.Id;
-					GameFuseRounds->OnGameRoundResponse.Clear();
 				});
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, FGFApiCallback())));
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData, TypedCallback)));
 
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
-					GameFuseRounds->OnGameRoundDeleteResponse.AddLambda([this, RoundData](bool bSuccess) {
+					FGFGameRoundActionCallback TypedCallback;
+					TypedCallback.BindLambda([this, RoundData](bool bSuccess) {
+						AddInfo("DeleteGameRound 2 :: Delete Round");
 						AddErrorIfFalse(bSuccess, FString::Printf(TEXT("Failed to delete round with id %d"), RoundData->Id));
 						TestTrue("deleted round", bSuccess);
-						GameFuseRounds->OnGameRoundDeleteResponse.Clear();
 					});
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->DeleteGameRound(RoundData->Id, FGFApiCallback())));
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->DeleteGameRound(RoundData->Id, TypedCallback)));
 					return true;
 				}));
 
@@ -341,69 +317,130 @@ void GameFuseRoundsSpec::Define()
 			}));
 		});
 
-		It("gets a users game rounds", [this] {
+		It("fetches a specific game round", [this]() {
+			TSharedPtr<FGFGameRound> RoundData = MakeShared<FGFGameRound>();
+			RoundData->Score = 100;
+			RoundData->StartTime = FDateTime::Now();
+			RoundData->EndTime = RoundData->StartTime + FTimespan::FromMinutes(1);
+			RoundData->GameType = "MultiPlayer";
+			RoundData->bMultiplayer = true;
+			RoundData->GameUserId = UserData->Id;
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
+				FGFGameRoundCallback CreateCallback;
+				CreateCallback.BindLambda([this, RoundData](const FGFGameRound& _RoundData) {
+					AddInfo("FetchGameRound 1 :: Create Round");
+					RoundData->Id = _RoundData.Id;
+					RoundData->MultiplayerGameRoundId = _RoundData.MultiplayerGameRoundId;
+					TestTrue("Created round has valid id", _RoundData.Id != 0);
+					TestTrue("has multiplayer game round id", _RoundData.MultiplayerGameRoundId != 0);
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																  GameFuseRounds->CreateGameRound(*RoundData, CreateCallback)));
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
+
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData]() -> bool {
+					FGFGameRoundCallback FetchCallback;
+					FetchCallback.BindLambda([this, RoundData](const FGFGameRound& FetchedRound) {
+						AddInfo("FetchGameRound 2 :: Verify Fetched Round");
+						TestEqual("Fetched round has correct ID", FetchedRound.Id, RoundData->Id);
+						TestEqual("Fetched round has correct score", FetchedRound.Score, RoundData->Score);
+						TestEqual("Fetched round has correct game type", FetchedRound.GameType, RoundData->GameType);
+						TestTrue("Fetched round has multiplayer game round id", FetchedRound.MultiplayerGameRoundId != 0);
+						TestTrue("Fetched round has rankings", !FetchedRound.Rankings.IsEmpty());
+
+						if (!FetchedRound.Rankings.IsEmpty()) {
+							const FGFGameRoundRanking& Ranking = FetchedRound.Rankings[0];
+							TestEqual("Ranking has correct user id", Ranking.User.Id, UserData->Id);
+							TestEqual("Ranking has correct score", Ranking.Score, RoundData->Score);
+						}
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																	  GameFuseRounds->FetchGameRound(RoundData->Id, FetchCallback)));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("gets a users game rounds", [this]() {
 			TSharedPtr<FGFGameRound> RoundData_1 = MakeShared<FGFGameRound>();
 			RoundData_1->Score = 100;
 			RoundData_1->StartTime = FDateTime::Now();
 			RoundData_1->EndTime = RoundData_1->StartTime + FTimespan::FromMinutes(1);
 			RoundData_1->GameType = "SinglePlayer";
 
-
 			TSharedPtr<FGFGameRound> RoundData_2 = MakeShared<FGFGameRound>();
-			RoundData_2->Score = 100;
+			RoundData_2->Score = 200; // Different score to distinguish from RoundData_1
 			RoundData_2->StartTime = FDateTime::Now();
 			RoundData_2->EndTime = RoundData_2->StartTime + FTimespan::FromMinutes(1);
 			RoundData_2->GameType = "SinglePlayer";
 
-			// create round 1
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData_1, RoundData_2]() -> bool {
-				GameFuseRounds->OnGameRoundResponse.AddLambda([this, RoundData_1](const FGFGameRound& _RoundData) {
-					AddInfo("GetGameRounds 1 :: Create Round 1");
-					TestTrue("has valid round id", _RoundData.Id != 0);
-
-					// RoundData->MultiplayerGameRoundId = _RoundData.MultiplayerGameRoundId;
+				FGFGameRoundCallback CreateCallback1;
+				CreateCallback1.BindLambda([this, RoundData_1, RoundData_2](const FGFGameRound& _RoundData) {
+					AddInfo("GetUserRounds 1 :: Create First Round");
 					RoundData_1->Id = _RoundData.Id;
-
-					GameFuseRounds->OnGameRoundResponse.Clear();
+					TestTrue("Round 1 has valid id", _RoundData.Id != 0);
+					AddErrorIfFalse(_RoundData.Id > 0, "Round 1 has valid id");
 				});
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData_1, FGFApiCallback())));
 
-				// create round 2
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																  GameFuseRounds->CreateGameRound(*RoundData_1, CreateCallback1)));
+
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData_1, RoundData_2]() -> bool {
-					GameFuseRounds->OnGameRoundResponse.AddLambda([this, RoundData_2](const FGFGameRound& _RoundData) {
-						AddInfo("GetGameRounds 2 :: Create Round 2");
-						TestTrue("has valid round id", _RoundData.Id != 0);
-
-						// RoundData->MultiplayerGameRoundId = _RoundData.MultiplayerGameRoundId;
+					FGFGameRoundCallback CreateCallback2;
+					CreateCallback2.BindLambda([this, RoundData_1, RoundData_2](const FGFGameRound& _RoundData) {
+						AddInfo("GetUserRounds 2 :: Create Second Round");
 						RoundData_2->Id = _RoundData.Id;
-
-						GameFuseRounds->OnGameRoundResponse.Clear();
+						TestTrue("Round 2 has valid id", _RoundData.Id != 0);
+						AddErrorIfFalse(_RoundData.Id > 0, "Round 2 has valid id");
 					});
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*RoundData_2, FGFApiCallback())));
 
-					// get user game rounds
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																	  GameFuseRounds->CreateGameRound(*RoundData_2, CreateCallback2)));
+
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, RoundData_1, RoundData_2]() -> bool {
-						GameFuseRounds->OnGameRoundListResponse.AddLambda([this, RoundData_1, RoundData_2](const TArray<FGFGameRound>& Rounds) {
-							AddInfo("GetGameRounds 3 :: Get User Rounds");
+						FGFGameRoundListCallback FetchCallback;
+						FetchCallback.BindLambda([this, RoundData_1, RoundData_2](const TArray<FGFGameRound>& Rounds) {
+							AddInfo("GetUserRounds 3 :: Verify User Rounds");
+							TestEqual("Should have exactly 2 rounds", Rounds.Num(), 2);
+							TestEqual("Internal storage has correct number of rounds", GameFuseRounds->GetUserRounds().Num(), 2);
 
-							TestTrue("has 2 rounds", Rounds.Num() == 2);
-							TestTrue("has round 1", Rounds.ContainsByPredicate([RoundData_1](const FGFGameRound& RoundData) {
-								return RoundData.Id == RoundData_1->Id;
-							}));
-							TestTrue("has round 2", Rounds.ContainsByPredicate([RoundData_2](const FGFGameRound& RoundData) {
-								return RoundData.Id == RoundData_2->Id;
-							}));
+							// Verify internal storage matches callback data
+							TestEqual("Internal storage matches callback data", Rounds, GameFuseRounds->GetUserRounds());
 
-							GameFuseRounds->OnGameRoundListResponse.Clear();
+							// Find both rounds in the array (order may not be guaranteed)
+							bool bFoundRound1 = false;
+							bool bFoundRound2 = false;
+
+							for (const FGFGameRound& Round : Rounds) {
+								if (Round.Id == RoundData_1->Id) {
+									bFoundRound1 = true;
+									TestEqual("Round 1 score matches", Round.Score, RoundData_1->Score);
+									TestEqual("Round 1 game type matches", Round.GameType, RoundData_1->GameType);
+								} else if (Round.Id == RoundData_2->Id) {
+									bFoundRound2 = true;
+									TestEqual("Round 2 score matches", Round.Score, RoundData_2->Score);
+									TestEqual("Round 2 game type matches", Round.GameType, RoundData_2->GameType);
+								}
+							}
+
+							TestTrue("Found Round 1 in response", bFoundRound1);
+							TestTrue("Found Round 2 in response", bFoundRound2);
 						});
-						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->GetUserGameRounds(FGFApiCallback())));
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																		  GameFuseRounds->FetchUserGameRounds(FetchCallback)));
 						return true;
 					}));
 					return true;
 				}));
 				return true;
 			}));
-			return true;
 		});
 	});
 }

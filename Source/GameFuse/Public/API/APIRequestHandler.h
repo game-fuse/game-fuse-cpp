@@ -9,6 +9,8 @@
 
 #include "ApiRequestHandler.generated.h"
 
+// Single-cast delegates for user callbacks
+DECLARE_DYNAMIC_DELEGATE_OneParam(FGFSuccessCallback, bool, bSuccess);
 
 /**
  * @brief BP Specific Callback Delegate. Only bound to the Delegate pin on a given node.

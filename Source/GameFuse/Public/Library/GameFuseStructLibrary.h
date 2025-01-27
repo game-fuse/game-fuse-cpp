@@ -206,6 +206,11 @@ struct FGFGameRoundRanking
 
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	FGFUserData User;
+
+	bool operator==(const FGFGameRoundRanking& Other) const
+	{
+		return Place == Other.Place && Score == Other.Score && StartTime == Other.StartTime && EndTime == Other.EndTime && User == Other.User;
+	}
 };
 
 // Main Game Round Structure
@@ -251,6 +256,25 @@ struct FGFGameRound
 	// Constructor for easy initialization
 	FGFGameRound()
 	{}
+
+	bool operator==(const FGFGameRound& Other) const
+	{
+		if (Id != Other.Id || GameUserId != Other.GameUserId || StartTime != Other.StartTime || EndTime != Other.EndTime || GameType != Other.GameType || MultiplayerGameRoundId != Other.MultiplayerGameRoundId || bMultiplayer != Other.bMultiplayer) {
+			return false;
+		}
+
+		// not comparing rankings
+
+		// Compare Metadata
+		for (const auto& Pair : Metadata) {
+			const FString* OtherValue = Other.Metadata.Find(Pair.Key);
+			if (!OtherValue || *OtherValue != Pair.Value) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 };
 
 USTRUCT(BlueprintType)
