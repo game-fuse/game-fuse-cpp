@@ -14,10 +14,8 @@ void FGameFuseTestsModule::StartupModule()
 		GameInstance->Init();
 		GameFuseManager = GameInstance->GetSubsystem<UGameFuseManager>();
 		GameData = MakeShared<FGFGameData>();
-		TestAPIHandler = TestAPIHandler;
+
 		TestAPIHandler = NewObject<UTestAPIHandler>();
-
-
 	});
 
 	FAutomationTestFramework::Get().OnAfterAllTestsEvent.AddLambda([]() {
