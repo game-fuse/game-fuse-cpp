@@ -157,6 +157,100 @@ struct FGFLeaderboard
 	TArray<FGFLeaderboardEntry> Entries;
 };
 
+USTRUCT(BlueprintType, Category = "GameFuse|Groups")
+struct FGFGroupAttribute
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 Id = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	FString Key = "";
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	FString Value = "";
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 CreatorId = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	bool bCanEdit = false;
+};
+
+USTRUCT(BlueprintType, Category = "GameFuse|Groups")
+struct FGFGroup
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 Id = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	FString Name = "";
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	FString GroupType = "";
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 MaxGroupSize = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	bool bCanAutoJoin = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	bool bIsInviteOnly = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	bool bSearchable = true;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	bool bAdminsOnlyCanCreateAttributes = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 MemberCount = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	TArray<FGFUserData> Members;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	TArray<FGFUserData> Admins;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	TArray<FGFGroupAttribute> Attributes;
+
+	bool operator==(const FGFGroup& Other) const
+	{
+		return Id == Other.Id && Name == Other.Name;
+	}
+};
+
+USTRUCT(BlueprintType)
+struct GAMEFUSE_API FGFGroupConnection
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 Id;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
+	FString Status;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 GroupId;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 UserId;
+
+	FGFGroupConnection()
+		: Id(0)
+		, Status("")
+		, GroupId(0)
+		, UserId(0)
+	{
+	}
+};
+
 USTRUCT(BlueprintType, Category = "GameFuse| API")
 
 struct FGFAPIResponse

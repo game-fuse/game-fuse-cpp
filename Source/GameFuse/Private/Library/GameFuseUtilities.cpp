@@ -56,6 +56,19 @@ bool GameFuseUtilities::ConvertGameRoundToJson(const FGFGameRound& GameRound, co
 	return true;
 }
 
+bool GameFuseUtilities::ConvertGroupToJson(const FGFGroup& Group, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	JsonObject->SetStringField("name", Group.Name);
+	JsonObject->SetStringField("group_type", Group.GroupType);
+	JsonObject->SetNumberField("max_group_size", Group.MaxGroupSize);
+	JsonObject->SetBoolField("can_auto_join", Group.bCanAutoJoin);
+	JsonObject->SetBoolField("invite_only", Group.bIsInviteOnly);
+	JsonObject->SetBoolField("searchable", Group.bSearchable);
+	JsonObject->SetBoolField("admins_only_can_create_attributes", Group.bAdminsOnlyCanCreateAttributes);
+
+	return true;
+}
+
 #pragma endregion
 
 #pragma region JSON => Struct Conversion
@@ -406,6 +419,149 @@ bool GameFuseUtilities::ConvertJsonArrayToGameRounds(TArray<FGFGameRound>& InGam
 		} else {
 			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonArrayToGameRounds: Failed to convert JSON value to GameRound"));
 			return false;
+		}
+	}
+
+	return true;
+}
+
+#pragma endregion
+
+#pragma region Groups
+
+bool GameFuseUtilities::ConvertJsonToGroupAttribute(FGFGroupAttribute& InAttribute, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (!JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for GroupAttribute conversion"));
+		return false;
+	}
+
+	JsonObject->TryGetNumberField(TEXT("id"), InAttribute.Id);
+	JsonObject->TryGetStringField(TEXT("key"), InAttribute.Key);
+	JsonObject->TryGetStringField(TEXT("value"), InAttribute.Value);
+	JsonObject->TryGetNumberField(TEXT("creator_id"), InAttribute.CreatorId);
+	JsonObject->TryGetBoolField(TEXT("can_edit"), InAttribute.bCanEdit);
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonArrayToGroupAttributes(TArray<FGFGroupAttribute>& InAttributes, const TArray<TSharedPtr<FJsonValue>>* JsonArray)
+{
+	if (!JsonArray) {
+		return false;
+	}
+
+	InAttributes.Empty();
+	for (const auto& JsonValue : *JsonArray) {
+		if (JsonValue->Type != EJson::Object) {
+			continue;
+		}
+
+		FGFGroupAttribute Attribute;
+		if (ConvertJsonToGroupAttribute(Attribute, JsonValue->AsObject())) {
+			InAttributes.Add(Attribute);
+		}
+	}
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToGroup(FGFGroup& InGroup, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (!JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for Group conversion"));
+		return false;
+	}
+
+	JsonObject->TryGetNumberField(TEXT("id"), InGroup.Id);
+	JsonObject->TryGetStringField(TEXT("name"), InGroup.Name);
+	JsonObject->TryGetStringField(TEXT("group_type"), InGroup.GroupType);
+	JsonObject->TryGetNumberField(TEXT("max_group_size"), InGroup.MaxGroupSize);
+	JsonObject->TryGetBoolField(TEXT("can_auto_join"), InGroup.bCanAutoJoin);
+	JsonObject->TryGetBoolField(TEXT("invite_only"), InGroup.bIsInviteOnly);
+	JsonObject->TryGetBoolField(TEXT("searchable"), InGroup.bSearchable);
+	JsonObject->TryGetBoolField(TEXT("admins_only_can_create_attributes"), InGroup.bAdminsOnlyCanCreateAttributes);
+	JsonObject->TryGetNumberField(TEXT("member_count"), InGroup.MemberCount);
+
+	// Convert members array
+	const TArray<TSharedPtr<FJsonValue>>* MembersArray;
+	if (JsonObject->TryGetArrayField(TEXT("members"), MembersArray)) {
+		InGroup.Members.Empty();
+		for (const auto& JsonValue : *MembersArray) {
+			if (JsonValue->Type != EJson::Object) {
+				continue;
+			}
+
+			FGFUserData Member;
+			if (ConvertJsonToUserData(Member, JsonValue->AsObject())) {
+				InGroup.Members.Add(Member);
+			}
+		}
+	}
+
+	// Convert admins array
+	const TArray<TSharedPtr<FJsonValue>>* AdminsArray;
+	if (JsonObject->TryGetArrayField(TEXT("admins"), AdminsArray)) {
+		InGroup.Admins.Empty();
+		for (const auto& JsonValue : *AdminsArray) {
+			if (JsonValue->Type != EJson::Object) {
+				continue;
+			}
+
+			FGFUserData Admin;
+			if (ConvertJsonToUserData(Admin, JsonValue->AsObject())) {
+				InGroup.Admins.Add(Admin);
+			}
+		}
+	}
+
+	// Convert attributes array
+	const TArray<TSharedPtr<FJsonValue>>* AttributesArray;
+	if (JsonObject->TryGetArrayField(TEXT("attributes"), AttributesArray)) {
+		ConvertJsonArrayToGroupAttributes(InGroup.Attributes, AttributesArray);
+	}
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToGroup(FGFGroup& InGroup, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	return ConvertJsonToGroup(InGroup, JsonObject);
+}
+
+bool GameFuseUtilities::ConvertJsonArrayToGroups(TArray<FGFGroup>& InGroups, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* JsonArray;
+	if (!JsonObject->TryGetArrayField(TEXT("groups"), JsonArray)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to get groups array from JSON"));
+		return false;
+	}
+
+	InGroups.Empty();
+	for (const auto& JsonValue : *JsonArray) {
+		if (JsonValue->Type != EJson::Object) {
+			continue;
+		}
+
+		FGFGroup Group;
+		if (ConvertJsonToGroup(Group, JsonValue->AsObject())) {
+			InGroups.Add(Group);
 		}
 	}
 

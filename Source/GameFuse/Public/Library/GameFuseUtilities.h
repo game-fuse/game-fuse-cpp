@@ -32,6 +32,13 @@ public:
 	 */
 	static bool ConvertGameRoundToJson(const FGFGameRound& GameRound, const TSharedPtr<FJsonObject>& JsonObject);
 
+	/**
+	 * Converts a Group into a JSON object
+	 * @param Group The Group to convert
+	 * @param JsonObject The JSON object to store the data
+	 * @return true if successful
+	 */
+	static bool ConvertGroupToJson(const FGFGroup& Group, const TSharedPtr<FJsonObject>& JsonObject);
 
 #pragma endregion
 #pragma region JSON => Struct Conversion
@@ -142,6 +149,50 @@ public:
 	 * @return true if successful
 	 */
 	static bool ConvertJsonToFriendsList(TArray<FGFUserData>& OutFriends, const FString& JsonString);
+
+#pragma endregion
+
+#pragma region Groups
+
+	/**
+	 * Converts a JSON object into a GroupAttribute
+	 * @param InAttribute GroupAttribute struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroupAttribute(FGFGroupAttribute& InAttribute, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON array into an array of GroupAttributes
+	 * @param InAttributes Array to store converted data
+	 * @param JsonArray The JSON array to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonArrayToGroupAttributes(TArray<FGFGroupAttribute>& InAttributes, const TArray<TSharedPtr<FJsonValue>>* JsonArray);
+
+	/**
+	 * Converts a JSON object into a Group
+	 * @param InGroup Group struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroup(FGFGroup& InGroup, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON string into a Group
+	 * @param InGroup Group struct to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroup(FGFGroup& InGroup, const FString& JsonString);
+
+	/**
+	 * Converts a JSON array into an array of Groups
+	 * @param InGroups Array to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonArrayToGroups(TArray<FGFGroup>& InGroups, const FString& JsonString);
 
 #pragma endregion
 
