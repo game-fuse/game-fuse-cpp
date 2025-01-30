@@ -62,7 +62,7 @@ bool GameFuseUtilities::ConvertGroupToJson(const FGFGroup& Group, const TSharedP
 	JsonObject->SetStringField("group_type", Group.GroupType);
 	JsonObject->SetNumberField("max_group_size", Group.MaxGroupSize);
 	JsonObject->SetBoolField("can_auto_join", Group.bCanAutoJoin);
-	JsonObject->SetBoolField("invite_only", Group.bIsInviteOnly);
+	JsonObject->SetBoolField("is_invite_only", Group.bIsInviteOnly);
 	JsonObject->SetBoolField("searchable", Group.bSearchable);
 	JsonObject->SetBoolField("admins_only_can_create_attributes", Group.bAdminsOnlyCanCreateAttributes);
 
@@ -478,7 +478,7 @@ bool GameFuseUtilities::ConvertJsonToGroup(FGFGroup& InGroup, const TSharedPtr<F
 	JsonObject->TryGetStringField(TEXT("group_type"), InGroup.GroupType);
 	JsonObject->TryGetNumberField(TEXT("max_group_size"), InGroup.MaxGroupSize);
 	JsonObject->TryGetBoolField(TEXT("can_auto_join"), InGroup.bCanAutoJoin);
-	JsonObject->TryGetBoolField(TEXT("invite_only"), InGroup.bIsInviteOnly);
+	JsonObject->TryGetBoolField(TEXT("is_invite_only"), InGroup.bIsInviteOnly);
 	JsonObject->TryGetBoolField(TEXT("searchable"), InGroup.bSearchable);
 	JsonObject->TryGetBoolField(TEXT("admins_only_can_create_attributes"), InGroup.bAdminsOnlyCanCreateAttributes);
 	JsonObject->TryGetNumberField(TEXT("member_count"), InGroup.MemberCount);

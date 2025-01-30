@@ -41,6 +41,7 @@ public:
 	FGuid AddAttribute(const int32 GroupId, const FString& Key, const FString& Value, FGFGroupActionCallback TypedCallback);
 	FGuid UpdateAttribute(const int32 GroupId, const int32 AttributeId, const FString& Value, FGFGroupActionCallback TypedCallback);
 	FGuid DeleteAttribute(const int32 GroupId, const int32 AttributeId, FGFGroupActionCallback TypedCallback);
+	FGuid RespondToGroupJoinRequest(const int32 ConnectionId, const int32 UserId, EGFInviteRequestStatus Status, FGFGroupActionCallback TypedCallback);
 
 	// Blueprint API
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
@@ -84,6 +85,26 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
 	void BP_DeleteAttribute(const int32 GroupId, const int32 AttributeId, FBP_GFGroupCallback Callback);
+
+	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	void BP_AcceptGroupJoinRequest(const int32 ConnectionId, const int32 UserId, FBP_GFGroupCallback Callback)
+	{
+		FGFGroupActionCallback TypedCallback;
+		TypedCallback.BindLambda([Callback](bool bSuccess) {
+			Callback.ExecuteIfBound(bSuccess);
+		});
+		RespondToGroupJoinRequest(ConnectionId, UserId, EGFInviteRequestStatus::Accepted, TypedCallback);
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	void BP_DeclineGroupJoinRequest(const int32 ConnectionId, const int32 UserId, FBP_GFGroupCallback Callback)
+	{
+		FGFGroupActionCallback TypedCallback;
+		TypedCallback.BindLambda([Callback](bool bSuccess) {
+			Callback.ExecuteIfBound(bSuccess);
+		});
+		RespondToGroupJoinRequest(ConnectionId, UserId, EGFInviteRequestStatus::Declined, TypedCallback);
+	}
 
 	// Getters for cached data
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")

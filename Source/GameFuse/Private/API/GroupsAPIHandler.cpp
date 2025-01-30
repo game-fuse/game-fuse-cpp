@@ -178,3 +178,31 @@ FGuid UGroupsAPIHandler::DeleteAttribute(const int32 GroupId, const int32 Attrib
 	const FString ApiEndpoint = FString::Printf(TEXT("/groups/%d/attributes/%d"), GroupId, AttributeId);
 	return SendRequest(ApiEndpoint, "DELETE", Callback);
 }
+
+FGuid UGroupsAPIHandler::RespondToGroupJoinRequest(const int32 ConnectionId, const int32 UserId, EGFInviteRequestStatus Status, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	if (!VerifyUserData(UserData)) {
+		return FGuid();
+	}
+
+	if (Status == EGFInviteRequestStatus::None) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid request status: None"));
+		return FGuid();
+	}
+
+	SetAuthHeader(UserData.AuthenticationToken);
+
+	const FString ApiEndpoint = FString::Printf(TEXT("/group_connections/%d"), ConnectionId);
+	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
+
+	// Create the group_connection object
+	TSharedPtr<FJsonObject> GroupConnectionObject = MakeShared<FJsonObject>();
+	GroupConnectionObject->SetStringField("status", Status == EGFInviteRequestStatus::Accepted ? "accepted" : "declined");
+	GroupConnectionObject->SetStringField("action_type", "update");
+
+	// Add the main objects
+	JsonObject->SetObjectField("group_connection", GroupConnectionObject);
+	JsonObject->SetStringField("connection_type", "invite");
+
+	return SendRequest(ApiEndpoint, "PUT", Callback, JsonObject);
+}

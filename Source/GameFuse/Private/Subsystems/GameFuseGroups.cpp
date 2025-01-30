@@ -300,6 +300,31 @@ FGuid UGameFuseGroups::DeleteAttribute(const int32 GroupId, const int32 Attribut
 	return RequestId;
 }
 
+FGuid UGameFuseGroups::RespondToGroupJoinRequest(const int32 ConnectionId, const int32 UserId, EGFInviteRequestStatus Status, FGFGroupActionCallback TypedCallback)
+{
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to respond to group join request"));
+		return FGuid();
+	}
+
+	if (Status == EGFInviteRequestStatus::None) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid request status: None"));
+		return FGuid();
+	}
+
+	FGFApiCallback InternalCallback;
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleGroupActionResponse(Response);
+	});
+
+	FGuid RequestId = RequestHandler->RespondToGroupJoinRequest(ConnectionId, UserId, Status, GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		GroupActionCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
+}
+
 void UGameFuseGroups::HandleGroupResponse(const FGFAPIResponse& Response)
 {
 	if (!Response.bSuccess) {

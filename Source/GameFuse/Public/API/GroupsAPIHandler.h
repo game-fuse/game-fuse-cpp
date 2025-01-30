@@ -54,4 +54,7 @@ public:
 
 	FGuid FetchAllGroups(const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid RequestToJoinGroup(int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback);
+
+	// Respond to a group join request
+	FGuid RespondToGroupJoinRequest(const int32 ConnectionId, const int32 UserId, EGFInviteRequestStatus Status, const FGFUserData& UserData, const FGFApiCallback& Callback);
 };
