@@ -12,7 +12,7 @@
 #include "Subsystems/GameFuseManager.h"
 
 BEGIN_DEFINE_SPEC(FGameFuseGroupsSpec, "GameFuseTests.GameFuseGroups",
-                 EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+				  EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 UGameFuseManager* GameFuseManager;
 UGameFuseGroups* GameFuseGroups;
 UGameFuseUser* GameFuseUser;
@@ -34,8 +34,8 @@ void FGameFuseGroupsSpec::Define()
 
 	// Get subsystems and test api handler
 	GameFuseManager = GameInstance->GetSubsystem<UGameFuseManager>();
-	GameFuseGroups = GameInstance->GetSubsystem<UGameFuseGroups>();
 	GameFuseUser = GameInstance->GetSubsystem<UGameFuseUser>();
+	GameFuseGroups = GameInstance->GetSubsystem<UGameFuseGroups>();
 	TestAPIHandler = NewObject<UTestAPIHandler>();
 
 	// Init testing data
@@ -43,162 +43,199 @@ void FGameFuseGroupsSpec::Define()
 	UserData1 = MakeShared<FGFUserData>();
 	UserData2 = MakeShared<FGFUserData>();
 
-	Describe("GameFuseGroups Basic Operations", [this]() {
-		BeforeEach([this]() {
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				if (GameFuseManager->IsSetUp()) {
-					UE_LOG(LogGameFuse, Warning, TEXT("Game was already Setup"));
-					GameFuseManager->ClearGameData();
-					return false; // Keep waiting
+	BeforeEach([this]() {
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+			if (GameFuseManager->IsSetUp()) {
+				UE_LOG(LogGameFuse, Warning, TEXT("Game was already Setup"));
+				GameFuseManager->ClearGameData();
+				return false; // Keep waiting
+			}
+			UE_LOG(LogGameFuse, Log, TEXT("GameFuseManager cleanup complete"));
+			return true;
+		}));
+
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+			if (GameFuseUser->IsSignedIn()) {
+				UE_LOG(LogGameFuse, Warning, TEXT("User was already Signed in"));
+				GameFuseUser->LogOut();
+				return false; // Keep waiting
+			}
+			UE_LOG(LogGameFuse, Log, TEXT("GameFuseUser cleanup complete"));
+			return true;
+		}));
+
+		// Create and setup game
+		ADD_LATENT_AUTOMATION_COMMAND(FSetupGame(TestAPIHandler, GameData, GameFuseManager, this, FGuid()));
+
+		// Wait for GameFuseManager to be fully set up
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+			if (!GameFuseManager->IsSetUp()) {
+				UE_LOG(LogGameFuse, Warning, TEXT("Waiting for GameFuseManager setup..."));
+				return false; // Keep waiting
+			}
+			UE_LOG(LogGameFuse, Log, TEXT("GameFuseManager setup complete"));
+			return true;
+		}));
+
+		// Create and sign in first user
+		ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, UserData1, GameFuseUser, this));
+
+		// Wait for first user to be fully signed in
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+			if (!GameFuseUser->IsSignedIn()) {
+				UE_LOG(LogGameFuse, Warning, TEXT("Waiting for first user signin..."));
+				return false; // Keep waiting
+			}
+			UE_LOG(LogGameFuse, Log, TEXT("First user signed in successfully"));
+			return true;
+		}));
+
+		// Create second user
+		ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, UserData2, this, FGuid()));
+	});
+
+	It("creates a group", [this]() {
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+			if (!GameFuseUser->IsSignedIn()) {
+				UE_LOG(LogGameFuse, Warning, TEXT("creates a group :: Waiting for first user signin..."));
+				return false; // Keep waiting
+			}
+			UE_LOG(LogGameFuse, Log, TEXT("creates a group :: First user signed in successfully"));
+			return true;
+		}));
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+			FGFGroup GroupData;
+			GroupData.Name = "Test Group";
+			GroupData.GroupType = "Test";
+			GroupData.MaxGroupSize = 10;
+			GroupData.bCanAutoJoin = true;
+			GroupData.bIsInviteOnly = false;
+			GroupData.bSearchable = true;
+
+			FGFGroupCallback TypedCallback;
+			TypedCallback.BindLambda([this](const FGFGroup& CreatedGroup) {
+				AddInfo("CreateGroup :: Create and Verify Group");
+				TestTrue("Group has valid id", CreatedGroup.Id != 0);
+				TestEqual("Group has correct name", CreatedGroup.Name, "Test Group");
+				TestEqual("Group has correct type", CreatedGroup.GroupType, "Test");
+				TestEqual("Group has correct max size", CreatedGroup.MaxGroupSize, 10);
+				TestTrue("Group can auto join", CreatedGroup.bCanAutoJoin);
+				TestFalse("Group is not invite only", CreatedGroup.bIsInviteOnly);
+				TestTrue("Group is searchable", CreatedGroup.bSearchable);
+
+				// Verify internal state matches callback data
+				const TArray<FGFGroup>& AllGroups = GameFuseGroups->GetAllGroups();
+				TestTrue("Group is stored internally", AllGroups.Contains(CreatedGroup));
+			});
+
+			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+															  GameFuseGroups->CreateGroup(GroupData, TypedCallback)));
+			return true;
+		}));
+	});
+
+	It("gets all groups", [this]() {
+		// First create a test group
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+			FGFGroup GroupData;
+			GroupData.Name = "Test Group for GetAll";
+			GroupData.GroupType = "Test";
+			GroupData.MaxGroupSize = 10;
+			GroupData.bCanAutoJoin = true;
+			GroupData.bSearchable = true;
+
+			FGFGroupCallback CreateCallback;
+			CreateCallback.BindLambda([this](const FGFGroup& CreatedGroup) {
+				AddInfo("GetAllGroups 1 :: Create Initial Group");
+				TestTrue("Created group has valid id", CreatedGroup.Id != 0);
+				TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for GetAll");
+			});
+
+			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+															  GameFuseGroups->CreateGroup(GroupData, CreateCallback)));
+			return true;
+		}));
+
+		// After creating group, fetch all groups to verify
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+			FGFGroupListCallback FetchCallback;
+			FetchCallback.BindLambda([this](const TArray<FGFGroup>& Groups) {
+				AddInfo("GetAllGroups 2 :: Verify Groups List");
+				TestTrue("Has at least one group", Groups.Num() > 0);
+				TestEqual("Internal storage matches callback data", Groups, GameFuseGroups->GetAllGroups());
+
+				// Find our created group in the list
+				bool bFoundGroup = false;
+				for (const FGFGroup& Group : Groups) {
+					TestTrue("Each group has valid id", Group.Id != 0);
+					TestFalse("Each group has name", Group.Name.IsEmpty());
+					TestFalse("Each group has type", Group.GroupType.IsEmpty());
+
+					if (Group.Name == "Test Group for GetAll") {
+						bFoundGroup = true;
+						TestEqual("Found group has correct name", Group.Name, "Test Group for GetAll");
+						TestEqual("Found group has correct type", Group.GroupType, "Test");
+						TestEqual("Found group has correct max size", Group.MaxGroupSize, 10);
+						TestTrue("Found group can auto join", Group.bCanAutoJoin);
+						TestTrue("Found group is searchable", Group.bSearchable);
+					}
 				}
-				UE_LOG(LogGameFuse, Log, TEXT("GameFuseManager cleanup complete"));
-				return true;
-			}));
+				TestTrue("Created group was found in list", bFoundGroup);
+			});
 
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				if (GameFuseUser->IsSignedIn()) {
-					UE_LOG(LogGameFuse, Warning, TEXT("User was already Signed in"));
-					GameFuseUser->LogOut();
-					return false; // Keep waiting
-				}
-				UE_LOG(LogGameFuse, Log, TEXT("GameFuseUser cleanup complete"));
-				return true;
-			}));
+			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+															  GameFuseGroups->GetAllGroups(FetchCallback)));
+			return true;
+		}));
+	});
 
-			// Create and setup game
-			ADD_LATENT_AUTOMATION_COMMAND(FSetupGame(TestAPIHandler, GameData, GameFuseManager, this, FGuid()));
+	It("requests to join a group", [this]() {
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+			// First create a test group
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = "Test Group for Joining";
+			GroupData->GroupType = "Test";
+			GroupData->MaxGroupSize = 10;
+			GroupData->bCanAutoJoin = true;
+			GroupData->bSearchable = true;
 
-			// Wait for GameFuseManager to be fully set up
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				if (!GameFuseManager->IsSetUp()) {
-					UE_LOG(LogGameFuse, Warning, TEXT("Waiting for GameFuseManager setup..."));
-					return false; // Keep waiting
-				}
-				UE_LOG(LogGameFuse, Log, TEXT("GameFuseManager setup complete"));
-				return true;
-			}));
+			FGFGroupCallback CreateCallback;
+			CreateCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+				AddInfo("JoinGroup :: Create Group");
+				AddErrorIfFalse(CreatedGroup.Id != 0, "Failed to create group");
+				TestTrue("Created group has valid id", CreatedGroup.Id != 0);
+				TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for Joining");
+				TestTrue("Created group can auto join", CreatedGroup.bCanAutoJoin);
 
-			// Create and sign in user
-			ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, UserData1, GameFuseUser, this));
+				GroupData->Id = CreatedGroup.Id;
+			});
 
-			// Wait for user to be fully signed in
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				if (!GameFuseUser->IsSignedIn()) {
-					UE_LOG(LogGameFuse, Warning, TEXT("Waiting for user signin..."));
-					return false; // Keep waiting
-				}
-				UE_LOG(LogGameFuse, Log, TEXT("User signed in successfully"));
-				return true;
-			}));
+			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+															  GameFuseGroups->CreateGroup(*GroupData, CreateCallback)));
 
-			// Create second user for testing
-			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, UserData2, this, FGuid()));
-		});
-
-		It("creates a group", [this]() {
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				FGFGroup Group;
-				Group.Name = "Test Group";
-				Group.GroupType = "Test";
-				Group.MaxGroupSize = 10;
-				Group.bCanAutoJoin = true;
-				Group.bIsInviteOnly = false;
-				Group.bSearchable = true;
-
-				FGFGroupCallback TypedCallback;
-				TypedCallback.BindLambda([this](const FGFGroup& CreatedGroup) {
-					AddInfo("CreateGroup :: Create and Verify Group");
-					TestTrue("Group has valid id", CreatedGroup.Id != 0);
-					TestEqual("Group has correct name", CreatedGroup.Name, "Test Group");
-					TestEqual("Group has correct type", CreatedGroup.GroupType, "Test");
-					TestEqual("Group has correct max size", CreatedGroup.MaxGroupSize, 10);
-					TestTrue("Group can auto join", CreatedGroup.bCanAutoJoin);
-					TestFalse("Group is not invite only", CreatedGroup.bIsInviteOnly);
-					TestTrue("Group is searchable", CreatedGroup.bSearchable);
-
-					// Verify internal state matches callback data
-					const TArray<FGFGroup>& AllGroups = GameFuseGroups->GetAllGroups();
-					TestTrue("Group is stored internally", AllGroups.Contains(CreatedGroup));
+			// Sign in second user before attempting to join
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+				FGFApiCallback SignInCallback;
+				SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					AddInfo("JoinGroup :: Sign In Second User");
+					TestTrue("Second user sign in succeeded", Response.bSuccess);
+					if (!Response.bSuccess) {
+						AddError(FString::Printf(TEXT("Second user sign in failed: %s"), *Response.ResponseStr));
+					}
 				});
 
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-					GameFuseGroups->CreateGroup(Group, TypedCallback)));
-				return true;
-			}));
-		});
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
 
-		It("gets all groups", [this]() {
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				// First create a test group
-				FGFGroup Group;
-				Group.Name = "Test Group for GetAll";
-				Group.GroupType = "Test";
-				Group.MaxGroupSize = 10;
-				Group.bCanAutoJoin = true;
-				Group.bSearchable = true;
-
-				FGFGroupCallback CreateCallback;
-				CreateCallback.BindLambda([this](const FGFGroup& CreatedGroup) {
-					AddInfo("GetAllGroups :: Create Initial Group");
-					TestTrue("Created group has valid id", CreatedGroup.Id != 0);
-					TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for GetAll");
-
-					// After creating group, fetch all groups to verify
-					FGFGroupListCallback FetchCallback;
-					FetchCallback.BindLambda([this, CreatedGroup](const TArray<FGFGroup>& Groups) {
-						AddInfo("GetAllGroups :: Verify Groups List");
-						TestTrue("Has at least one group", Groups.Num() > 0);
-						TestEqual("Internal storage matches callback data", Groups, GameFuseGroups->GetAllGroups());
-
-						// Find our created group in the list
-						bool bFoundGroup = false;
-						for (const FGFGroup& Group : Groups) {
-							TestTrue("Each group has valid id", Group.Id != 0);
-							TestFalse("Each group has name", Group.Name.IsEmpty());
-							TestFalse("Each group has type", Group.GroupType.IsEmpty());
-
-							if (Group.Id == CreatedGroup.Id) {
-								bFoundGroup = true;
-								TestEqual("Found group matches created group", Group, CreatedGroup);
-							}
-						}
-						TestTrue("Created group was found in list", bFoundGroup);
-					});
-
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-						GameFuseGroups->GetAllGroups(FetchCallback)));
-				});
-
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-					GameFuseGroups->CreateGroup(Group, CreateCallback)));
-				return true;
-			}));
-		});
-
-		It("requests to join a group", [this]() {
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				// First create a test group
-				FGFGroup Group;
-				Group.Name = "Test Group for Joining";
-				Group.GroupType = "Test";
-				Group.MaxGroupSize = 10;
-				Group.bCanAutoJoin = true;
-				Group.bSearchable = true;
-
-				FGFGroupCallback CreateCallback;
-				CreateCallback.BindLambda([this](const FGFGroup& CreatedGroup) {
-					AddInfo("JoinGroup :: Create Group");
-					TestTrue("Created group has valid id", CreatedGroup.Id != 0);
-					TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for Joining");
-					TestTrue("Created group can auto join", CreatedGroup.bCanAutoJoin);
-
+				// After signing in, attempt to join the group
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
 					// After creating group, attempt to join it
 					FGFGroupConnectionCallback JoinCallback;
-					JoinCallback.BindLambda([this, CreatedGroup](const FGFGroupConnection& Connection) {
+					JoinCallback.BindLambda([this, GroupData](const FGFGroupConnection& Connection) {
 						AddInfo("JoinGroup :: Request to Join");
+						AddErrorIfFalse(Connection.Id != 0, "Failed to join group");
 						TestTrue("Connection has valid id", Connection.Id != 0);
-						TestEqual("Connection has correct group id", Connection.GroupId, CreatedGroup.Id);
-						TestEqual("Connection has correct user id", Connection.UserId, UserData1->Id);
+						TestEqual("Connection has correct user id", Connection.User.Id, UserData2->Id);
 						TestFalse("Connection has status", Connection.Status.IsEmpty());
 
 						// Verify the connection was successful
@@ -206,14 +243,13 @@ void FGameFuseGroupsSpec::Define()
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-						GameFuseGroups->RequestToJoinGroup(CreatedGroup.Id, JoinCallback)));
-				});
-
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-					GameFuseGroups->CreateGroup(Group, CreateCallback)));
+																	  GameFuseGroups->RequestToJoinGroup(GroupData->Id, JoinCallback)));
+					return true;
+				}));
 				return true;
 			}));
-		});
+			return true;
+		}));
 	});
 }
 

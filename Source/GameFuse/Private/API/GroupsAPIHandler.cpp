@@ -2,28 +2,44 @@
 #include "Library/GameFuseLog.h"
 #include "Library/GameFuseUtilities.h"
 
-FGuid UGroupsAPIHandler::CreateGroup(const FGFGroup& Group, const FGFApiCallback& Callback)
+FGuid UGroupsAPIHandler::CreateGroup(const FGFGroup& Group, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
+	if (!VerifyUserData(UserData)) {
+		return FGuid();
+	}
+	SetAuthHeader(UserData.AuthenticationToken);
+
 	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
 	if (!GameFuseUtilities::ConvertGroupToJson(Group, JsonObject)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to serialize group to JSON"));
 		return FGuid();
 	}
 
-	return SendRequest("/api/v3/groups", "POST", Callback, JsonObject);
+	return SendRequest("/groups", "POST", Callback, JsonObject);
 }
 
-FGuid UGroupsAPIHandler::GetAllGroups(const FGFApiCallback& Callback)
+FGuid UGroupsAPIHandler::GetAllGroups(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	return SendRequest("/api/v3/groups", "GET", Callback);
+	if (!VerifyUserData(UserData)) {
+		return FGuid();
+	}
+	SetAuthHeader(UserData.AuthenticationToken);
+
+	return SendRequest("/groups", "GET", Callback);
 }
 
-FGuid UGroupsAPIHandler::RequestToJoinGroup(int32 GroupId, const FGFApiCallback& Callback)
+FGuid UGroupsAPIHandler::RequestToJoinGroup(int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
+	if (!VerifyUserData(UserData)) {
+		return FGuid();
+	}
+	SetAuthHeader(UserData.AuthenticationToken);
+
 	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
 	JsonObject->SetNumberField("group_id", GroupId);
+	JsonObject->SetNumberField("user_id", UserData.Id);
 
-	return SendRequest("/api/v3/group_connections", "POST", Callback, JsonObject);
+	return SendRequest("/group_connections", "POST", Callback, JsonObject);
 }
 
 FGuid UGroupsAPIHandler::GetGroup(const int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback)

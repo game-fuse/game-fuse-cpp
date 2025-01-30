@@ -237,17 +237,19 @@ struct GAMEFUSE_API FGFGroupConnection
 	FString Status;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
-	int32 GroupId;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
-	int32 UserId;
+	FGFUserData User;
 
 	FGFGroupConnection()
 		: Id(0)
 		, Status("")
-		, GroupId(0)
-		, UserId(0)
 	{
+	}
+
+	bool operator==(const FGFGroupConnection& Other) const
+	{
+		return Id == Other.Id && 
+			   Status == Other.Status && 
+			   User == Other.User;
 	}
 };
 

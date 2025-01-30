@@ -12,7 +12,6 @@ void UGameFuseGroups::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	RequestHandler = NewObject<UGroupsAPIHandler>();
-	GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 }
 
 void UGameFuseGroups::Deinitialize()
@@ -23,43 +22,27 @@ void UGameFuseGroups::Deinitialize()
 
 FGuid UGameFuseGroups::CreateGroup(const FGFGroup& Group, FGFGroupCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to create a group"));
 		return FGuid();
 	}
 
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
-	GameFuseUtilities::ConvertGroupToJson(Group, JsonObject);
-
 	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this, TypedCallback](const FGFAPIResponse& Response) {
-		if (!Response.bSuccess) {
-			UE_LOG(LogGameFuse, Error, TEXT("Failed to create group: %s"), *Response.ResponseStr);
-			if (TypedCallback.IsBound()) {
-				TypedCallback.ExecuteIfBound(FGFGroup());
-			}
-			return;
-		}
-
-		FGFGroup CreatedGroup;
-		if (!GameFuseUtilities::ConvertJsonToGroup(CreatedGroup, Response.ResponseStr)) {
-			UE_LOG(LogGameFuse, Error, TEXT("Failed to parse created group"));
-			if (TypedCallback.IsBound()) {
-				TypedCallback.ExecuteIfBound(FGFGroup());
-			}
-			return;
-		}
-
-		if (TypedCallback.IsBound()) {
-			TypedCallback.ExecuteIfBound(CreatedGroup);
-		}
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleGroupResponse(Response);
 	});
 
-	return RequestHandler->CreateGroup(Group, InternalCallback);
+	FGuid RequestId = RequestHandler->CreateGroup(Group, GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		GroupCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
 FGuid UGameFuseGroups::GetGroup(const int32 GroupId, FGFGroupCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to get group"));
 		return FGuid();
@@ -79,84 +62,47 @@ FGuid UGameFuseGroups::GetGroup(const int32 GroupId, FGFGroupCallback TypedCallb
 
 FGuid UGameFuseGroups::GetAllGroups(FGFGroupListCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to get all groups"));
 		return FGuid();
 	}
 
 	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this, TypedCallback](const FGFAPIResponse& Response) {
-		if (!Response.bSuccess) {
-			UE_LOG(LogGameFuse, Error, TEXT("Failed to get all groups: %s"), *Response.ResponseStr);
-			if (TypedCallback.IsBound()) {
-				TypedCallback.ExecuteIfBound(TArray<FGFGroup>());
-			}
-			return;
-		}
-
-		TArray<FGFGroup> Groups;
-		if (!GameFuseUtilities::ConvertJsonArrayToGroups(Groups, Response.ResponseStr)) {
-			UE_LOG(LogGameFuse, Error, TEXT("Failed to parse groups list"));
-			if (TypedCallback.IsBound()) {
-				TypedCallback.ExecuteIfBound(TArray<FGFGroup>());
-			}
-			return;
-		}
-
-		// Update cached data
-		AllGroups = Groups;
-
-		if (TypedCallback.IsBound()) {
-			TypedCallback.ExecuteIfBound(Groups);
-		}
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleGroupListResponse(Response);
 	});
 
-	return RequestHandler->GetAllGroups(InternalCallback);
+	FGuid RequestId = RequestHandler->GetAllGroups(GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		GroupListCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
 FGuid UGameFuseGroups::RequestToJoinGroup(int32 GroupId, FGFGroupConnectionCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to request to join a group"));
 		return FGuid();
 	}
 
 	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this, TypedCallback](const FGFAPIResponse& Response) {
-		if (!Response.bSuccess) {
-			UE_LOG(LogGameFuse, Error, TEXT("Failed to request to join group: %s"), *Response.ResponseStr);
-			if (TypedCallback.IsBound()) {
-				TypedCallback.ExecuteIfBound(FGFGroupConnection());
-			}
-			return;
-		}
-
-		TSharedPtr<FJsonObject> JsonObject;
-		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
-		if (!FJsonSerializer::Deserialize(Reader, JsonObject)) {
-			UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group connection response"));
-			if (TypedCallback.IsBound()) {
-				TypedCallback.ExecuteIfBound(FGFGroupConnection());
-			}
-			return;
-		}
-
-		FGFGroupConnection Connection;
-		Connection.Id = JsonObject->GetIntegerField(TEXT("id"));
-		Connection.Status = JsonObject->GetStringField(TEXT("status"));
-		Connection.GroupId = JsonObject->GetIntegerField(TEXT("group_id"));
-		Connection.UserId = JsonObject->GetIntegerField(TEXT("user_id"));
-
-		if (TypedCallback.IsBound()) {
-			TypedCallback.ExecuteIfBound(Connection);
-		}
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleGroupConnectionResponse(Response);
 	});
 
-	return RequestHandler->RequestToJoinGroup(GroupId, InternalCallback);
+	FGuid RequestId = RequestHandler->RequestToJoinGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		GroupConnectionCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
 }
 
 FGuid UGameFuseGroups::DeleteGroup(const int32 GroupId, FGFGroupActionCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to delete group"));
 		return FGuid();
@@ -176,6 +122,7 @@ FGuid UGameFuseGroups::DeleteGroup(const int32 GroupId, FGFGroupActionCallback T
 
 FGuid UGameFuseGroups::JoinGroup(const int32 GroupId, FGFGroupActionCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to join group"));
 		return FGuid();
@@ -195,6 +142,7 @@ FGuid UGameFuseGroups::JoinGroup(const int32 GroupId, FGFGroupActionCallback Typ
 
 FGuid UGameFuseGroups::LeaveGroup(const int32 GroupId, FGFGroupActionCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to leave group"));
 		return FGuid();
@@ -214,6 +162,7 @@ FGuid UGameFuseGroups::LeaveGroup(const int32 GroupId, FGFGroupActionCallback Ty
 
 FGuid UGameFuseGroups::GetUserGroups(FGFGroupListCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to get user groups"));
 		return FGuid();
@@ -233,6 +182,7 @@ FGuid UGameFuseGroups::GetUserGroups(FGFGroupListCallback TypedCallback)
 
 FGuid UGameFuseGroups::SearchGroups(const FString& Query, FGFGroupListCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to search groups"));
 		return FGuid();
@@ -252,6 +202,7 @@ FGuid UGameFuseGroups::SearchGroups(const FString& Query, FGFGroupListCallback T
 
 FGuid UGameFuseGroups::AddAdmin(const int32 GroupId, const int32 UserId, FGFGroupActionCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to add admin"));
 		return FGuid();
@@ -271,6 +222,7 @@ FGuid UGameFuseGroups::AddAdmin(const int32 GroupId, const int32 UserId, FGFGrou
 
 FGuid UGameFuseGroups::RemoveAdmin(const int32 GroupId, const int32 UserId, FGFGroupActionCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to remove admin"));
 		return FGuid();
@@ -290,6 +242,7 @@ FGuid UGameFuseGroups::RemoveAdmin(const int32 GroupId, const int32 UserId, FGFG
 
 FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FString& Key, const FString& Value, FGFGroupActionCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to add attribute"));
 		return FGuid();
@@ -309,6 +262,7 @@ FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FString& Key, con
 
 FGuid UGameFuseGroups::UpdateAttribute(const int32 GroupId, const int32 AttributeId, const FString& Value, FGFGroupActionCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to update attribute"));
 		return FGuid();
@@ -328,6 +282,7 @@ FGuid UGameFuseGroups::UpdateAttribute(const int32 GroupId, const int32 Attribut
 
 FGuid UGameFuseGroups::DeleteAttribute(const int32 GroupId, const int32 AttributeId, FGFGroupActionCallback TypedCallback)
 {
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to delete attribute"));
 		return FGuid();
@@ -343,23 +298,6 @@ FGuid UGameFuseGroups::DeleteAttribute(const int32 GroupId, const int32 Attribut
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
-}
-
-void UGameFuseGroups::HandleGroupActionResponse(const FGFAPIResponse& Response)
-{
-	if (!Response.bSuccess) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group action response: %s"), *Response.ResponseStr);
-		if (GroupActionCallbacks.Contains(Response.RequestId)) {
-			GroupActionCallbacks[Response.RequestId].ExecuteIfBound(false);
-			GroupActionCallbacks.Remove(Response.RequestId);
-		}
-		return;
-	}
-
-	if (GroupActionCallbacks.Contains(Response.RequestId)) {
-		GroupActionCallbacks[Response.RequestId].ExecuteIfBound(true);
-		GroupActionCallbacks.Remove(Response.RequestId);
-	}
 }
 
 void UGameFuseGroups::HandleGroupResponse(const FGFAPIResponse& Response)
@@ -382,6 +320,12 @@ void UGameFuseGroups::HandleGroupResponse(const FGFAPIResponse& Response)
 		}
 		return;
 	}
+	// update cached data
+	AllGroups.AddUnique(Group);
+	if (Group.Members.Contains(GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetUserData())) {
+		UserGroups.AddUnique(Group);
+	}
+
 
 	if (GroupCallbacks.Contains(Response.RequestId)) {
 		GroupCallbacks[Response.RequestId].ExecuteIfBound(Group);
@@ -411,11 +355,55 @@ void UGameFuseGroups::HandleGroupListResponse(const FGFAPIResponse& Response)
 	}
 
 	// Update cached data
-	UserGroups = Groups;
+	AllGroups = Groups;
 
 	if (GroupListCallbacks.Contains(Response.RequestId)) {
 		GroupListCallbacks[Response.RequestId].ExecuteIfBound(Groups);
 		GroupListCallbacks.Remove(Response.RequestId);
+	}
+}
+
+void UGameFuseGroups::HandleGroupConnectionResponse(const FGFAPIResponse& Response)
+{
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group connection: %s"), *Response.ResponseStr);
+		if (GroupConnectionCallbacks.Contains(Response.RequestId)) {
+			GroupConnectionCallbacks[Response.RequestId].ExecuteIfBound(FGFGroupConnection());
+			GroupConnectionCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	FGFGroupConnection Connection;
+	if (!GameFuseUtilities::ConvertJsonToGroupConnection(Connection, Response.ResponseStr)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group connection response"));
+		if (GroupConnectionCallbacks.Contains(Response.RequestId)) {
+			GroupConnectionCallbacks[Response.RequestId].ExecuteIfBound(FGFGroupConnection());
+			GroupConnectionCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	if (GroupConnectionCallbacks.Contains(Response.RequestId)) {
+		GroupConnectionCallbacks[Response.RequestId].ExecuteIfBound(Connection);
+		GroupConnectionCallbacks.Remove(Response.RequestId);
+	}
+}
+
+void UGameFuseGroups::HandleGroupActionResponse(const FGFAPIResponse& Response)
+{
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group action response: %s"), *Response.ResponseStr);
+		if (GroupActionCallbacks.Contains(Response.RequestId)) {
+			GroupActionCallbacks[Response.RequestId].ExecuteIfBound(false);
+			GroupActionCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	if (GroupActionCallbacks.Contains(Response.RequestId)) {
+		GroupActionCallbacks[Response.RequestId].ExecuteIfBound(true);
+		GroupActionCallbacks.Remove(Response.RequestId);
 	}
 }
 

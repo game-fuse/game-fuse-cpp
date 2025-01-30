@@ -108,9 +108,6 @@ private:
 	UPROPERTY()
 	TObjectPtr<UGroupsAPIHandler> RequestHandler;
 
-	UPROPERTY()
-	TObjectPtr<UGameFuseUser> GameFuseUser;
-
 	// Cached group data
 	TArray<FGFGroup> UserGroups;
 	TArray<FGFGroup> AllGroups;

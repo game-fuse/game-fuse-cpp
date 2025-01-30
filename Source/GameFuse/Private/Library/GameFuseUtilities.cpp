@@ -570,6 +570,45 @@ bool GameFuseUtilities::ConvertJsonArrayToGroups(TArray<FGFGroup>& InGroups, con
 
 #pragma endregion
 
+#pragma region Group Connections
+
+bool GameFuseUtilities::ConvertJsonToGroupConnection(FGFGroupConnection& InConnection, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (!JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for GroupConnection conversion"));
+		return false;
+	}
+
+	JsonObject->TryGetNumberField(TEXT("id"), InConnection.Id);
+	JsonObject->TryGetStringField(TEXT("status"), InConnection.Status);
+
+	// Get the user data if present
+	const TSharedPtr<FJsonObject>* UserObject;
+	if (JsonObject->TryGetObjectField(TEXT("user"), UserObject)) {
+		if (!ConvertJsonToUserData(InConnection.User, *UserObject)) {
+			UE_LOG(LogGameFuse, Error, TEXT("Failed to parse user data in group connection"));
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToGroupConnection(FGFGroupConnection& InConnection, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	return ConvertJsonToGroupConnection(InConnection, JsonObject);
+}
+
+#pragma endregion
+
 #pragma region Utility Functions
 
 TSharedPtr<FJsonObject> GameFuseUtilities::ConvertMapToJsonObject(const TMap<FString, FString>& Map)

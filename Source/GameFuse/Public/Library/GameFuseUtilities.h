@@ -163,6 +163,22 @@ public:
 	static bool ConvertJsonToGroupAttribute(FGFGroupAttribute& InAttribute, const TSharedPtr<FJsonObject>& JsonObject);
 
 	/**
+	 * Converts a JSON object into a GroupConnection
+	 * @param InConnection GroupConnection struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroupConnection(FGFGroupConnection& InConnection, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON string into a GroupConnection
+	 * @param InConnection GroupConnection struct to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroupConnection(FGFGroupConnection& InConnection, const FString& JsonString);
+
+	/**
 	 * Converts a JSON array into an array of GroupAttributes
 	 * @param InAttributes Array to store converted data
 	 * @param JsonArray The JSON array to convert

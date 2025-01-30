@@ -8,14 +8,15 @@
 void FGameFuseTestsModule::StartupModule()
 {
 	FAutomationTestFramework::Get().OnBeforeAllTestsEvent.AddLambda([this]() {
-		UE_LOG(LogGameFuse, Log, TEXT("GameFuse ====> OnBeforeAllTestsEvent"));
-
-		GameInstance = NewObject<UGameInstance>();
-		GameInstance->Init();
-		GameFuseManager = GameInstance->GetSubsystem<UGameFuseManager>();
-		GameData = MakeShared<FGFGameData>();
-
-		TestAPIHandler = NewObject<UTestAPIHandler>();
+		// UE_LOG(LogGameFuse, Log, TEXT("GameFuse ====> OnBeforeAllTestsEvent"));
+		// UWorld* World = GEditor->GetEditorWorldContext().World();
+		// GameInstance = World->GetGameInstance();
+		// ensure(GameInstance);
+		// GameInstance->Init();
+		// GameFuseManager = GameInstance->GetSubsystem<UGameFuseManager>();
+		// GameData = MakeShared<FGFGameData>();
+		//
+		// TestAPIHandler = NewObject<UTestAPIHandler>();
 	});
 
 	FAutomationTestFramework::Get().OnAfterAllTestsEvent.AddLambda([]() {
