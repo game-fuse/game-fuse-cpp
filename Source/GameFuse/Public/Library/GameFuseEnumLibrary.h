@@ -1,5 +1,5 @@
 ﻿/**
-*  Copyright (c) 2024-09-30 GameFuse
+ *  Copyright (c) 2024-09-30 GameFuse
  *  All rights reserved.
  *
  *  https://GameFuse.co/
@@ -49,8 +49,8 @@ enum class EGFCoreAPIResponseType : uint8
 	ForgotPassword,
 };
 
-UENUM(meta = (ScriptName = "GF_FriendRequestStatus"))
-enum class EGFFriendRequestStatus : uint8
+UENUM(meta = (ScriptName = "GF_InviteRequestStatus"))
+enum class EGFInviteRequestStatus : uint8
 {
 	None,
 	Accepted,

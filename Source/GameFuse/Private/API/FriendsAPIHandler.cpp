@@ -13,7 +13,7 @@ FGuid UFriendsAPIHandler::SendFriendRequest(const FString& Username, const FGFUs
 	return SendRequest("/friendships", "POST", Callback, JsonObject);
 }
 
-FGuid UFriendsAPIHandler::RespondToFriendRequest(const int32 FriendshipId, const EGFFriendRequestStatus Status, const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UFriendsAPIHandler::RespondToFriendRequest(const int32 FriendshipId, const EGFInviteRequestStatus Status, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	if (!VerifyUserData(UserData)) {
 		return FGuid();
@@ -23,10 +23,10 @@ FGuid UFriendsAPIHandler::RespondToFriendRequest(const int32 FriendshipId, const
 
 	FString StatusStr;
 	switch (Status) {
-		case EGFFriendRequestStatus::Accepted:
+		case EGFInviteRequestStatus::Accepted:
 			StatusStr = TEXT("accepted");
 			break;
-		case EGFFriendRequestStatus::Declined:
+		case EGFInviteRequestStatus::Declined:
 			StatusStr = TEXT("declined");
 			break;
 		default:
