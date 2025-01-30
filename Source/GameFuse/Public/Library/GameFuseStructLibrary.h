@@ -234,22 +234,21 @@ struct GAMEFUSE_API FGFGroupConnection
 	int32 Id;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
-	FString Status;
+	EGFInviteRequestStatus Status;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
 	FGFUserData User;
 
-	FGFGroupConnection()
-		: Id(0)
-		, Status("")
+	FGFGroupConnection() :
+		Id(0), Status(EGFInviteRequestStatus::None)
 	{
 	}
 
 	bool operator==(const FGFGroupConnection& Other) const
 	{
-		return Id == Other.Id && 
-			   Status == Other.Status && 
-			   User == Other.User;
+		return Id == Other.Id &&
+		Status == Other.Status &&
+		User == Other.User;
 	}
 };
 
@@ -385,7 +384,7 @@ struct GAMEFUSE_API FGFFriendRequest
 	FGFUserData OtherUser;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
-	EGFFriendRequestStatus Status = EGFFriendRequestStatus::None;
+	EGFInviteRequestStatus Status = EGFInviteRequestStatus::None;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
 	FDateTime RequestCreatedAt;

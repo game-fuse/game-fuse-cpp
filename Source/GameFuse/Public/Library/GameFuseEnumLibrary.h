@@ -54,5 +54,6 @@ enum class EGFInviteRequestStatus : uint8
 {
 	None,
 	Accepted,
-	Declined
+	Declined,
+	Pending
 };

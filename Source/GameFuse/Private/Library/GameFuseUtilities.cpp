@@ -262,13 +262,13 @@ bool GameFuseUtilities::ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest,
 	FString StatusStr;
 	if (JsonObject->TryGetStringField(TEXT("status"), StatusStr)) {
 		if (StatusStr == TEXT("accepted")) {
-			OutRequest.Status = EGFFriendRequestStatus::Accepted;
+			OutRequest.Status = EGFInviteRequestStatus::Accepted;
 		} else if (StatusStr == TEXT("declined")) {
-			OutRequest.Status = EGFFriendRequestStatus::Declined;
+			OutRequest.Status = EGFInviteRequestStatus::Declined;
 		}
 
 	} else {
-		OutRequest.Status = EGFFriendRequestStatus::None;
+		OutRequest.Status = EGFInviteRequestStatus::None;
 	}
 
 	// Get the request creation time
@@ -575,12 +575,27 @@ bool GameFuseUtilities::ConvertJsonArrayToGroups(TArray<FGFGroup>& InGroups, con
 bool GameFuseUtilities::ConvertJsonToGroupConnection(FGFGroupConnection& InConnection, const TSharedPtr<FJsonObject>& JsonObject)
 {
 	if (!JsonObject.IsValid()) {
-		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for GroupConnection conversion"));
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for group connection"));
 		return false;
 	}
 
 	JsonObject->TryGetNumberField(TEXT("id"), InConnection.Id);
-	JsonObject->TryGetStringField(TEXT("status"), InConnection.Status);
+
+	// Convert status string to enum
+	FString StatusStr;
+	if (JsonObject->TryGetStringField(TEXT("status"), StatusStr)) {
+		if (StatusStr == TEXT("accepted")) {
+			InConnection.Status = EGFInviteRequestStatus::Accepted;
+		} else if (StatusStr == TEXT("declined")) {
+			InConnection.Status = EGFInviteRequestStatus::Declined;
+		} else if (StatusStr == TEXT("pending")) {
+			InConnection.Status = EGFInviteRequestStatus::Pending;
+		} else {
+			InConnection.Status = EGFInviteRequestStatus::None;
+		}
+	} else {
+		InConnection.Status = EGFInviteRequestStatus::None;
+	}
 
 	// Get the user data if present
 	const TSharedPtr<FJsonObject>* UserObject;
