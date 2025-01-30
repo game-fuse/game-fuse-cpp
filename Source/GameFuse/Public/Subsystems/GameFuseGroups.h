@@ -28,13 +28,13 @@ public:
 
 	// C++ API
 	FGuid CreateGroup(const FGFGroup& Group, FGFGroupCallback TypedCallback);
-	FGuid GetGroup(const int32 GroupId, FGFGroupCallback TypedCallback);
-	FGuid GetAllGroups(FGFGroupListCallback TypedCallback);
+	FGuid FetchGroup(const int32 GroupId, FGFGroupCallback TypedCallback);
+	FGuid FetchAllGroups(FGFGroupListCallback TypedCallback);
 	FGuid RequestToJoinGroup(int32 GroupId, FGFGroupConnectionCallback TypedCallback);
 	FGuid DeleteGroup(const int32 GroupId, FGFGroupActionCallback TypedCallback);
 	FGuid JoinGroup(const int32 GroupId, FGFGroupActionCallback TypedCallback);
 	FGuid LeaveGroup(const int32 GroupId, FGFGroupActionCallback TypedCallback);
-	FGuid GetUserGroups(FGFGroupListCallback TypedCallback);
+	FGuid FetchUserGroups(FGFGroupListCallback TypedCallback);
 	FGuid SearchGroups(const FString& Query, FGFGroupListCallback TypedCallback);
 	FGuid AddAdmin(const int32 GroupId, const int32 UserId, FGFGroupActionCallback TypedCallback);
 	FGuid RemoveAdmin(const int32 GroupId, const int32 UserId, FGFGroupActionCallback TypedCallback);
@@ -47,10 +47,10 @@ public:
 	void BP_CreateGroup(const FGFGroup& Group, FBP_GFGroupCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_GetGroup(const int32 GroupId, FBP_GFGroupCallback Callback);
+	void BP_FetchGroup(const int32 GroupId, FBP_GFGroupCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_GetAllGroups(FBP_GFGroupCallback Callback);
+	void BP_FetchAllGroups(FBP_GFGroupCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
 	void BP_RequestToJoinGroup(int32 GroupId, FBP_GFGroupCallback Callback);
@@ -65,7 +65,7 @@ public:
 	void BP_LeaveGroup(const int32 GroupId, FBP_GFGroupCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_GetUserGroups(FBP_GFGroupCallback Callback);
+	void BP_FetchUserGroups(FBP_GFGroupCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
 	void BP_SearchGroups(const FString& Query, FBP_GFGroupCallback Callback);

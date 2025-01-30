@@ -18,7 +18,7 @@ FGuid UGroupsAPIHandler::CreateGroup(const FGFGroup& Group, const FGFUserData& U
 	return SendRequest("/groups", "POST", Callback, JsonObject);
 }
 
-FGuid UGroupsAPIHandler::GetAllGroups(const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UGroupsAPIHandler::FetchAllGroups(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	if (!VerifyUserData(UserData)) {
 		return FGuid();
@@ -42,7 +42,7 @@ FGuid UGroupsAPIHandler::RequestToJoinGroup(int32 GroupId, const FGFUserData& Us
 	return SendRequest("/group_connections", "POST", Callback, JsonObject);
 }
 
-FGuid UGroupsAPIHandler::GetGroup(const int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UGroupsAPIHandler::FetchGroup(int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	if (!VerifyUserData(UserData)) {
 		return FGuid();
@@ -64,14 +64,15 @@ FGuid UGroupsAPIHandler::DeleteGroup(const int32 GroupId, const FGFUserData& Use
 	return SendRequest(ApiEndpoint, "DELETE", Callback);
 }
 
-FGuid UGroupsAPIHandler::GetUserGroups(const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UGroupsAPIHandler::FetchUserGroups(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 	SetAuthHeader(UserData.AuthenticationToken);
 
-	return SendRequest("/groups", "GET", Callback);
+	const FString Endpoint = TEXT("/user/groups");
+	return SendRequest(Endpoint, TEXT("GET"), Callback);
 }
 
 FGuid UGroupsAPIHandler::SearchGroups(const FString& Query, const FGFUserData& UserData, const FGFApiCallback& Callback)

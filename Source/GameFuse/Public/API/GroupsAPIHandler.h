@@ -19,8 +19,8 @@ public:
 	// Create a new group
 	FGuid CreateGroup(const FGFGroup& Group, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	// Get a specific group
-	FGuid GetGroup(int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	// Fetch a specific group
+	FGuid FetchGroup(int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Delete a group
 	FGuid DeleteGroup(int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback);
@@ -31,8 +31,8 @@ public:
 	// Leave a group
 	FGuid LeaveGroup(const int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	// Get all groups the user is a member of
-	FGuid GetUserGroups(const FGFUserData& UserData, const FGFApiCallback& Callback);
+	// Fetch all groups the user is a member of
+	FGuid FetchUserGroups(const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Search for groups
 	FGuid SearchGroups(const FString& Query, const FGFUserData& UserData, const FGFApiCallback& Callback);
@@ -52,6 +52,6 @@ public:
 	// Delete a group attribute
 	FGuid DeleteAttribute(const int32 GroupId, const int32 AttributeId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	FGuid GetAllGroups(const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid FetchAllGroups(const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid RequestToJoinGroup(int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 };

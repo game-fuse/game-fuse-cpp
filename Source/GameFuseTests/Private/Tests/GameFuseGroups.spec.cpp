@@ -134,11 +134,11 @@ void FGameFuseGroupsSpec::Define()
 		}));
 	});
 
-	It("gets all groups", [this]() {
+	It("fetches all groups", [this]() {
 		// First create a test group
 		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 			FGFGroup GroupData;
-			GroupData.Name = "Test Group for GetAll";
+			GroupData.Name = "Test Group for FetchAll";
 			GroupData.GroupType = "Test";
 			GroupData.MaxGroupSize = 10;
 			GroupData.bCanAutoJoin = true;
@@ -146,9 +146,9 @@ void FGameFuseGroupsSpec::Define()
 
 			FGFGroupCallback CreateCallback;
 			CreateCallback.BindLambda([this](const FGFGroup& CreatedGroup) {
-				AddInfo("GetAllGroups 1 :: Create Initial Group");
+				AddInfo("FetchAllGroups 1 :: Create Initial Group");
 				TestTrue("Created group has valid id", CreatedGroup.Id != 0);
-				TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for GetAll");
+				TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for FetchAll");
 			});
 
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
@@ -160,7 +160,7 @@ void FGameFuseGroupsSpec::Define()
 		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 			FGFGroupListCallback FetchCallback;
 			FetchCallback.BindLambda([this](const TArray<FGFGroup>& Groups) {
-				AddInfo("GetAllGroups 2 :: Verify Groups List");
+				AddInfo("FetchAllGroups 2 :: Verify Groups List");
 				TestTrue("Has at least one group", Groups.Num() > 0);
 				TestEqual("Internal storage matches callback data", Groups, GameFuseGroups->GetAllGroups());
 
@@ -171,9 +171,9 @@ void FGameFuseGroupsSpec::Define()
 					TestFalse("Each group has name", Group.Name.IsEmpty());
 					TestFalse("Each group has type", Group.GroupType.IsEmpty());
 
-					if (Group.Name == "Test Group for GetAll") {
+					if (Group.Name == "Test Group for FetchAll") {
 						bFoundGroup = true;
-						TestEqual("Found group has correct name", Group.Name, "Test Group for GetAll");
+						TestEqual("Found group has correct name", Group.Name, "Test Group for FetchAll");
 						TestEqual("Found group has correct type", Group.GroupType, "Test");
 						TestEqual("Found group has correct max size", Group.MaxGroupSize, 10);
 						TestTrue("Found group can auto join", Group.bCanAutoJoin);
@@ -184,12 +184,12 @@ void FGameFuseGroupsSpec::Define()
 			});
 
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-															  GameFuseGroups->GetAllGroups(FetchCallback)));
+															  GameFuseGroups->FetchAllGroups(FetchCallback)));
 			return true;
 		}));
 	});
 
-	It("requests to join a group", [this]() {
+	It("requests to join a public group", [this]() {
 		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 			// First create a test group
 			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();

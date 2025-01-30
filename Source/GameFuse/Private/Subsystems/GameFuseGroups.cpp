@@ -40,11 +40,11 @@ FGuid UGameFuseGroups::CreateGroup(const FGFGroup& Group, FGFGroupCallback Typed
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::GetGroup(const int32 GroupId, FGFGroupCallback TypedCallback)
+FGuid UGameFuseGroups::FetchGroup(const int32 GroupId, FGFGroupCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
-		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to get group"));
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch group"));
 		return FGuid();
 	}
 
@@ -53,18 +53,18 @@ FGuid UGameFuseGroups::GetGroup(const int32 GroupId, FGFGroupCallback TypedCallb
 		HandleGroupResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->GetGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::GetAllGroups(FGFGroupListCallback TypedCallback)
+FGuid UGameFuseGroups::FetchAllGroups(FGFGroupListCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
-		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to get all groups"));
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch all groups"));
 		return FGuid();
 	}
 
@@ -73,7 +73,7 @@ FGuid UGameFuseGroups::GetAllGroups(FGFGroupListCallback TypedCallback)
 		HandleGroupListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->GetAllGroups(GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchAllGroups(GameFuseUser->GetUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupListCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -160,11 +160,11 @@ FGuid UGameFuseGroups::LeaveGroup(const int32 GroupId, FGFGroupActionCallback Ty
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::GetUserGroups(FGFGroupListCallback TypedCallback)
+FGuid UGameFuseGroups::FetchUserGroups(FGFGroupListCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
-		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to get user groups"));
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch user groups"));
 		return FGuid();
 	}
 
@@ -173,7 +173,7 @@ FGuid UGameFuseGroups::GetUserGroups(FGFGroupListCallback TypedCallback)
 		HandleGroupListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->GetUserGroups(GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchUserGroups(GameFuseUser->GetUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupListCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -417,22 +417,22 @@ void UGameFuseGroups::BP_CreateGroup(const FGFGroup& Group, FBP_GFGroupCallback 
 	CreateGroup(Group, TypedCallback);
 }
 
-void UGameFuseGroups::BP_GetGroup(const int32 GroupId, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_FetchGroup(const int32 GroupId, FBP_GFGroupCallback Callback)
 {
 	FGFGroupCallback TypedCallback;
 	TypedCallback.BindLambda([Callback](const FGFGroup& Group) {
 		Callback.ExecuteIfBound(Group.Id > 0);
 	});
-	GetGroup(GroupId, TypedCallback);
+	FetchGroup(GroupId, TypedCallback);
 }
 
-void UGameFuseGroups::BP_GetAllGroups(FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_FetchAllGroups(FBP_GFGroupCallback Callback)
 {
 	FGFGroupListCallback TypedCallback;
 	TypedCallback.BindLambda([Callback](const TArray<FGFGroup>& Groups) {
 		Callback.ExecuteIfBound(!Groups.IsEmpty());
 	});
-	GetAllGroups(TypedCallback);
+	FetchAllGroups(TypedCallback);
 }
 
 void UGameFuseGroups::BP_RequestToJoinGroup(int32 GroupId, FBP_GFGroupCallback Callback)
@@ -471,13 +471,13 @@ void UGameFuseGroups::BP_LeaveGroup(const int32 GroupId, FBP_GFGroupCallback Cal
 	LeaveGroup(GroupId, TypedCallback);
 }
 
-void UGameFuseGroups::BP_GetUserGroups(FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_FetchUserGroups(FBP_GFGroupCallback Callback)
 {
 	FGFGroupListCallback TypedCallback;
 	TypedCallback.BindLambda([Callback](const TArray<FGFGroup>& Groups) {
 		Callback.ExecuteIfBound(!Groups.IsEmpty());
 	});
-	GetUserGroups(TypedCallback);
+	FetchUserGroups(TypedCallback);
 }
 
 void UGameFuseGroups::BP_SearchGroups(const FString& Query, FBP_GFGroupCallback Callback)
