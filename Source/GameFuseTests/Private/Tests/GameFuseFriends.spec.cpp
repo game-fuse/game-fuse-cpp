@@ -38,6 +38,8 @@ void GameFuseFriendsSpec::Define()
 	UserData2 = MakeShared<FGFUserData>();
 	bCleanupSuccess = false;
 
+	// TODO: add remove a friend test [request => accept => remove]
+
 	Describe("GameFuseFriends", [this]() {
 		// creates a game and 2 users to facilitate friend request testing
 		// user 1 is signed in, user 2 is just created
@@ -91,6 +93,7 @@ void GameFuseFriendsSpec::Define()
 			// Create second user
 			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, UserData2, this, FGuid()));
 		});
+
 
 		It("sends and accepts a friend request", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {

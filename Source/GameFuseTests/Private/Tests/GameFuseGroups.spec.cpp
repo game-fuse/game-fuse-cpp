@@ -45,6 +45,9 @@ void FGameFuseGroupsSpec::Define()
 	UserData2 = MakeShared<FGFUserData>();
 	TestConnectionData = MakeShared<FGFGroupConnection>();
 	// TODO:: before each works outside of a describe block?? can update others to reduce repetition
+	// TODO: add test for manage group membership requests
+
+
 	BeforeEach([this]() {
 		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 			if (GameFuseManager->IsSetUp()) {
@@ -447,6 +450,7 @@ void FGameFuseGroupsSpec::Define()
 			return true;
 		}));
 	});
+
 
 	Describe("Group Attributes", [this]() {
 		It("creates and fetches group attributes", [this]() {
