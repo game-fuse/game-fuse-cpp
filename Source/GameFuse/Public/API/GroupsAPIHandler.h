@@ -43,14 +43,36 @@ public:
 	// Remove a user as admin
 	FGuid RemoveAdmin(const int32 GroupId, const int32 UserId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	// Add an attribute to a group
-	FGuid AddAttribute(const int32 GroupId, const FString& Key, const FString& Value, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	/**
+	 * Add an attribute to a group
+	 * @param GroupId - The ID of the group to add the attribute to
+	 * @param Attribute - The attribute to add, GroupId and bCanEdit are read only and ignored for this request
+	 * @param bOnlyCreatorCanEdit - Whether only the creator can edit this attribute
+	 * @param UserData - The user data of the requester
+	 * @param Callback - The callback to handle the response
+	 */
+	FGuid AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	// Update a group attribute
-	FGuid UpdateAttribute(const int32 GroupId, const int32 AttributeId, const FString& Value, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	/**
+	 * Fetch all attributes for a group
+	 * @param GroupId - The ID of the group to fetch attributes for
+	 * @param UserData - The user data of the requester
+	 * @param Callback - The callback to handle the response
+	 */
+	FGuid FetchGroupAttributes(const int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback);
+
+	/**
+	 * Updates an existing group attribute
+	 * @param GroupId The ID of the group
+	 * @param Attribute The attribute to update, must have valid Id and new Value
+	 * @param UserData The user data for authentication
+	 * @param Callback The callback to handle the response
+	 * @return Request ID
+	 */
+	FGuid UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, const FGFUserData& UserData, FGFApiCallback Callback);
 
 	// Delete a group attribute
-	FGuid DeleteAttribute(const int32 GroupId, const int32 AttributeId, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	// FGuid DeleteAttribute(const int32 GroupId, const int32 AttributeId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	FGuid FetchAllGroups(const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid RequestToJoinGroup(int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback);

@@ -157,25 +157,45 @@ struct FGFLeaderboard
 	TArray<FGFLeaderboardEntry> Entries;
 };
 
-USTRUCT(BlueprintType, Category = "GameFuse|Groups")
-struct FGFGroupAttribute
+/**
+ * Represents a group attribute
+ */
+USTRUCT(BlueprintType)
+struct GAMEFUSE_API FGFGroupAttribute
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	/** The unique identifier of the attribute */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Groups")
 	int32 Id = 0;
 
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	FString Key = "";
+	/** The key of the attribute */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
+	FString Key;
 
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	FString Value = "";
+	/** The value of the attribute */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
+	FString Value;
 
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	/** 
+	 * When creating/updating an attribute: Set this to the target group's ID
+	 * When receiving an attribute from the server: Contains the ID of the user who created the attribute
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups", meta=(DisplayName="Creator/Group ID"))
 	int32 CreatorId = 0;
 
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	/** Whether the attribute can be edited by non-admin members. Read-only, set via bOnlyCreatorCanEdit parameter when creating */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Groups")
 	bool bCanEdit = false;
+
+	bool operator==(const FGFGroupAttribute& Other) const
+	{
+		return Id == Other.Id
+			&& Key == Other.Key
+			&& Value == Other.Value
+			&& CreatorId == Other.CreatorId
+			&& bCanEdit == Other.bCanEdit;
+	}
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|Groups")

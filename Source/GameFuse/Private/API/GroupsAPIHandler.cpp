@@ -139,7 +139,7 @@ FGuid UGroupsAPIHandler::RemoveAdmin(const int32 GroupId, const int32 UserId, co
 	return SendRequest(ApiEndpoint, "DELETE", Callback);
 }
 
-FGuid UGroupsAPIHandler::AddAttribute(const int32 GroupId, const FString& Key, const FString& Value, const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UGroupsAPIHandler::AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	if (!VerifyUserData(UserData)) {
 		return FGuid();
@@ -147,37 +147,63 @@ FGuid UGroupsAPIHandler::AddAttribute(const int32 GroupId, const FString& Key, c
 	SetAuthHeader(UserData.AuthenticationToken);
 
 	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
-	JsonObject->SetStringField("key", Key);
-	JsonObject->SetStringField("value", Value);
+	TArray<TSharedPtr<FJsonValue>> AttributesArray;
+
+	// Create the attribute object
+	TSharedPtr<FJsonObject> AttributeObject = MakeShared<FJsonObject>();
+	AttributeObject->SetStringField(TEXT("key"), Attribute.Key);
+	AttributeObject->SetStringField(TEXT("value"), Attribute.Value);
+	AttributeObject->SetBoolField(TEXT("only_can_edit_by_creator"), bOnlyCreatorCanEdit);
+
+	// Add it to the array
+	AttributesArray.Add(MakeShared<FJsonValueObject>(AttributeObject));
+
+	// Set the attributes array in the main object
+	JsonObject->SetArrayField(TEXT("attributes"), AttributesArray);
 
 	const FString ApiEndpoint = FString::Printf(TEXT("/groups/%d/add_attribute"), GroupId);
-	return SendRequest(ApiEndpoint, "POST", Callback, JsonObject);
+	return SendRequest(ApiEndpoint, TEXT("POST"), Callback, JsonObject);
 }
 
-FGuid UGroupsAPIHandler::UpdateAttribute(const int32 GroupId, const int32 AttributeId, const FString& Value, const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UGroupsAPIHandler::UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, const FGFUserData& UserData, FGFApiCallback Callback)
 {
 	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 	SetAuthHeader(UserData.AuthenticationToken);
 
-	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
-	JsonObject->SetStringField("value", Value);
+	if (GroupId <= 0) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid group ID"));
+		return FGuid();
+	}
 
+	if (Attribute.Id <= 0) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid attribute ID"));
+		return FGuid();
+	}
+
+	// Create request body
+	TSharedPtr<FJsonObject> JsonBody = MakeShared<FJsonObject>();
+	JsonBody->SetStringField(TEXT("value"), Attribute.Value);
+	JsonBody->SetStringField(TEXT("key"), Attribute.Key);
+	// RequestBody->SetNumberField(TEXT("id"), Attribute.Id);
+
+
+	// Create request
 	const FString ApiEndpoint = FString::Printf(TEXT("/groups/%d/modify_attribute"), GroupId);
-	return SendRequest(ApiEndpoint, "PATCH", Callback, JsonObject);
+	return SendRequest(ApiEndpoint, TEXT("PATCH"), Callback, JsonBody);
 }
 
-FGuid UGroupsAPIHandler::DeleteAttribute(const int32 GroupId, const int32 AttributeId, const FGFUserData& UserData, const FGFApiCallback& Callback)
-{
-	if (!VerifyUserData(UserData)) {
-		return FGuid();
-	}
-	SetAuthHeader(UserData.AuthenticationToken);
-
-	const FString ApiEndpoint = FString::Printf(TEXT("/groups/%d/attributes/%d"), GroupId, AttributeId);
-	return SendRequest(ApiEndpoint, "DELETE", Callback);
-}
+// FGuid UGroupsAPIHandler::DeleteAttribute(const int32 GroupId, const int32 AttributeId, const FGFUserData& UserData, const FGFApiCallback& Callback)
+// {
+// 	if (!VerifyUserData(UserData)) {
+// 		return FGuid();
+// 	}
+// 	SetAuthHeader(UserData.AuthenticationToken);
+//
+// 	const FString ApiEndpoint = FString::Printf(TEXT("/groups/%d/attributes/%d"), GroupId, AttributeId);
+// 	return SendRequest(ApiEndpoint, "DELETE", Callback);
+// }
 
 FGuid UGroupsAPIHandler::RespondToGroupJoinRequest(const int32 ConnectionId, const int32 UserId, EGFInviteRequestStatus Status, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
@@ -205,4 +231,15 @@ FGuid UGroupsAPIHandler::RespondToGroupJoinRequest(const int32 ConnectionId, con
 	JsonObject->SetStringField("connection_type", "invite");
 
 	return SendRequest(ApiEndpoint, "PUT", Callback, JsonObject);
+}
+
+FGuid UGroupsAPIHandler::FetchGroupAttributes(const int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	if (!VerifyUserData(UserData)) {
+		return FGuid();
+	}
+	SetAuthHeader(UserData.AuthenticationToken);
+
+	const FString ApiEndpoint = FString::Printf(TEXT("/groups/%d/attributes"), GroupId);
+	return SendRequest(ApiEndpoint, TEXT("GET"), Callback);
 }

@@ -11,6 +11,7 @@
 DECLARE_DELEGATE_OneParam(FGFGroupCallback, const FGFGroup&);
 DECLARE_DELEGATE_OneParam(FGFGroupListCallback, const TArray<FGFGroup>&);
 DECLARE_DELEGATE_OneParam(FGFGroupConnectionCallback, const FGFGroupConnection&);
+DECLARE_DELEGATE_OneParam(FGFGroupAttributeCallback, const TArray<FGFGroupAttribute>&);
 DECLARE_DELEGATE_OneParam(FGFGroupActionCallback, bool);
 
 // Blueprint callback
@@ -38,9 +39,10 @@ public:
 	FGuid SearchGroups(const FString& Query, FGFGroupListCallback TypedCallback);
 	FGuid AddAdmin(const int32 GroupId, const int32 UserId, FGFGroupActionCallback TypedCallback);
 	FGuid RemoveAdmin(const int32 GroupId, const int32 UserId, FGFGroupActionCallback TypedCallback);
-	FGuid AddAttribute(const int32 GroupId, const FString& Key, const FString& Value, FGFGroupActionCallback TypedCallback);
-	FGuid UpdateAttribute(const int32 GroupId, const int32 AttributeId, const FString& Value, FGFGroupActionCallback TypedCallback);
-	FGuid DeleteAttribute(const int32 GroupId, const int32 AttributeId, FGFGroupActionCallback TypedCallback);
+	FGuid AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, FGFGroupAttributeCallback TypedCallback);
+	FGuid UpdateGroupAttribute(int32 GroupId, const FGFGroupAttribute& Attribute, FGFGroupActionCallback UntypedCallback);
+	// FGuid DeleteAttribute(const int32 GroupId, const int32 AttributeId, FGFGroupActionCallback TypedCallback);
+	FGuid FetchGroupAttributes(const int32 GroupId, FGFGroupAttributeCallback TypedCallback);
 	FGuid RespondToGroupJoinRequest(const int32 ConnectionId, const int32 UserId, EGFInviteRequestStatus Status, FGFGroupActionCallback TypedCallback);
 
 	// Blueprint API
@@ -78,13 +80,19 @@ public:
 	void BP_RemoveAdmin(const int32 GroupId, const int32 UserId, FBP_GFGroupCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_AddAttribute(const int32 GroupId, const FString& Key, const FString& Value, FBP_GFGroupCallback Callback);
+	void BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, FBP_GFGroupCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_UpdateAttribute(const int32 GroupId, const int32 AttributeId, const FString& Value, FBP_GFGroupCallback Callback);
+	void BP_UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, FBP_GFGroupCallback Callback);
+
+	// UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	// void BP_DeleteAttribute(const int32 GroupId, const int32 AttributeId, FBP_GFGroupCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_DeleteAttribute(const int32 GroupId, const int32 AttributeId, FBP_GFGroupCallback Callback);
+	void BP_FetchAttributes(const int32 GroupId, FBP_GFGroupCallback Callback);
+
+	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	void BP_FetchGroupAttributes(const int32 GroupId, FBP_GFGroupCallback Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
 	void BP_AcceptGroupJoinRequest(const int32 ConnectionId, const int32 UserId, FBP_GFGroupCallback Callback)
@@ -138,10 +146,14 @@ private:
 	void HandleGroupListResponse(const FGFAPIResponse& Response);
 	void HandleGroupConnectionResponse(const FGFAPIResponse& Response);
 	void HandleGroupActionResponse(const FGFAPIResponse& Response);
+	void HandleGroupAttributeResponse(const FGFAPIResponse& Response);
+	void HandleFetchAttributesResponse(FGFAPIResponse Response);
 
 	// User callbacks storage
 	TMap<FGuid, FGFGroupCallback> GroupCallbacks;
 	TMap<FGuid, FGFGroupListCallback> GroupListCallbacks;
 	TMap<FGuid, FGFGroupConnectionCallback> GroupConnectionCallbacks;
 	TMap<FGuid, FGFGroupActionCallback> GroupActionCallbacks;
+	TMap<FGuid, FGFGroupAttributeCallback> GroupAttributeCallbacks;
+	TMap<FGuid, FGFGroupAttributeCallback> FetchAttributesCallbacks;
 };

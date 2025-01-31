@@ -432,14 +432,13 @@ bool GameFuseUtilities::ConvertJsonArrayToGameRounds(TArray<FGFGameRound>& InGam
 bool GameFuseUtilities::ConvertJsonToGroupAttribute(FGFGroupAttribute& InAttribute, const TSharedPtr<FJsonObject>& JsonObject)
 {
 	if (!JsonObject.IsValid()) {
-		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for GroupAttribute conversion"));
 		return false;
 	}
 
 	JsonObject->TryGetNumberField(TEXT("id"), InAttribute.Id);
 	JsonObject->TryGetStringField(TEXT("key"), InAttribute.Key);
 	JsonObject->TryGetStringField(TEXT("value"), InAttribute.Value);
-	JsonObject->TryGetNumberField(TEXT("creator_id"), InAttribute.CreatorId);
+	JsonObject->TryGetNumberField(TEXT("creator_id"), InAttribute.CreatorId); // Server sends creator_id but it's actually the group ID
 	JsonObject->TryGetBoolField(TEXT("can_edit"), InAttribute.bCanEdit);
 
 	return true;
@@ -464,6 +463,25 @@ bool GameFuseUtilities::ConvertJsonArrayToGroupAttributes(TArray<FGFGroupAttribu
 	}
 
 	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToGroupAttributeResponse(TArray<FGFGroupAttribute>& OutAttributes, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* AttributesArray;
+	if (!JsonObject->TryGetArrayField(TEXT("attributes"), AttributesArray)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to get attributes array from JSON"));
+		return false;
+	}
+
+	return ConvertJsonArrayToGroupAttributes(OutAttributes, AttributesArray);
 }
 
 bool GameFuseUtilities::ConvertJsonToGroup(FGFGroup& InGroup, const TSharedPtr<FJsonObject>& JsonObject)

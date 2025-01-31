@@ -44,7 +44,7 @@ void FGameFuseGroupsSpec::Define()
 	UserData1 = MakeShared<FGFUserData>();
 	UserData2 = MakeShared<FGFUserData>();
 	TestConnectionData = MakeShared<FGFGroupConnection>();
-
+	// TODO:: before each works outside of a describe block?? can update others to reduce repetition
 	BeforeEach([this]() {
 		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 			if (GameFuseManager->IsSetUp()) {
@@ -256,7 +256,7 @@ void FGameFuseGroupsSpec::Define()
 		}));
 	});
 
-	It("accepts a request to join a group", [this]() {
+	It("accepts a request to join a group", [this] {
 		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 			// First create a test group with invite only
 			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
@@ -446,6 +446,209 @@ void FGameFuseGroupsSpec::Define()
 			}));
 			return true;
 		}));
+	});
+
+	Describe("Group Attributes", [this]() {
+		It("creates and fetches group attributes", [this]() {
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = TEXT("Stormwind Raiders");
+			GroupData->GroupType = TEXT("Clan");
+			GroupData->MaxGroupSize = 50;
+			GroupData->bCanAutoJoin = false;
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+				FGFGroupCallback CreateGroupCallback;
+				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+					AddInfo("CreateAndFetchAttributes 1 :: Create Group");
+					TestTrue("Group created successfully", CreatedGroup.Id > 0);
+					GroupData->Id = CreatedGroup.Id;
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
+
+				// After creating clan, add clan level (admin-only editable)
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+					TSharedPtr<FGFGroupAttribute> ClanLevelAttribute = MakeShared<FGFGroupAttribute>();
+					ClanLevelAttribute->Key = TEXT("clan_level");
+					ClanLevelAttribute->Value = TEXT("10");
+					ClanLevelAttribute->CreatorId = GroupData->Id; // Used as group ID when creating
+
+					FGFGroupAttributeCallback AddLevelCallback;
+					AddLevelCallback.BindLambda([this, ClanLevelAttribute](const TArray<FGFGroupAttribute>& Attributes) {
+						AddInfo("CreateAndFetchAttributes 2 :: Add Attribute 1");
+						TestTrue("attribute 1 added successfully", Attributes.Num() > 0);
+						if (Attributes.Num() > 0) {
+							const FGFGroupAttribute& Attribute = Attributes[0];
+							TestEqual("has correct key", Attribute.Key, TEXT("clan_level"));
+							TestEqual("has correct value", Attribute.Value, TEXT("10"));
+							TestEqual("has correct creator ID", Attribute.CreatorId, UserData1->Id); // CreatorId is the creating user's ID in response
+							TestTrue("admin can edit", Attribute.bCanEdit);
+
+							ClanLevelAttribute->Id = Attribute.Id;
+						}
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																	  GameFuseGroups->AddAttribute(GroupData->Id, *ClanLevelAttribute, true, AddLevelCallback)));
+
+					// After adding level, add motto
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+						FGFGroupAttribute ClanMottoAttribute;
+						ClanMottoAttribute.Key = TEXT("clan_motto");
+						ClanMottoAttribute.Value = TEXT("For Honor and Glory!");
+						ClanMottoAttribute.CreatorId = GroupData->Id; // Used as group ID when creating
+
+						FGFGroupAttributeCallback AddMottoCallback;
+						AddMottoCallback.BindLambda([this](const TArray<FGFGroupAttribute>& Attributes) {
+							AddInfo("CreateAndFetchAttributes 3 :: Add Attribute 2");
+							TestTrue("attribute added successfully", Attributes.Num() > 0);
+							if (Attributes.Num() > 0) {
+								const FGFGroupAttribute& Attribute = Attributes[0];
+								TestEqual("attribute has correct key", Attribute.Key, TEXT("clan_motto"));
+								TestEqual("attribute has correct value", Attribute.Value, TEXT("For Honor and Glory!"));
+								TestEqual("has correct creator ID", Attribute.CreatorId, UserData1->Id); // CreatorId is the creating user's ID in response
+								TestTrue("attribute is member-editable", Attribute.bCanEdit);
+							}
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->AddAttribute(GroupData->Id, ClanMottoAttribute, false, AddMottoCallback)));
+
+						// After setting attributes, fetch the clan to verify
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+							FGFGroupAttributeCallback FetchCallback;
+							FetchCallback.BindLambda([this](const TArray<FGFGroupAttribute>& Attributes) {
+								AddInfo("CreateAndFetchAttributes 4 :: Verify Group Attributes");
+								TestTrue("Group has attributes", Attributes.Num() > 0);
+								TestEqual("Group has correct number of attributes", Attributes.Num(), 2);
+
+								// Verify attribute values and metadata
+								bool bFoundLevel = false;
+								bool bFoundMotto = false;
+
+								for (const auto& Attribute : Attributes) {
+									TestTrue("Attribute has valid ID", Attribute.Id > 0);
+									TestEqual("Creator ID matches user ID", Attribute.CreatorId, UserData1->Id);
+
+									if (Attribute.Key == TEXT("clan_level")) {
+										bFoundLevel = true;
+										TestEqual("attribute 1 has correct value", Attribute.Value, TEXT("10"));
+										TestTrue("attribute 1 is admin-only editable", Attribute.bCanEdit); // still the same user, TODO: add another test for different user to check if it's admin-only
+									} else if (Attribute.Key == TEXT("clan_motto")) {
+										bFoundMotto = true;
+										TestEqual("attribute 2 has correct value", Attribute.Value, TEXT("For Honor and Glory!"));
+										TestTrue("attribute 2 is member-editable", Attribute.bCanEdit);
+									}
+								}
+
+								TestTrue("Found attribute 1", bFoundLevel);
+								TestTrue("Found attribute 2", bFoundMotto);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																			  GameFuseGroups->FetchGroupAttributes(GroupData->Id, FetchCallback)));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("modifies group attributes", [this]() {
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = TEXT("Ironforge Defenders");
+			GroupData->GroupType = TEXT("Clan");
+			GroupData->MaxGroupSize = 50;
+			GroupData->bCanAutoJoin = false;
+
+			// Create a shared attribute to use across all operations
+			TSharedPtr<FGFGroupAttribute> TerritoryAttribute = MakeShared<FGFGroupAttribute>();
+			TerritoryAttribute->Key = TEXT("home_territory");
+			TerritoryAttribute->Value = TEXT("Dun Morogh");
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, TerritoryAttribute]() -> bool {
+				FGFGroupCallback CreateGroupCallback;
+				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+					AddInfo("ModifyAttributes 1 :: Create Group");
+					TestTrue("Group created successfully", CreatedGroup.Id > 0);
+					GroupData->Id = CreatedGroup.Id;
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
+
+				// After creating group, set home territory (member-editable)
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, TerritoryAttribute]() -> bool {
+					// Set the group ID for the request
+					TerritoryAttribute->CreatorId = GroupData->Id; // Used as group ID when creating
+
+					FGFGroupAttributeCallback AddAttributeCallback;
+					AddAttributeCallback.BindLambda([this, TerritoryAttribute](const TArray<FGFGroupAttribute>& Attributes) {
+						AddInfo("ModifyAttributes 2 :: Add Attribute");
+						TestTrue("attribute added successfully", Attributes.Num() > 0);
+						if (Attributes.Num() > 0) {
+							const FGFGroupAttribute& Attribute = Attributes[0];
+							TestEqual("attribute has correct key", Attribute.Key, TEXT("home_territory"));
+							TestEqual("attribute has correct value", Attribute.Value, TEXT("Dun Morogh"));
+							TestEqual("has correct creator ID", Attribute.CreatorId, UserData1->Id); // CreatorId is the creating user's ID in response TODO:: get api changed to return both user and group ids
+							TestTrue("attribute is member-editable", Attribute.bCanEdit);
+
+							// Store the attribute ID for the update
+							TerritoryAttribute->Id = Attribute.Id;
+						}
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																	  GameFuseGroups->AddAttribute(GroupData->Id, *TerritoryAttribute, false, AddAttributeCallback)));
+
+					// After adding territory, update it
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, TerritoryAttribute]() -> bool {
+						// Update the value for the next request
+						TerritoryAttribute->Value = TEXT("Ironforge");
+
+						FGFGroupActionCallback UpdateAttributeCallback;
+						// TODO:: replace this once the response is consistent with the other group attribute responses
+						UpdateAttributeCallback.BindLambda([this](bool bSuccess) {
+							AddInfo("ModifyAttributes 3 :: Update Attribute");
+							TestTrue("attribute updated successfully", bSuccess);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->UpdateGroupAttribute(GroupData->Id, *TerritoryAttribute, UpdateAttributeCallback)));
+
+						// After updating attribute, fetch the clan to verify
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+							FGFGroupAttributeCallback FetchCallback;
+							FetchCallback.BindLambda([this](const TArray<FGFGroupAttribute>& Attributes) {
+								AddInfo("ModifyAttributes 4 :: Verify Group Attributes");
+								TestTrue("Group has attributes", Attributes.Num() > 0);
+								TestEqual("Group has correct number of attributes", Attributes.Num(), 1);
+
+								if (Attributes.Num() > 0) {
+									const FGFGroupAttribute& Attribute = Attributes[0];
+									TestTrue("Attribute has valid ID", Attribute.Id > 0);
+									TestEqual("Creator ID matches user ID", Attribute.CreatorId, UserData1->Id);
+									TestEqual("attribute has correct key", Attribute.Key, TEXT("home_territory"));
+									TestEqual("attribute has updated value", Attribute.Value, TEXT("Ironforge"));
+									TestTrue("attribute is member-editable", Attribute.bCanEdit);
+								}
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																			  GameFuseGroups->FetchGroupAttributes(GroupData->Id, FetchCallback)));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
 	});
 }
 

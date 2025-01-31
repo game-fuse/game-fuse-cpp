@@ -210,6 +210,14 @@ public:
 	 */
 	static bool ConvertJsonArrayToGroups(TArray<FGFGroup>& InGroups, const FString& JsonString);
 
+	/**
+	 * Converts a JSON string into a GroupAttributeResponse
+	 * @param OutAttributes Array to store the converted group attributes
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroupAttributeResponse(TArray<FGFGroupAttribute>& OutAttributes, const FString& JsonString);
+
 #pragma endregion
 
 #pragma region Utility Functions

@@ -2,7 +2,6 @@
 #include "Library/GameFuseLog.h"
 #include "Subsystems/GameFuseUser.h"
 #include "Library/GameFuseUtilities.h"
-#include "JsonObjectConverter.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -240,7 +239,7 @@ FGuid UGameFuseGroups::RemoveAdmin(const int32 GroupId, const int32 UserId, FGFG
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FString& Key, const FString& Value, FGFGroupActionCallback TypedCallback)
+FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, FGFGroupAttributeCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
@@ -250,17 +249,17 @@ FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FString& Key, con
 
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleGroupActionResponse(Response);
+		HandleGroupAttributeResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->AddAttribute(GroupId, Key, Value, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->AddAttribute(GroupId, Attribute, bOnlyCreatorCanEdit, GameFuseUser->GetUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
-		GroupActionCallbacks.Add(RequestId, TypedCallback);
+		GroupAttributeCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::UpdateAttribute(const int32 GroupId, const int32 AttributeId, const FString& Value, FGFGroupActionCallback TypedCallback)
+FGuid UGameFuseGroups::UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, FGFGroupActionCallback UntypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
@@ -273,32 +272,32 @@ FGuid UGameFuseGroups::UpdateAttribute(const int32 GroupId, const int32 Attribut
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->UpdateAttribute(GroupId, AttributeId, Value, GameFuseUser->GetUserData(), InternalCallback);
-	if (TypedCallback.IsBound()) {
-		GroupActionCallbacks.Add(RequestId, TypedCallback);
+	FGuid RequestId = RequestHandler->UpdateGroupAttribute(GroupId, Attribute, GameFuseUser->GetUserData(), InternalCallback);
+	if (UntypedCallback.IsBound()) {
+		GroupActionCallbacks.Add(RequestId, UntypedCallback);
 	}
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::DeleteAttribute(const int32 GroupId, const int32 AttributeId, FGFGroupActionCallback TypedCallback)
-{
-	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
-	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
-		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to delete attribute"));
-		return FGuid();
-	}
-
-	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleGroupActionResponse(Response);
-	});
-
-	FGuid RequestId = RequestHandler->DeleteAttribute(GroupId, AttributeId, GameFuseUser->GetUserData(), InternalCallback);
-	if (TypedCallback.IsBound()) {
-		GroupActionCallbacks.Add(RequestId, TypedCallback);
-	}
-	return RequestId;
-}
+// FGuid UGameFuseGroups::DeleteAttribute(const int32 GroupId, const int32 AttributeId, FGFGroupActionCallback TypedCallback)
+// {
+// 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
+// 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
+// 		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to delete attribute"));
+// 		return FGuid();
+// 	}
+//
+// 	FGFApiCallback InternalCallback;
+// 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+// 		HandleGroupActionResponse(Response);
+// 	});
+//
+// 	FGuid RequestId = RequestHandler->DeleteAttribute(GroupId, AttributeId, GameFuseUser->GetUserData(), InternalCallback);
+// 	if (TypedCallback.IsBound()) {
+// 		GroupActionCallbacks.Add(RequestId, TypedCallback);
+// 	}
+// 	return RequestId;
+// }
 
 FGuid UGameFuseGroups::RespondToGroupJoinRequest(const int32 ConnectionId, const int32 UserId, EGFInviteRequestStatus Status, FGFGroupActionCallback TypedCallback)
 {
@@ -321,6 +320,26 @@ FGuid UGameFuseGroups::RespondToGroupJoinRequest(const int32 ConnectionId, const
 	FGuid RequestId = RequestHandler->RespondToGroupJoinRequest(ConnectionId, UserId, Status, GameFuseUser->GetUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
+}
+
+FGuid UGameFuseGroups::FetchGroupAttributes(const int32 GroupId, FGFGroupAttributeCallback TypedCallback)
+{
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch attributes"));
+		return FGuid();
+	}
+
+	FGFApiCallback InternalCallback;
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleGroupAttributeResponse(Response);
+	});
+
+	FGuid RequestId = RequestHandler->FetchGroupAttributes(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		GroupAttributeCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
 }
@@ -419,16 +438,70 @@ void UGameFuseGroups::HandleGroupActionResponse(const FGFAPIResponse& Response)
 {
 	if (!Response.bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group action response: %s"), *Response.ResponseStr);
-		if (GroupActionCallbacks.Contains(Response.RequestId)) {
-			GroupActionCallbacks[Response.RequestId].ExecuteIfBound(false);
-			GroupActionCallbacks.Remove(Response.RequestId);
+	}
+
+	if (GroupActionCallbacks.Contains(Response.RequestId)) {
+		GroupActionCallbacks[Response.RequestId].ExecuteIfBound(Response.bSuccess);
+		GroupActionCallbacks.Remove(Response.RequestId);
+	}
+}
+
+void UGameFuseGroups::HandleGroupAttributeResponse(const FGFAPIResponse& Response)
+{
+
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group attribute response: %s"), *Response.ResponseStr);
+		if (GroupAttributeCallbacks.Contains(Response.RequestId)) {
+			TArray<FGFGroupAttribute> EmptyAttributes;
+			GroupAttributeCallbacks[Response.RequestId].ExecuteIfBound(EmptyAttributes);
+			GroupAttributeCallbacks.Remove(Response.RequestId);
 		}
 		return;
 	}
 
-	if (GroupActionCallbacks.Contains(Response.RequestId)) {
-		GroupActionCallbacks[Response.RequestId].ExecuteIfBound(true);
-		GroupActionCallbacks.Remove(Response.RequestId);
+	// Parse the attributes array from the response
+	TArray<FGFGroupAttribute> Attributes;
+	if (!GameFuseUtilities::ConvertJsonToGroupAttributeResponse(Attributes, Response.ResponseStr)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group attributes response"));
+		if (GroupAttributeCallbacks.Contains(Response.RequestId)) {
+			TArray<FGFGroupAttribute> EmptyAttributes;
+			GroupAttributeCallbacks[Response.RequestId].ExecuteIfBound(EmptyAttributes);
+			GroupAttributeCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	// Execute the callback with the parsed attributes
+	if (GroupAttributeCallbacks.Contains(Response.RequestId)) {
+		GroupAttributeCallbacks[Response.RequestId].ExecuteIfBound(Attributes);
+		GroupAttributeCallbacks.Remove(Response.RequestId);
+	}
+}
+
+void UGameFuseGroups::HandleFetchAttributesResponse(FGFAPIResponse Response)
+{
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to fetch group attributes: %s"), *Response.ResponseStr);
+		if (FetchAttributesCallbacks.Contains(Response.RequestId)) {
+			FetchAttributesCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGroupAttribute>());
+			FetchAttributesCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	TArray<FGFGroupAttribute> Attributes;
+	if (!GameFuseUtilities::ConvertJsonToGroupAttributeResponse(Attributes, Response.ResponseStr)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group attributes"));
+		if (FetchAttributesCallbacks.Contains(Response.RequestId)) {
+			FetchAttributesCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGroupAttribute>());
+			FetchAttributesCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	if (FetchAttributesCallbacks.Contains(Response.RequestId)) {
+		FetchAttributesCallbacks[Response.RequestId].ExecuteIfBound(Attributes);
+		FetchAttributesCallbacks.Remove(Response.RequestId);
 	}
 }
 
@@ -532,29 +605,47 @@ void UGameFuseGroups::BP_RemoveAdmin(const int32 GroupId, const int32 UserId, FB
 	RemoveAdmin(GroupId, UserId, TypedCallback);
 }
 
-void UGameFuseGroups::BP_AddAttribute(const int32 GroupId, const FString& Key, const FString& Value, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, FBP_GFGroupCallback Callback)
 {
-	FGFGroupActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
+	FGFGroupAttributeCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](const TArray<FGFGroupAttribute>& Attributes) {
+		Callback.ExecuteIfBound(!Attributes.IsEmpty());
 	});
-	AddAttribute(GroupId, Key, Value, TypedCallback);
+	AddAttribute(GroupId, Attribute, bOnlyCreatorCanEdit, TypedCallback);
 }
 
-void UGameFuseGroups::BP_UpdateAttribute(const int32 GroupId, const int32 AttributeId, const FString& Value, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, FBP_GFGroupCallback Callback)
 {
 	FGFGroupActionCallback TypedCallback;
 	TypedCallback.BindLambda([Callback](bool bSuccess) {
 		Callback.ExecuteIfBound(bSuccess);
 	});
-	UpdateAttribute(GroupId, AttributeId, Value, TypedCallback);
+	UpdateGroupAttribute(GroupId, Attribute, TypedCallback);
 }
 
-void UGameFuseGroups::BP_DeleteAttribute(const int32 GroupId, const int32 AttributeId, FBP_GFGroupCallback Callback)
+// void UGameFuseGroups::BP_DeleteAttribute(const int32 GroupId, const int32 AttributeId, FBP_GFGroupCallback Callback)
+// {
+// 	FGFGroupActionCallback TypedCallback;
+// 	TypedCallback.BindLambda([Callback](bool bSuccess) {
+// 		Callback.ExecuteIfBound(bSuccess);
+// 	});
+// 	DeleteAttribute(GroupId, AttributeId, TypedCallback);
+// }
+
+void UGameFuseGroups::BP_FetchAttributes(const int32 GroupId, FBP_GFGroupCallback Callback)
 {
-	FGFGroupActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
+	FGFGroupAttributeCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](const TArray<FGFGroupAttribute>& Attributes) {
+		Callback.ExecuteIfBound(!Attributes.IsEmpty());
 	});
-	DeleteAttribute(GroupId, AttributeId, TypedCallback);
+	FetchGroupAttributes(GroupId, TypedCallback);
+}
+
+void UGameFuseGroups::BP_FetchGroupAttributes(const int32 GroupId, FBP_GFGroupCallback Callback)
+{
+	FGFGroupAttributeCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](const TArray<FGFGroupAttribute>& Attributes) {
+		Callback.ExecuteIfBound(!Attributes.IsEmpty());
+	});
+	FetchGroupAttributes(GroupId, TypedCallback);
 }
