@@ -40,6 +40,22 @@ public:
 	 */
 	static bool ConvertGroupToJson(const FGFGroup& Group, const TSharedPtr<FJsonObject>& JsonObject);
 
+	/**
+	 * Converts a Message into a JSON object
+	 * @param Message The Message to convert
+	 * @param JsonObject The JSON object to store the data
+	 * @return true if successful
+	 */
+	static bool ConvertMessageToJson(const FGFMessage& Message, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a Chat into a JSON object
+	 * @param Chat The Chat to convert
+	 * @param JsonObject The JSON object to store the data
+	 * @return true if successful
+	 */
+	static bool ConvertChatToJson(const FGFChat& Chat, const TSharedPtr<FJsonObject>& JsonObject);
+
 #pragma endregion
 #pragma region JSON => Struct Conversion
 
@@ -99,6 +115,45 @@ public:
 	 */
 	static bool ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest, const TSharedPtr<FJsonObject>& JsonObject);
 
+	/**
+	 * Converts a JSON string into a Message
+	 * @param InMessage Message struct to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToMessage(FGFMessage& InMessage, const FString& JsonString);
+
+	/**
+	 * Converts a JSON object into a Message
+	 * @param InMessage Message struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToMessage(FGFMessage& InMessage, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON string into a Chat
+	 * @param InChat Chat struct to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToChat(FGFChat& InChat, const FString& JsonString);
+
+	/**
+	 * Converts a JSON object into a Chat
+	 * @param InChat Chat struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToChat(FGFChat& InChat, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON string into an array of Chats
+	 * @param OutChats Array to store the converted chats
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToChats(TArray<FGFChat>& OutChats, const FString& JsonString);
 
 #pragma endregion
 

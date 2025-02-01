@@ -158,6 +158,87 @@ struct FGFLeaderboard
 };
 
 /**
+ * Represents a message in a chat
+ */
+USTRUCT(BlueprintType)
+struct GAMEFUSE_API FGFMessage
+{
+	GENERATED_BODY()
+
+	/** The unique identifier of the message */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
+	int32 Id = 0;
+
+	/** The message text */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Chat")
+	FString Text;
+
+	/** The ID of the user who sent the message */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
+	int32 UserId = 0;
+
+	/** When the message was created */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
+	FDateTime CreatedAt;
+
+	/** List of user IDs who have read the message */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
+	TArray<int32> ReadBy;
+
+	/** Whether the current user has read the message */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
+	bool bRead = false;
+
+	bool operator==(const FGFMessage& Other) const
+	{
+		return Id == Other.Id
+			&& Text == Other.Text
+			&& UserId == Other.UserId
+			&& CreatedAt == Other.CreatedAt
+			&& ReadBy == Other.ReadBy
+			&& bRead == Other.bRead;
+	}
+};
+
+/**
+ * Represents a chat (both direct and group chats)
+ */
+USTRUCT(BlueprintType)
+struct GAMEFUSE_API FGFChat
+{
+	GENERATED_BODY()
+
+	/** The unique identifier of the chat */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
+	int32 Id = 0;
+
+	/** The ID of the user who created the chat */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
+	int32 CreatorId = 0;
+
+	/** The type of creator (User, etc.) */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
+	FString CreatorType;
+
+	/** List of messages in the chat */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
+	TArray<FGFMessage> Messages;
+
+	/** List of users in the chat */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
+	TArray<FGFUserData> Participants;
+
+	bool operator==(const FGFChat& Other) const
+	{
+		return Id == Other.Id
+			&& CreatorId == Other.CreatorId
+			&& CreatorType == Other.CreatorType
+			&& Messages == Other.Messages
+			&& Participants == Other.Participants;
+	}
+};
+
+/**
  * Represents a group attribute
  */
 USTRUCT(BlueprintType)
