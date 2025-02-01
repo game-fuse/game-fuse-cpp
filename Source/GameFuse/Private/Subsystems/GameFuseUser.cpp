@@ -182,7 +182,7 @@ TArray<FString> UGameFuseUser::GetAttributesKeys() const
 
 TMap<FString, FString>& UGameFuseUser::GetDirtyAttributes()
 {
-	return DirtyAttributes;
+	return LocalAttributes;
 }
 
 FString UGameFuseUser::GetAttributeValue(const FString Key) const
@@ -196,9 +196,22 @@ FGuid UGameFuseUser::SetAttribute(const FString& SetKey, const FString& SetValue
 	return RequestHandler->SetAttribute(SetKey, SetValue, UserData, Callback);
 }
 
+void UGameFuseUser::BP_SetAttributes(const TMap<FString, FString>& NewAttributes, FBP_GFApiCallback Callback)
+{
+	FGFApiCallback InternalCallback;
+	WrapBlueprintCallback(Callback, InternalCallback);
+	SetAttributes(NewAttributes, InternalCallback);
+}
+
+FGuid UGameFuseUser::SetAttributes(const TMap<FString, FString>& NewAttributes, FGFApiCallback Callback)
+{
+	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
+	return RequestHandler->SetAttributes(NewAttributes, UserData, Callback);
+}
+
 void UGameFuseUser::SetAttributeLocal(const FString& SetKey, const FString& SetValue, FGFApiCallback Callback)
 {
-	DirtyAttributes.Add(SetKey, SetValue);
+	LocalAttributes.Add(SetKey, SetValue);
 	FString Set_Dirty_Attribute_Message = FString::Printf(TEXT("Setting Dirty Attribute (local-and-temporary) : %s : %s"), *SetKey, *SetValue);
 	UE_LOG(LogGameFuse, Log, TEXT("%s"), *Set_Dirty_Attribute_Message);
 	Callback.Broadcast(FGFAPIResponse(true, Set_Dirty_Attribute_Message));
@@ -219,7 +232,7 @@ FGuid UGameFuseUser::FetchAttributes(FGFApiCallback Callback)
 FGuid UGameFuseUser::SyncLocalAttributes(FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
-	return RequestHandler->SyncLocalAttributes(DirtyAttributes, UserData, Callback);
+	return RequestHandler->SetAttributes(LocalAttributes, UserData, Callback);
 }
 
 #pragma endregion
@@ -248,16 +261,10 @@ FGuid UGameFuseUser::SetScore(const int SetScore, FGFApiCallback Callback)
 	return RequestHandler->SetScore(SetScore, UserData, Callback);
 }
 
-FGuid UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, FGFApiCallback Callback)
+FGuid UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, const TMap<FString, FString>& Metadata, FGFApiCallback Callback)
 {
 	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
-	return AddLeaderboardEntryWithAttributes(LeaderboardName, OurScore, TMap<FString, FString>(), Callback);
-}
-
-FGuid UGameFuseUser::AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, const TMap<FString, FString>& ExtraAttributes, FGFApiCallback Callback)
-{
-	Callback.AddUObject(this, &UGameFuseUser::InternalResponseManager);
-	return RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, ExtraAttributes, UserData, Callback);
+	return RequestHandler->AddLeaderboardEntry(LeaderboardName, OurScore, Metadata, UserData, Callback);
 }
 
 FGuid UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGFApiCallback Callback)
@@ -382,18 +389,11 @@ void UGameFuseUser::BP_RemoveStoreItem(const FGFStoreItem& StoreItem, FBP_GFApiC
 	RemoveStoreItem(StoreItem, InternalCallback);
 }
 
-void UGameFuseUser::BP_AddLeaderboardEntry(const FString& LeaderboardName, const int Score, FBP_GFApiCallback Callback)
+void UGameFuseUser::BP_AddLeaderboardEntry(const FString& LeaderboardName, const int Score, const TMap<FString, FString>& Metadata, FBP_GFApiCallback Callback)
 {
 	FGFApiCallback InternalCallback;
 	WrapBlueprintCallback(Callback, InternalCallback);
-	AddLeaderboardEntry(LeaderboardName, Score, InternalCallback);
-}
-
-void UGameFuseUser::BP_AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int Score, TMap<FString, FString>& ExtraAttributes, FBP_GFApiCallback Callback)
-{
-	FGFApiCallback InternalCallback;
-	WrapBlueprintCallback(Callback, InternalCallback);
-	AddLeaderboardEntryWithAttributes(LeaderboardName, Score, ExtraAttributes, InternalCallback);
+	AddLeaderboardEntry(LeaderboardName, Score, Metadata, InternalCallback);
 }
 
 void UGameFuseUser::BP_ClearLeaderboardEntry(const FString& LeaderboardName, FBP_GFApiCallback Callback)

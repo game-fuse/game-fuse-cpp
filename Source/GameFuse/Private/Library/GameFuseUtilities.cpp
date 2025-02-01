@@ -143,52 +143,42 @@ bool GameFuseUtilities::ConvertJsonToStoreItem(FGFStoreItem& InStoreItem, const 
 bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue)
 {
 	if (JsonValue->Type != EJson::Object) {
-		UE_LOG(LogGameFuse, Error, TEXT("Fetching Leaderboard Items Failed to parse JSON Items"));
 		return false;
 	}
 
-	const TSharedPtr<FJsonObject> JsonObject = JsonValue->AsObject();
+	const TSharedPtr<FJsonObject>& JsonObject = JsonValue->AsObject();
 
-	JsonObject->TryGetStringField(TEXT("username"), InLeaderboardItem.Username);
-	JsonObject->TryGetStringField(TEXT("leaderboard_name"), InLeaderboardItem.LeaderboardName);
+	InLeaderboardItem.LeaderboardName = JsonObject->GetStringField(TEXT("leaderboard_name"));
+	InLeaderboardItem.Username = JsonObject->GetStringField(TEXT("username"));
+	InLeaderboardItem.Score = JsonObject->GetNumberField(TEXT("score"));
+	InLeaderboardItem.GameUserId = JsonObject->GetNumberField(TEXT("game_user_id"));
+	InLeaderboardItem.DateTime = JsonObject->GetStringField(TEXT("created_at"));
 
-	JsonObject->TryGetNumberField(TEXT("score"), InLeaderboardItem.Score);
-	JsonObject->TryGetNumberField(TEXT("game_user_id"), InLeaderboardItem.GameUserId);
-
-	if (JsonObject->HasField(TEXT("extra_attributes"))) {
-		// Log the raw extra_attributes field
-		FString RawExtraAttribs;
-		JsonObject->TryGetStringField(TEXT("extra_attributes"), RawExtraAttribs);
-		UE_LOG(LogGameFuse, Log, TEXT("Raw extra_attributes: %s"), *RawExtraAttribs);
-
-		// extra attribs is stored as string so needs decoding before can be read as json
-		FString ExtraAttribsStr = RawExtraAttribs;
-		ExtraAttribsStr = FGenericPlatformHttp::UrlDecode(ExtraAttribsStr);
-		UE_LOG(LogGameFuse, Log, TEXT("URL Decoded extra_attributes: %s"), *ExtraAttribsStr);
-
-		ExtraAttribsStr = ExtraAttribsStr.Replace(TEXT("=>"), TEXT(":"));
-		UE_LOG(LogGameFuse, Log, TEXT("After => replacement: %s"), *ExtraAttribsStr);
-
-		TSharedPtr<FJsonObject> ExtraAttribsJson;
-		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ExtraAttribsStr);
-
-		if (!FJsonSerializer::Deserialize(Reader, ExtraAttribsJson) || !ExtraAttribsJson.IsValid()) {
-			UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
-			return false;
-		}
-
-		ConvertJsonObjectToStringMap(ExtraAttribsJson, InLeaderboardItem.ExtraAttributes);
-
-		// Log the final attributes map
-		UE_LOG(LogGameFuse, Log, TEXT("Final ExtraAttributes map:"));
-		for (const auto& Pair : InLeaderboardItem.ExtraAttributes) {
-			UE_LOG(LogGameFuse, Log, TEXT("  %s: %s"), *Pair.Key, *Pair.Value);
-		}
+	// Convert metadata from JSON
+	const TSharedPtr<FJsonObject>* MetadataObject;
+	if (JsonObject->TryGetObjectField(TEXT("metadata"), MetadataObject)) {
+		ConvertJsonObjectToStringMap(*MetadataObject, InLeaderboardItem.Metadata);
 	}
 
 	return true;
 }
 
+bool GameFuseUtilities::ConvertLeaderboardItemToJson(const FGFLeaderboardEntry& LeaderboardItem, TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (LeaderboardItem.LeaderboardName.IsEmpty()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Leaderboard name is required"));
+		return false;
+	}
+	JsonObject->SetStringField(TEXT("leaderboard_name"), LeaderboardItem.LeaderboardName);
+	JsonObject->SetNumberField(TEXT("score"), LeaderboardItem.Score);
+	// Convert metadata to JSON
+	if (!LeaderboardItem.Metadata.IsEmpty()) {
+		TSharedPtr<FJsonObject> MetadataObject = ConvertMapToJsonObject(LeaderboardItem.Metadata);
+		JsonObject->SetObjectField(TEXT("metadata"), MetadataObject);
+	}
+
+	return true;
+}
 
 bool GameFuseUtilities::ConvertJsonToFriendRequests(TArray<FGFFriendRequest>& OutRequests, const FString& JsonString)
 {
@@ -646,6 +636,11 @@ bool GameFuseUtilities::ConvertJsonToGroupConnection(FGFGroupConnection& InConne
 
 TSharedPtr<FJsonObject> GameFuseUtilities::ConvertMapToJsonObject(const TMap<FString, FString>& Map)
 {
+	if (Map.Num() == 0) {
+		return nullptr;
+	}
+
+
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
 	for (const auto& Pair : Map) {
 		JsonObject->SetStringField(Pair.Key, Pair.Value);
@@ -739,6 +734,7 @@ EGFUserAPIResponseType GameFuseUtilities::DetermineUserAPIResponseType(const TSh
 void GameFuseUtilities::LogRequest(FHttpRequestPtr HttpRequest)
 {
 	UE_LOG(LogGameFuse, Log, TEXT("=========   URL   ========= \n %s"), *(HttpRequest->GetURL()));
+	UE_LOG(LogGameFuse, Log, TEXT("METHOD == %s"), *(HttpRequest->GetVerb()));
 	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
 	for (const FString& currHeader : HttpRequest->GetAllHeaders()) {
 		UE_LOG(LogGameFuse, Log, TEXT("%s"), *currHeader);

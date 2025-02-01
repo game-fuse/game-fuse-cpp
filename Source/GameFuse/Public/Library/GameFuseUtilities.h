@@ -84,6 +84,14 @@ public:
 	static bool ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
 
 	/**
+	 * Converts a LeaderboardEntry into a JSON object
+	 * @param LeaderboardItem The LeaderboardEntry to convert
+	 * @param JsonObject The JSON object to store the data
+	 * @return true if successful
+	 */
+	static bool ConvertLeaderboardItemToJson(const FGFLeaderboardEntry& LeaderboardItem, TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
 	 * Converts a JSON object into a single friend request
 	 * @param OutRequest FriendRequest struct to store converted data
 	 * @param JsonObject The JSON object to convert

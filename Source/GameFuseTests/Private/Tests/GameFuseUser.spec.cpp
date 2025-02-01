@@ -415,23 +415,44 @@ void GameFuseUserSpec::Define()
 					}
 				});
 
+				// Test setting a single attribute
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->SetAttribute("test_key", "test_value", SetAttributeCallback)));
 
-				// Fetch attributes to verify
+				// Test setting multiple attributes in batch
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-					FGFApiCallback FetchAttributesCallback;
-					FetchAttributesCallback.AddLambda([this](const FGFAPIResponse& Response) {
-						TestTrue("Fetch attributes request succeeded", Response.bSuccess);
+					TMap<FString, FString> BatchAttributes;
+					BatchAttributes.Add("batch_key1", "batch_value1");
+					BatchAttributes.Add("batch_key2", "batch_value2");
+
+					FGFApiCallback BatchSetCallback;
+					BatchSetCallback.AddLambda([this](const FGFAPIResponse& Response) {
+						TestTrue("Batch set attributes request succeeded", Response.bSuccess);
 						if (!Response.bSuccess) {
-							AddError(FString::Printf(TEXT("Fetch attributes failed: %s"), *Response.ResponseStr));
+							AddError(FString::Printf(TEXT("Batch set attributes failed: %s"), *Response.ResponseStr));
 						}
 					});
 
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->FetchAttributes(FetchAttributesCallback)));
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->SetAttribute("batch_key1", "batch_value1", BatchSetCallback)));
 
+					// Fetch attributes to verify
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-						TestTrue("attribute was set", GameFuseUser->GetAttributeValue("test_key") == "test_value");
-						ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+						FGFApiCallback FetchAttributesCallback;
+						FetchAttributesCallback.AddLambda([this](const FGFAPIResponse& Response) {
+							TestTrue("Fetch attributes request succeeded", Response.bSuccess);
+							if (!Response.bSuccess) {
+								AddError(FString::Printf(TEXT("Fetch attributes failed: %s"), *Response.ResponseStr));
+							}
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->FetchAttributes(FetchAttributesCallback)));
+
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+							// Verify all attributes were set correctly
+							TestTrue("single attribute was set", GameFuseUser->GetAttributeValue("test_key") == "test_value");
+							TestTrue("batch attribute 1 was set", GameFuseUser->GetAttributeValue("batch_key1") == "batch_value1");
+							ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+							return true;
+						}));
 						return true;
 					}));
 					return true;
@@ -440,48 +461,59 @@ void GameFuseUserSpec::Define()
 			}));
 		});
 
-		It("sets local attributes and syncs them", [this]() {
+		It("batch updates attributes", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				FGFApiCallback SetLocalAttributeCallback;
-				SetLocalAttributeCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					TestTrue("Set local attribute succeeded", Response.bSuccess);
-				});
+				// Create test attributes map
+				TMap<FString, FString> TestAttributes;
+				TestAttributes.Add("test_key1", "test_value1");
+				TestAttributes.Add("test_key2", "test_value2");
+				TestAttributes.Add("test_key3", "test_value3");
 
-				// Set two local attributes
-				GameFuseUser->SetAttributeLocal("local_key1", "local_value1", SetLocalAttributeCallback);
-				GameFuseUser->SetAttributeLocal("local_key2", "local_value2", SetLocalAttributeCallback);
-
-				// Verify they're in dirty attributes
-				TestTrue("local attributes are in dirty map", GameFuseUser->GetDirtyAttributes().Num() == 2);
-				TestTrue("local attribute 1 is correct", GameFuseUser->GetDirtyAttributes()["local_key1"] == "local_value1");
-				TestTrue("local attribute 2 is correct", GameFuseUser->GetDirtyAttributes()["local_key2"] == "local_value2");
-
-				// Sync the attributes
-				FGFApiCallback SyncCallback;
-				SyncCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					TestTrue("Sync attributes succeeded", Response.bSuccess);
+				FGFApiCallback SetAttributesCallback;
+				SetAttributesCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					AddInfo("BatchAttributes 1 :: Set Attributes");
+					TestTrue("Set attributes request succeeded", Response.bSuccess);
 					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Sync attributes failed: %s"), *Response.ResponseStr));
+						AddError(FString::Printf(TEXT("Set attributes failed: %s"), *Response.ResponseStr));
 					}
 				});
 
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->SyncLocalAttributes(SyncCallback)));
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), 
+					GameFuseUser->SetAttributes(TestAttributes, SetAttributesCallback)));
 
-				// Fetch to verify synced attributes
-				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				// Fetch attributes to verify
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, TestAttributes]() -> bool {
 					FGFApiCallback FetchCallback;
 					FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
-						TestTrue("Fetch attributes succeeded", Response.bSuccess);
+						AddInfo("BatchAttributes 2 :: Fetch Attributes");
+						TestTrue("Fetch attributes request succeeded", Response.bSuccess);
 						if (!Response.bSuccess) {
 							AddError(FString::Printf(TEXT("Fetch attributes failed: %s"), *Response.ResponseStr));
 						}
 					});
 
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->FetchAttributes(FetchCallback)));
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+						GameFuseUser->FetchAttributes(FetchCallback)));
 
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-						TestTrue("synced attribute 1 exists", GameFuseUser->GetAttributeValue("local_key1") == "local_value1");
-						TestTrue("synced attribute 2 exists", GameFuseUser->GetAttributeValue("local_key2") == "local_value2");
+					// Verify attributes
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, TestAttributes]() -> bool {
+						AddInfo("BatchAttributes 3 :: Verify Attributes");
+						const TMap<FString, FString>& StoredAttributes = GameFuseUser->GetAttributes();
+						
+						TestEqual("Should have correct number of attributes", StoredAttributes.Num(), TestAttributes.Num());
+						
+						for (const auto& Pair : TestAttributes)
+						{
+							const FString* StoredValue = StoredAttributes.Find(Pair.Key);
+							TestNotNull(*FString::Printf(TEXT("Should find attribute %s"), *Pair.Key), StoredValue);
+							if (StoredValue)
+							{
+								TestEqual(*FString::Printf(TEXT("Attribute %s should have correct value"), *Pair.Key),
+									*StoredValue, Pair.Value);
+							}
+						}
+
+						// Clean up
 						ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 						return true;
 					}));
@@ -493,43 +525,140 @@ void GameFuseUserSpec::Define()
 
 		It("removes attributes", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				// First set an attribute
-				FGFApiCallback SetAttributeCallback;
-				SetAttributeCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					TestTrue("Set attribute succeeded", Response.bSuccess);
+				// First set some attributes
+				TMap<FString, FString> TestAttributes;
+				TestAttributes.Add("test_key1", "test_value1");
+				TestAttributes.Add("test_key2", "test_value2");
+
+				FGFApiCallback SetAttributesCallback;
+				SetAttributesCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					AddInfo("RemoveAttributes 1 :: Set Initial Attributes");
+					TestTrue("Set attributes request succeeded", Response.bSuccess);
+					if (!Response.bSuccess) {
+						AddError(FString::Printf(TEXT("Set attributes failed: %s"), *Response.ResponseStr));
+					}
 				});
 
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->SetAttribute("remove_key", "remove_value", SetAttributeCallback)));
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+					GameFuseUser->SetAttributes(TestAttributes, SetAttributesCallback)));
 
-				// Then remove it
+				// Remove one attribute
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 					FGFApiCallback RemoveCallback;
 					RemoveCallback.AddLambda([this](const FGFAPIResponse& Response) {
-						TestTrue("Remove attribute succeeded", Response.bSuccess);
+						AddInfo("RemoveAttributes 2 :: Remove Attribute");
+						TestTrue("Remove attribute request succeeded", Response.bSuccess);
 						if (!Response.bSuccess) {
 							AddError(FString::Printf(TEXT("Remove attribute failed: %s"), *Response.ResponseStr));
 						}
 					});
 
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->RemoveAttribute("remove_key", RemoveCallback)));
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+						GameFuseUser->RemoveAttribute("test_key1", RemoveCallback)));
 
-					// Fetch to verify removal
+					// Fetch to verify
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 						FGFApiCallback FetchCallback;
 						FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
-							TestTrue("Fetch attributes succeeded", Response.bSuccess);
+							AddInfo("RemoveAttributes 3 :: Fetch Attributes");
+							TestTrue("Fetch attributes request succeeded", Response.bSuccess);
 							if (!Response.bSuccess) {
 								AddError(FString::Printf(TEXT("Fetch attributes failed: %s"), *Response.ResponseStr));
 							}
 						});
 
-						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->FetchAttributes(FetchCallback)));
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+							GameFuseUser->FetchAttributes(FetchCallback)));
 
+						// Verify attributes
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-							TestTrue("attribute was removed", GameFuseUser->GetAttributeValue("remove_key").IsEmpty());
+							AddInfo("RemoveAttributes 4 :: Verify Attributes");
+							const TMap<FString, FString>& StoredAttributes = GameFuseUser->GetAttributes();
+							
+							TestEqual("Should have one attribute remaining", StoredAttributes.Num(), 1);
+							TestNull("Removed attribute should not exist", StoredAttributes.Find("test_key1"));
+							TestNotNull("Remaining attribute should exist", StoredAttributes.Find("test_key2"));
+							
+							if (const FString* RemainingValue = StoredAttributes.Find("test_key2"))
+							{
+								TestEqual("Remaining attribute should have correct value", *RemainingValue, "test_value2");
+							}
+
+							// Clean up
 							ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 							return true;
 						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("syncs local attributes", [this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				// First set some local attributes
+				FGFApiCallback SetLocalCallback;
+				SetLocalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					AddInfo("SyncLocal 1 :: Set Local Attributes");
+					TestTrue("Set local attributes succeeded", Response.bSuccess);
+					if (!Response.bSuccess) {
+						AddError(FString::Printf(TEXT("Set local attributes failed: %s"), *Response.ResponseStr));
+					}
+				});
+
+				// Set multiple local attributes
+				GameFuseUser->SetAttributeLocal("local_key1", "local_value1", SetLocalCallback);
+				GameFuseUser->SetAttributeLocal("local_key2", "local_value2", SetLocalCallback);
+				GameFuseUser->SetAttributeLocal("local_key3", "local_value3", SetLocalCallback);
+
+				// Verify local attributes were set
+				const TMap<FString, FString>& LocalAttributes = GameFuseUser->GetDirtyAttributes();
+				TestEqual("Should have three local attributes", LocalAttributes.Num(), 3);
+				TestEqual("Local attribute 1 should have correct value", LocalAttributes.FindRef("local_key1"), "local_value1");
+				TestEqual("Local attribute 2 should have correct value", LocalAttributes.FindRef("local_key2"), "local_value2");
+				TestEqual("Local attribute 3 should have correct value", LocalAttributes.FindRef("local_key3"), "local_value3");
+
+				// Sync local attributes to server
+				FGFApiCallback SyncCallback;
+				SyncCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					AddInfo("SyncLocal 2 :: Sync Local Attributes");
+					TestTrue("Sync local attributes succeeded", Response.bSuccess);
+					if (!Response.bSuccess) {
+						AddError(FString::Printf(TEXT("Sync local attributes failed: %s"), *Response.ResponseStr));
+					}
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+					GameFuseUser->SyncLocalAttributes(SyncCallback)));
+
+				// Fetch attributes to verify sync
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					FGFApiCallback FetchCallback;
+					FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
+						AddInfo("SyncLocal 3 :: Fetch Attributes");
+						TestTrue("Fetch attributes succeeded", Response.bSuccess);
+						if (!Response.bSuccess) {
+							AddError(FString::Printf(TEXT("Fetch attributes failed: %s"), *Response.ResponseStr));
+						}
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+						GameFuseUser->FetchAttributes(FetchCallback)));
+
+					// Verify synced attributes
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+						AddInfo("SyncLocal 4 :: Verify Synced Attributes");
+						const TMap<FString, FString>& StoredAttributes = GameFuseUser->GetAttributes();
+						
+						TestEqual("Should have three synced attributes", StoredAttributes.Num(), 3);
+						TestEqual("Synced attribute 1 should have correct value", StoredAttributes.FindRef("local_key1"), "local_value1");
+						TestEqual("Synced attribute 2 should have correct value", StoredAttributes.FindRef("local_key2"), "local_value2");
+						TestEqual("Synced attribute 3 should have correct value", StoredAttributes.FindRef("local_key3"), "local_value3");
+
+						// Clean up
+						ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 						return true;
 					}));
 					return true;

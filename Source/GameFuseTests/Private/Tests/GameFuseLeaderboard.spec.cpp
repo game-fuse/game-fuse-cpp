@@ -83,6 +83,7 @@ void GameFuseLeaderboard::Define()
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 				const FString LeaderboardName = TEXT("TestLeaderboard");
 				constexpr int32 Score = 1000;
+				TMap<FString, FString> Metadata;
 				FGFApiCallback Callback;
 				Callback.AddLambda([this](const FGFAPIResponse& Response) {
 					AddInfo("AddLeaderboardEntry 1 :: Add Entry");
@@ -93,7 +94,7 @@ void GameFuseLeaderboard::Define()
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, Callback)));
+																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, Metadata, Callback)));
 
 				// Verify internal state after adding entry
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score]() -> bool {
@@ -120,31 +121,31 @@ void GameFuseLeaderboard::Define()
 			}));
 		});
 
-		It("adds a leaderboard entry with attributes", [this]() {
+		It("adds a leaderboard entry with metadata", [this]() {
 			const FString LeaderboardName = TEXT("TestLeaderboard");
 			constexpr int32 Score = 1000;
-			TMap<FString, FString> ExtraAttributes;
-			ExtraAttributes.Add(TEXT("Weapon"), TEXT("Sword"));
-			ExtraAttributes.Add(TEXT("Level"), TEXT("5"));
+			TMap<FString, FString> Metadata;
+			Metadata.Add(TEXT("Weapon"), TEXT("Sword"));
+			Metadata.Add(TEXT("Level"), TEXT("5"));
 
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score, ExtraAttributes]() -> bool {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score, Metadata]() -> bool {
 				FGFApiCallback AddCallback;
 				AddCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					AddInfo("AddLeaderboardEntryWithAttributes 1 :: Add Entry With Attributes");
-					TestTrue("Add leaderboard entry with attributes succeeded", Response.bSuccess);
+					AddInfo("AddLeaderboardEntry 1 :: Add Entry With Metadata");
+					TestTrue("Add leaderboard entry with metadata succeeded", Response.bSuccess);
 					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Add leaderboard entry with attributes failed: %s"), *Response.ResponseStr));
+						AddError(FString::Printf(TEXT("Add leaderboard entry with metadata failed: %s"), *Response.ResponseStr));
 					}
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																  GameFuseUser->AddLeaderboardEntryWithAttributes(LeaderboardName, Score, ExtraAttributes, AddCallback)));
+																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, Metadata, AddCallback)));
 
-				// Verify the entry was added and attributes are correct
-				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score, ExtraAttributes]() -> bool {
+				// Verify the entry was added and metadata is correct
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score, Metadata]() -> bool {
 					FGFApiCallback FetchCallback;
 					FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
-						AddInfo("AddLeaderboardEntryWithAttributes 2 :: Fetch Entry");
+						AddInfo("AddLeaderboardEntry 2 :: Fetch Entry");
 						TestTrue("Fetch after add succeeded", Response.bSuccess);
 					});
 
@@ -152,7 +153,7 @@ void GameFuseLeaderboard::Define()
 																	  GameFuseUser->FetchMyLeaderboardEntries(10, true, FetchCallback)));
 
 					// Verify the fetched data
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score, ExtraAttributes]() -> bool {
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score, Metadata]() -> bool {
 						const TArray<FGFLeaderboardEntry>& Entries = GameFuseUser->GetLeaderboardEntries();
 						TestTrue("Should have at least one entry", Entries.Num() > 0);
 
@@ -160,15 +161,15 @@ void GameFuseLeaderboard::Define()
 							const FGFLeaderboardEntry& Entry = Entries[0];
 							TestEqual("Score should match what we added", Entry.Score, Score);
 
-							// Verify attributes exist
-							TestTrue("Should have weapon attribute", Entry.ExtraAttributes.Contains(TEXT("Weapon")));
-							TestTrue("Should have level attribute", Entry.ExtraAttributes.Contains(TEXT("Level")));
+							// Verify metadata exists
+							TestTrue("Should have weapon metadata", Entry.Metadata.Contains(TEXT("Weapon")));
+							TestTrue("Should have level metadata", Entry.Metadata.Contains(TEXT("Level")));
 
-							// Only compare attributes if they exist
-							AddErrorIfFalse(Entry.ExtraAttributes.Contains(TEXT("Weapon")), "Missing Weapon attribute");
-							AddErrorIfFalse(Entry.ExtraAttributes.Contains(TEXT("Level")), "Missing Level attribute");
-							TestEqual("Weapon attribute should match", Entry.ExtraAttributes[TEXT("Weapon")], ExtraAttributes[TEXT("Weapon")]);
-							TestEqual("Level attribute should match", Entry.ExtraAttributes[TEXT("Level")], ExtraAttributes[TEXT("Level")]);
+							// Only compare metadata if they exist
+							AddErrorIfFalse(Entry.Metadata.Contains(TEXT("Weapon")), "Missing Weapon metadata");
+							AddErrorIfFalse(Entry.Metadata.Contains(TEXT("Level")), "Missing Level metadata");
+							TestEqual("Weapon metadata should match", Entry.Metadata[TEXT("Weapon")], Metadata[TEXT("Weapon")]);
+							TestEqual("Level metadata should match", Entry.Metadata[TEXT("Level")], Metadata[TEXT("Level")]);
 						}
 						return true;
 					}));
@@ -181,8 +182,9 @@ void GameFuseLeaderboard::Define()
 		It("clears a leaderboard entry", [this]() {
 			const FString LeaderboardName = TEXT("TestLeaderboard");
 			constexpr int32 Score = 1500;
+			TMap<FString, FString> Metadata;
 
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score]() -> bool {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score, Metadata]() -> bool {
 				FGFApiCallback AddCallback;
 				AddCallback.AddLambda([this](const FGFAPIResponse& Response) {
 					AddInfo("ClearLeaderboardEntry 1 :: Add Entry");
@@ -190,7 +192,7 @@ void GameFuseLeaderboard::Define()
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, AddCallback)));
+																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, Metadata, AddCallback)));
 
 				// Verify entry was added
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score]() -> bool {
@@ -251,8 +253,9 @@ void GameFuseLeaderboard::Define()
 			const FString LeaderboardName2 = TEXT("TestLeaderboard2");
 			constexpr int32 Score1 = 1500;
 			constexpr int32 Score2 = 2500;
+			TMap<FString, FString> Metadata;
 
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, LeaderboardName2, Score1, Score2]() -> bool {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, LeaderboardName2, Score1, Score2, Metadata]() -> bool {
 				FGFApiCallback AddCallback1;
 				AddCallback1.AddLambda([this](const FGFAPIResponse& Response) {
 					AddInfo("ClearSpecificEntry 1 :: Add First Entry");
@@ -260,10 +263,10 @@ void GameFuseLeaderboard::Define()
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																  GameFuseUser->AddLeaderboardEntry(LeaderboardName1, Score1, AddCallback1)));
+																  GameFuseUser->AddLeaderboardEntry(LeaderboardName1, Score1, Metadata, AddCallback1)));
 
 				// Verify first entry was added
-				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, LeaderboardName2, Score1]() -> bool {
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, LeaderboardName2, Score1, Metadata]() -> bool {
 					FGFApiCallback VerifyFirstCallback;
 					VerifyFirstCallback.AddLambda([this](const FGFAPIResponse& Response) {
 						TestTrue("Fetch after first add succeeded", Response.bSuccess);
@@ -281,7 +284,7 @@ void GameFuseLeaderboard::Define()
 						return true;
 					}));
 
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, LeaderboardName2, Score2]() -> bool {
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, LeaderboardName2, Score2, Metadata]() -> bool {
 						FGFApiCallback AddCallback2;
 						AddCallback2.AddLambda([this](const FGFAPIResponse& Response) {
 							AddInfo("ClearSpecificEntry 2 :: Add Second Entry");
@@ -289,7 +292,7 @@ void GameFuseLeaderboard::Define()
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																		  GameFuseUser->AddLeaderboardEntry(LeaderboardName2, Score2, AddCallback2)));
+																		  GameFuseUser->AddLeaderboardEntry(LeaderboardName2, Score2, Metadata, AddCallback2)));
 
 						// Verify both entries exist
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, Score1, Score2]() -> bool {
@@ -361,8 +364,9 @@ void GameFuseLeaderboard::Define()
 		It("fetches my leaderboard entries", [this]() {
 			const FString LeaderboardName = TEXT("TestLeaderboard");
 			constexpr int32 Score = 2000;
+			TMap<FString, FString> Metadata;
 
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score]() -> bool {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score, Metadata]() -> bool {
 				FGFApiCallback AddCallback;
 				AddCallback.AddLambda([this](const FGFAPIResponse& Response) {
 					AddInfo("FetchLeaderboardEntries 1 :: Add Entry");
@@ -370,7 +374,7 @@ void GameFuseLeaderboard::Define()
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, AddCallback)));
+																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, Metadata, AddCallback)));
 
 				// Verify entry was added
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score]() -> bool {

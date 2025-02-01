@@ -129,7 +129,7 @@ struct FGFLeaderboardEntry
 	int32 GameUserId = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
-	TMap<FString, FString> ExtraAttributes;
+	TMap<FString, FString> Metadata;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString DateTime = "";

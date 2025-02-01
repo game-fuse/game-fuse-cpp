@@ -23,6 +23,7 @@ class GAMEFUSE_API UGameFuseUser : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+
 	//> Subsystem Initialization
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
@@ -127,6 +128,11 @@ public:
 	void BP_SetAttributeLocal(const FString& Key, const FString& Value, FBP_GFApiCallback Callback);
 	void SetAttributeLocal(const FString& SetKey, const FString& SetValue, FGFApiCallback Callback);
 
+	UFUNCTION(BlueprintCallable, DisplayName = "Set Attributes", Category = "GameFuse|User")
+	void BP_SetAttributes(const TMap<FString, FString>& NewAttributes, FBP_GFApiCallback Callback);
+	/** Set multiple attributes at once */
+	FGuid SetAttributes(const TMap<FString, FString>& NewAttributes, FGFApiCallback Callback);
+
 	UFUNCTION(BlueprintCallable, DisplayName = "Remove Attribute", Category = "GameFuse|User")
 	void BP_RemoveAttribute(const FString& Key, FBP_GFApiCallback Callback);
 	FGuid RemoveAttribute(const FString& SetKey, FGFApiCallback Callback);
@@ -144,12 +150,8 @@ public:
 	const TArray<FGFLeaderboardEntry>& GetLeaderboardEntries();
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Add Leaderboard Entry", Category = "GameFuse|User")
-	void BP_AddLeaderboardEntry(const FString& LeaderboardName, const int Score, FBP_GFApiCallback Callback);
-	FGuid AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, FGFApiCallback Callback);
-
-	UFUNCTION(BlueprintCallable, DisplayName = "Add Leaderboard Entry With Attributes", Category = "GameFuse|User")
-	void BP_AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int Score, TMap<FString, FString>& ExtraAttributes, FBP_GFApiCallback Callback);
-	FGuid AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int OurScore, const TMap<FString, FString>& ExtraAttributes, FGFApiCallback Callback);
+	void BP_AddLeaderboardEntry(const FString& LeaderboardName, const int Score, const TMap<FString, FString>& Metadata, FBP_GFApiCallback Callback);
+	FGuid AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, const TMap<FString, FString>& Metadata, FGFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Clear Leaderboard Entry", Category = "GameFuse|User")
 	void BP_ClearLeaderboardEntry(const FString& LeaderboardName, FBP_GFApiCallback Callback);
@@ -160,13 +162,17 @@ public:
 	FGuid FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, FGFApiCallback Callback);
 
 	//> Internal
-	TObjectPtr<UAPIRequestHandler> GetRequestHandler() { return RequestHandler; }
+	TObjectPtr<UAPIRequestHandler> GetRequestHandler()
+	{
+		return RequestHandler;
+	}
 	void InternalResponseManager(FGFAPIResponse ResponseData);
 
 private:
+
 	FGFUserData UserData;
 	TMap<FString, FString> Attributes;
-	TMap<FString, FString> DirtyAttributes;
+	TMap<FString, FString> LocalAttributes;
 	TArray<FGFStoreItem> PurchasedStoreItems;
 	TArray<FGFLeaderboardEntry> LeaderboardEntries;
 
