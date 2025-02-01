@@ -140,54 +140,86 @@ void FGameFuseGroupsSpec::Define()
 	});
 
 	It("fetches all groups", [this]() {
-		// First create a test group
+		// First create two test groups
 		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-			FGFGroup GroupData;
-			GroupData.Name = "Test Group for FetchAll";
-			GroupData.GroupType = "Test";
-			GroupData.MaxGroupSize = 10;
-			GroupData.bCanAutoJoin = true;
-			GroupData.bSearchable = true;
+			// Create first group
+			FGFGroup Group1Data;
+			Group1Data.Name = "Test Group 1 for FetchAll";
+			Group1Data.GroupType = "Test";
+			Group1Data.MaxGroupSize = 10;
+			Group1Data.bCanAutoJoin = true;
+			Group1Data.bSearchable = true;
 
-			FGFGroupCallback CreateCallback;
-			CreateCallback.BindLambda([this](const FGFGroup& CreatedGroup) {
-				AddInfo("FetchAllGroups 1 :: Create Initial Group");
-				TestTrue("Created group has valid id", CreatedGroup.Id != 0);
-				TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for FetchAll");
+			FGFGroupCallback CreateCallback1;
+			CreateCallback1.BindLambda([this](const FGFGroup& CreatedGroup) {
+				AddInfo("FetchAllGroups 1 :: Create First Group");
+				TestTrue("Created group 1 has valid id", CreatedGroup.Id != 0);
+				TestEqual("Created group 1 has correct name", CreatedGroup.Name, "Test Group 1 for FetchAll");
 			});
 
 			ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-															  GameFuseGroups->CreateGroup(GroupData, CreateCallback)));
+															  GameFuseGroups->CreateGroup(Group1Data, CreateCallback1)));
 
-			// After creating group, fetch all groups to verify
+			// Create second group with different settings
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				FGFGroupListCallback FetchCallback;
-				FetchCallback.BindLambda([this](const TArray<FGFGroup>& Groups) {
-					AddInfo("FetchAllGroups 2 :: Verify Groups List");
-					TestTrue("Has at least one group", Groups.Num() > 0);
-					TestEqual("Internal storage matches callback data", Groups, GameFuseGroups->GetAllGroups());
+				FGFGroup Group2Data;
+				Group2Data.Name = "Test Group 2 for FetchAll";
+				Group2Data.GroupType = "Clan";
+				Group2Data.MaxGroupSize = 20;
+				Group2Data.bCanAutoJoin = false;
+				Group2Data.bIsInviteOnly = true;
+				Group2Data.bSearchable = true;
 
-					// Find our created group in the list
-					bool bFoundGroup = false;
-					for (const FGFGroup& Group : Groups) {
-						TestTrue("Each group has valid id", Group.Id != 0);
-						TestFalse("Each group has name", Group.Name.IsEmpty());
-						TestFalse("Each group has type", Group.GroupType.IsEmpty());
-
-						if (Group.Name == "Test Group for FetchAll") {
-							bFoundGroup = true;
-							TestEqual("Found group has correct name", Group.Name, "Test Group for FetchAll");
-							TestEqual("Found group has correct type", Group.GroupType, "Test");
-							TestEqual("Found group has correct max size", Group.MaxGroupSize, 10);
-							TestTrue("Found group can auto join", Group.bCanAutoJoin);
-							TestTrue("Found group is searchable", Group.bSearchable);
-						}
-					}
-					TestTrue("Created group was found in list", bFoundGroup);
+				FGFGroupCallback CreateCallback2;
+				CreateCallback2.BindLambda([this](const FGFGroup& CreatedGroup) {
+					AddInfo("FetchAllGroups 2 :: Create Second Group");
+					TestTrue("Created group 2 has valid id", CreatedGroup.Id != 0);
+					TestEqual("Created group 2 has correct name", CreatedGroup.Name, "Test Group 2 for FetchAll");
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+															  GameFuseGroups->CreateGroup(Group2Data, CreateCallback2)));
+
+				// After creating both groups, fetch all groups to verify
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					FGFGroupListCallback FetchCallback;
+					FetchCallback.BindLambda([this](const TArray<FGFGroup>& Groups) {
+						AddInfo("FetchAllGroups 3 :: Verify Groups List");
+						TestTrue("Has at least two groups", Groups.Num() >= 2);
+						TestEqual("Internal storage matches callback data", Groups, GameFuseGroups->GetAllGroups());
+
+						// Find our created groups in the list
+						bool bFoundGroup1 = false;
+						bool bFoundGroup2 = false;
+						for (const FGFGroup& Group : Groups) {
+							TestTrue("Each group has valid id", Group.Id != 0);
+							TestFalse("Each group has name", Group.Name.IsEmpty());
+							TestFalse("Each group has type", Group.GroupType.IsEmpty());
+
+							if (Group.Name == "Test Group 1 for FetchAll") {
+								bFoundGroup1 = true;
+								TestEqual("Group 1 has correct type", Group.GroupType, "Test");
+								TestEqual("Group 1 has correct max size", Group.MaxGroupSize, 10);
+								TestTrue("Group 1 can auto join", Group.bCanAutoJoin);
+								TestTrue("Group 1 is searchable", Group.bSearchable);
+							}
+							else if (Group.Name == "Test Group 2 for FetchAll") {
+								bFoundGroup2 = true;
+								TestEqual("Group 2 has correct type", Group.GroupType, "Clan");
+								TestEqual("Group 2 has correct max size", Group.MaxGroupSize, 20);
+								TestFalse("Group 2 cannot auto join", Group.bCanAutoJoin);
+								TestTrue("Group 2 is invite only", Group.bIsInviteOnly);
+								TestTrue("Group 2 is searchable", Group.bSearchable);
+							}
+						}
+						TestTrue("First created group was found in list", bFoundGroup1);
+						TestTrue("Second created group was found in list", bFoundGroup2);
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
 																  GameFuseGroups->FetchAllGroups(FetchCallback)));
+					return true;
+				}));
 				return true;
 			}));
 			return true;
