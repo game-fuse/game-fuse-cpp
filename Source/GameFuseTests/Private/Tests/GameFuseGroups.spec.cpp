@@ -1,6 +1,6 @@
-#include "Library/GameFuseLog.h"
 #if WITH_AUTOMATION_TESTS
 
+#include "Library/GameFuseLog.h"
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Engine/GameInstance.h"
@@ -178,7 +178,7 @@ void FGameFuseGroupsSpec::Define()
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-															  GameFuseGroups->CreateGroup(Group2Data, CreateCallback2)));
+																  GameFuseGroups->CreateGroup(Group2Data, CreateCallback2)));
 
 				// After creating both groups, fetch all groups to verify
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
@@ -202,8 +202,7 @@ void FGameFuseGroupsSpec::Define()
 								TestEqual("Group 1 has correct max size", Group.MaxGroupSize, 10);
 								TestTrue("Group 1 can auto join", Group.bCanAutoJoin);
 								TestTrue("Group 1 is searchable", Group.bSearchable);
-							}
-							else if (Group.Name == "Test Group 2 for FetchAll") {
+							} else if (Group.Name == "Test Group 2 for FetchAll") {
 								bFoundGroup2 = true;
 								TestEqual("Group 2 has correct type", Group.GroupType, "Clan");
 								TestEqual("Group 2 has correct max size", Group.MaxGroupSize, 20);
@@ -217,7 +216,7 @@ void FGameFuseGroupsSpec::Define()
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-																  GameFuseGroups->FetchAllGroups(FetchCallback)));
+																	  GameFuseGroups->FetchAllGroups(FetchCallback)));
 					return true;
 				}));
 				return true;
