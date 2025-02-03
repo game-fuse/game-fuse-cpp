@@ -25,9 +25,9 @@ public:
 	// Mark a message as read
 	FGuid MarkMessageAsRead(int32 MessageId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	// Fetch a specific chat
-	FGuid FetchChat(int32 ChatId, const FGFUserData& UserData, const FGFApiCallback& Callback);
-
 	// Fetch all chats for the current user
 	FGuid FetchAllChats(const FGFUserData& UserData, const int32 Page, const FGFApiCallback& Callback);
+
+	// Fetch paginated messages for a specific chat
+	FGuid FetchMessages(int32 ChatId, const FGFUserData& UserData, const int32 Page, const FGFApiCallback& Callback);
 };

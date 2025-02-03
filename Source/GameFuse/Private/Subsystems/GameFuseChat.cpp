@@ -33,7 +33,6 @@ FGuid UGameFuseChat::MarkMessageAsRead(int32 MessageId, FGFSuccessCallback Succe
 
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		// todo: investigate just calling broadcasting successs ehre and not tracking simple success callbacks
 		HandleSuccessResponse(Response);
 	});
 
@@ -44,27 +43,7 @@ FGuid UGameFuseChat::MarkMessageAsRead(int32 MessageId, FGFSuccessCallback Succe
 	return RequestId;
 }
 
-FGuid UGameFuseChat::FetchChat(const int32 ChatId, FGFChatCallback TypedCallback)
-{
-	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
-	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
-		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch a chat"));
-		return FGuid();
-	}
-
-	FGFApiCallback InternalCallback;
-	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleChatResponse(Response);
-	});
-
-	FGuid RequestId = RequestHandler->FetchChat(ChatId, GameFuseUser->GetUserData(), InternalCallback);
-	if (TypedCallback.IsBound()) {
-		ChatCallbacks.Add(RequestId, TypedCallback);
-	}
-	return RequestId;
-}
-
-FGuid UGameFuseChat::FetchAllChats(FGFChatListCallback TypedCallback, int32 Page)
+FGuid UGameFuseChat::FetchAllChats(int32 Page, FGFChatListCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
@@ -284,17 +263,7 @@ void UGameFuseChat::BP_SendMessage(int32 ChatId, const FString& Message, FGFSucc
 void UGameFuseChat::BP_MarkMessageAsRead(int32 MessageId, FGFSuccessCallback Callback)
 {
 	FGFSuccessCallback TypedCallback;
-
 	MarkMessageAsRead(MessageId, TypedCallback);
-}
-
-void UGameFuseChat::BP_FetchChat(int32 ChatId, FGFSuccessCallback Callback)
-{
-	FGFChatCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const FGFChat&) {
-		Callback.ExecuteIfBound(true);
-	});
-	FetchChat(ChatId, TypedCallback);
 }
 
 void UGameFuseChat::BP_FetchAllChats(FGFSuccessCallback Callback, int32 Page)
@@ -303,5 +272,72 @@ void UGameFuseChat::BP_FetchAllChats(FGFSuccessCallback Callback, int32 Page)
 	TypedCallback.BindLambda([Callback](const TArray<FGFChat>&) {
 		Callback.ExecuteIfBound(true);
 	});
-	FetchAllChats(TypedCallback, Page);
+	FetchAllChats(Page);
+}
+
+FGuid UGameFuseChat::FetchMessages(int32 ChatId, FGFMessageListCallback TypedCallback, int32 Page)
+{
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch messages"));
+		return FGuid();
+	}
+
+	FGFApiCallback InternalCallback;
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleMessageListResponse(Response);
+	});
+
+	FGuid RequestId = RequestHandler->FetchMessages(ChatId, GameFuseUser->GetUserData(), Page, InternalCallback);
+	if (TypedCallback.IsBound()) {
+		MessageListCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
+}
+
+void UGameFuseChat::HandleMessageListResponse(FGFAPIResponse Response)
+{
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to fetch messages: %s"), *Response.ResponseStr);
+		if (MessageListCallbacks.Contains(Response.RequestId)) {
+			MessageListCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFMessage>());
+			MessageListCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	// Clear existing messages
+	ChatMessages.Empty();
+
+	// If the response is empty or indicates no messages, return empty array
+	if (Response.ResponseStr.IsEmpty() || Response.ResponseStr == "[]" || Response.ResponseStr == "null") {
+		if (MessageListCallbacks.Contains(Response.RequestId)) {
+			MessageListCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFMessage>());
+			MessageListCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	if (!GameFuseUtilities::ConvertJsonToMessages(ChatMessages, Response.ResponseStr)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse messages list"));
+		if (MessageListCallbacks.Contains(Response.RequestId)) {
+			MessageListCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFMessage>());
+			MessageListCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	if (MessageListCallbacks.Contains(Response.RequestId)) {
+		MessageListCallbacks[Response.RequestId].ExecuteIfBound(ChatMessages);
+		MessageListCallbacks.Remove(Response.RequestId);
+	}
+}
+
+void UGameFuseChat::BP_FetchMessages(int32 ChatId, FGFSuccessCallback Callback, int32 Page)
+{
+	FGFMessageListCallback TypedCallback;
+	TypedCallback.BindLambda([Callback](const TArray<FGFMessage>&) {
+		Callback.ExecuteIfBound(true);
+	});
+	FetchMessages(ChatId, TypedCallback, Page);
 }

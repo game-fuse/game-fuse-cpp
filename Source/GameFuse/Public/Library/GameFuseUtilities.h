@@ -155,6 +155,14 @@ public:
 	 */
 	static bool ConvertJsonToChats(TArray<FGFChat>& OutChats, const FString& JsonString);
 
+	/**
+	 * Converts a JSON string into an array of Messages
+	 * @param OutMessages Array to store the converted messages
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToMessages(TArray<FGFMessage>& OutMessages, const FString& JsonString);
+
 #pragma endregion
 
 #pragma region Game Rounds

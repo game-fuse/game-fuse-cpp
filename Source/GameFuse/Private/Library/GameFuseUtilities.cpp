@@ -492,6 +492,38 @@ bool GameFuseUtilities::ConvertJsonToChats(TArray<FGFChat>& OutChats, const FStr
 	return true;
 }
 
+bool GameFuseUtilities::ConvertJsonToMessages(TArray<FGFMessage>& OutMessages, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse messages JSON string"));
+		return false;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* JsonMessages;
+	if (!JsonObject->TryGetArrayField(TEXT("messages"), JsonMessages)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to get messages array from JSON"));
+		return false;
+	}
+
+	OutMessages.Empty();
+	for (const TSharedPtr<FJsonValue>& JsonValue : *JsonMessages) {
+		const TSharedPtr<FJsonObject>& MessageObject = JsonValue->AsObject();
+		if (!MessageObject.IsValid()) {
+			UE_LOG(LogGameFuse, Error, TEXT("Invalid message object in JSON array"));
+			continue;
+		}
+
+		FGFMessage Message;
+		if (ConvertJsonToMessage(Message, MessageObject)) {
+			OutMessages.Add(Message);
+		}
+	}
+
+	return true;
+}
+
 #pragma endregion
 
 #pragma region Game Rounds
@@ -1044,4 +1076,5 @@ bool GameFuseUtilities::ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObjec
 	return true;
 }
 
+#pragma endregion
 #pragma endregion
