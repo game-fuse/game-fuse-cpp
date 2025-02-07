@@ -9,6 +9,8 @@
 
 #include "ApiRequestHandler.generated.h"
 
+// Single-cast delegates for user callbacks
+DECLARE_DYNAMIC_DELEGATE_OneParam(FGFSuccessCallback, bool, bSuccess);
 
 /**
  * @brief BP Specific Callback Delegate. Only bound to the Delegate pin on a given node.
@@ -53,10 +55,16 @@ public:
 		return ActiveRequests.Num();
 	}
 
+
+	static bool VerifyUserData(const FGFUserData& UserData);
+	static bool VerifyGameData(const FGFGameData& GameData);
+
 protected:
 
 	// Sends an HTTP Request, optionally with a JSON object as the body, returns unique Request ID
-	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject, ESPMode::ThreadSafe>& Body = nullptr);
+	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject>& Body = nullptr);
+
+	void SetAuthHeader(const FString& AuthToken);
 
 private:
 

@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "API/UserAPIHandler.h"
+
+#include "GenericPlatform/GenericPlatformHttp.h"
 #include "Library/GameFuseLog.h"
 #include "Library/GameFuseUtilities.h"
 
@@ -32,142 +32,239 @@ FGuid UUserAPIHandler::SignIn(const FString& Email, const FString& Password, con
 	return SendRequest(ApiEndpoint, "POST", Callback, Body);
 }
 
-FGuid UUserAPIHandler::AddCredits(const int AddCredits, const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::AddCredits(const int32 Credits, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_credits?authentication_token=%s&credits=%d")
-	                                            , UserData.Id, *UserData.AuthenticationToken, AddCredits);
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
 
-	UE_LOG(LogGameFuse, Verbose, TEXT("Adding Credits: %d"), AddCredits);
-	return SendRequest(ApiEndpoint, "POST", Callback);
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_credits"), UserData.Id);
+
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetNumberField("credits", Credits);
+
+	UE_LOG(LogGameFuse, Verbose, TEXT("Adding Credits: %d"), Credits);
+	return SendRequest(ApiEndpoint, "POST", Callback, JsonObject);
 }
 
 FGuid UUserAPIHandler::SetCredits(const int SetCredits, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/set_credits?authentication_token=%s&credits=%d")
-	                                            , UserData.Id, *UserData.AuthenticationToken, SetCredits);
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
+
+
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/set_credits"), UserData.Id);
+	// add attributes object to body
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetNumberField("credits", SetCredits);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Setting Credits: %d"), SetCredits);
-	return SendRequest(ApiEndpoint, "POST", Callback);
+	return SendRequest(ApiEndpoint, "POST", Callback, JsonObject);
 }
 
-FGuid UUserAPIHandler::AddScore(const int AddScore, const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::AddScore(const int32 Score, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_score?authentication_token=%s&score=%d")
-	                                            , UserData.Id, *UserData.AuthenticationToken, AddScore);
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
 
-	UE_LOG(LogGameFuse, Verbose, TEXT("Adding Scores: %d"), AddScore);
-	return SendRequest(ApiEndpoint, "POST", Callback);
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_score"), UserData.Id);
+
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetNumberField("score", Score);
+
+	UE_LOG(LogGameFuse, Verbose, TEXT("Adding Score: %d"), Score);
+	return SendRequest(ApiEndpoint, "POST", Callback, JsonObject);
 }
 
-FGuid UUserAPIHandler::SetScore(const int SetScore, const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::SetScore(const int32 Score, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/set_score?authentication_token=%s&score=%d")
-	                                            , UserData.Id, *UserData.AuthenticationToken, SetScore);
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
 
-	UE_LOG(LogGameFuse, Verbose, TEXT("Setting Scores: %d"), SetScore);
-	return SendRequest(ApiEndpoint, "POST", Callback);
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/set_score"), UserData.Id);
+
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetNumberField("score", Score);
+
+	UE_LOG(LogGameFuse, Verbose, TEXT("Setting Score: %d"), Score);
+	return SendRequest(ApiEndpoint, "POST", Callback, JsonObject);
 }
 
 FGuid UUserAPIHandler::SetAttribute(const FString& SetKey, const FString& SetValue, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_game_user_attribute?authentication_token=%s&key=%s&value=%s")
-	                                            , UserData.Id, *UserData.AuthenticationToken, *SetKey, *SetValue);
-
-	UE_LOG(LogGameFuse, Verbose, TEXT("Setting Attribute: %s : %s"), *SetKey, *SetValue);
-	return SendRequest(ApiEndpoint, "POST", Callback);
-}
-
-FGuid UUserAPIHandler::SyncLocalAttributes(const TMap<FString, FString>& DirtyAttributes, const FGFUserData& UserData, const FGFApiCallback& Callback)
-{
-	const FString Json_Dirty_Attributes = GameFuseUtilities::MakeStrRequestBody(UserData.AuthenticationToken, "attributes", DirtyAttributes);
-
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_game_user_attribute")
-	                                            , UserData.Id);
-
-	UE_LOG(LogGameFuse, Verbose, TEXT("Syncing All Local Dirty Attributes: %s, %s"), *Json_Dirty_Attributes, *UserData.AuthenticationToken);
-
-	return SendRequest(ApiEndpoint, "POST", Callback);
-}
-
-FGuid UUserAPIHandler::RemoveAttribute(const FString& SetKey, const FGFUserData& UserData, const FGFApiCallback& Callback)
-{
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/remove_game_user_attributes?authentication_token=%s&key=%s")
-	                                            , UserData.Id, *UserData.AuthenticationToken, *SetKey);
-
-	UE_LOG(LogGameFuse, Verbose, TEXT("Removing Attribute: %s"), *SetKey);
-
-	return SendRequest(ApiEndpoint, "GET", Callback);
-}
-
-FGuid UUserAPIHandler::PurchaseStoreItem(const int StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback)
-{
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/purchase_game_user_store_item?authentication_token=%s&store_item_id=%d")
-	                                            , UserData.Id, *UserData.AuthenticationToken, StoreItemId);
-
-	UE_LOG(LogGameFuse, Verbose, TEXT("Purchasing Store Item: %d"), StoreItemId);
-
-	return SendRequest(ApiEndpoint, "POST", Callback);
-}
-
-FGuid UUserAPIHandler::RemoveStoreItem(const int StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback)
-{
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/remove_game_user_store_item?authentication_token=%s&store_item_id=%d")
-	                                            , UserData.Id, *UserData.AuthenticationToken, StoreItemId);
-
-	UE_LOG(LogGameFuse, Verbose, TEXT("Removing Store Item: %d"), StoreItemId);
-
-	return SendRequest(ApiEndpoint, "GET", Callback);
-}
-
-FGuid UUserAPIHandler::AddLeaderboardEntry(const FString& LeaderboardName, const int OurScore, TMap<FString, FString>* ExtraAttributes, const FGFUserData& UserData, const FGFApiCallback& Callback)
-{
-	FString ExtraAttributesStr = "";
-
-
-	if (ExtraAttributes != nullptr)
+	if (!VerifyUserData(UserData))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("TODO:: FIX EXTRA ATTRIBUTE ENCODING"))
-		//TODO:: find cross platform way to encode Attribs
-		const FString ExtraAttributes_Encoded = ""; //FPlatformHttp::UrlEncode(GameFuseUtilities::ConvertMapToJsonStr(*ExtraAttributes));
-		ExtraAttributesStr = FString::Printf(TEXT("&extra_attributes=%s"), *ExtraAttributes_Encoded);
+		return FGuid();
 	}
 
-	const FString ApiEndpoint = FString::Printf(
-	TEXT("/users/%d/add_leaderboard_entry?authentication_token=%s&score=%d&leaderboard_name=%s%s")
-	, UserData.Id, *UserData.AuthenticationToken, OurScore, *LeaderboardName, *ExtraAttributesStr);
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_game_user_attribute"), UserData.Id);
 
-	UE_LOG(LogGameFuse, Verbose, TEXT("User Adding Leaderboard : %s : %d"), *LeaderboardName, OurScore);
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetStringField("key", SetKey);
+	JsonObject->SetStringField("value", SetValue);
 
-	return SendRequest(ApiEndpoint, "POST", Callback);
+	UE_LOG(LogGameFuse, Verbose, TEXT("Setting Attribute: %s : %s"), *SetKey, *SetValue);
+	return SendRequest(ApiEndpoint, "POST", Callback, JsonObject);
+}
+
+FGuid UUserAPIHandler::SetAttributes(const TMap<FString, FString>& Attributes, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
+
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_game_user_attribute"), UserData.Id);
+
+	// Create JSON object for batch attributes
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	TArray<TSharedPtr<FJsonValue>> AttributesArray;
+
+	// Convert attributes map to array of key-value objects
+	for (const auto& Pair : Attributes)
+	{
+		TSharedPtr<FJsonObject> AttributeObject = MakeShareable(new FJsonObject);
+		AttributeObject->SetStringField("key", Pair.Key);
+		AttributeObject->SetStringField("value", Pair.Value);
+		AttributesArray.Add(MakeShareable(new FJsonValueObject(AttributeObject)));
+	}
+
+	JsonObject->SetArrayField("attributes", AttributesArray);
+
+	UE_LOG(LogGameFuse, Verbose, TEXT("Setting %d attributes in batch"), Attributes.Num());
+	return SendRequest(ApiEndpoint, "POST", Callback, JsonObject);
+}
+
+FGuid UUserAPIHandler::RemoveAttribute(const FString& Key, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
+
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/remove_game_user_attributes?game_user_attribute_key=%s"), UserData.Id, *Key);
+
+	UE_LOG(LogGameFuse, Verbose, TEXT("Removing Attribute: %s"), *Key);
+	return SendRequest(ApiEndpoint, "GET", Callback);
+}
+
+FGuid UUserAPIHandler::PurchaseStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
+
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/purchase_game_user_store_item"), UserData.Id);
+
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetNumberField("store_item_id", StoreItemId);
+
+	UE_LOG(LogGameFuse, Verbose, TEXT("Purchasing Store Item: %d"), StoreItemId);
+	return SendRequest(ApiEndpoint, "POST", Callback, JsonObject);
+}
+
+FGuid UUserAPIHandler::RemoveStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
+
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/remove_game_user_store_item?store_item_id=%d"), UserData.Id, StoreItemId);
+
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetNumberField("store_item_id", StoreItemId);
+
+	UE_LOG(LogGameFuse, Verbose, TEXT("Removing Store Item: %d"), StoreItemId);
+	return SendRequest(ApiEndpoint, "GET", Callback);
+}
+
+FGuid UUserAPIHandler::AddLeaderboardEntry(const FString& LeaderboardName, const int Score, const TMap<FString, FString>& Metadata, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	FGFLeaderboardEntry LeaderboardEntry;
+	LeaderboardEntry.LeaderboardName = LeaderboardName;
+	LeaderboardEntry.Score = Score;
+	LeaderboardEntry.Metadata = Metadata;
+
+	return AddLeaderboardEntry(LeaderboardEntry, UserData, Callback);
+}
+
+FGuid UUserAPIHandler::AddLeaderboardEntry(const FGFLeaderboardEntry& LeaderboardEntry, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
+
+	SetAuthHeader(UserData.AuthenticationToken);
+
+	// Create JSON body with all parameters
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	if (GameFuseUtilities::ConvertLeaderboardItemToJson(LeaderboardEntry, JsonObject))
+	{
+		const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_leaderboard_entry"), UserData.Id);
+
+		UE_LOG(LogGameFuse, Verbose, TEXT("User Adding Leaderboard : %s : %d"), *LeaderboardEntry.LeaderboardName, LeaderboardEntry.Score);
+		return SendRequest(ApiEndpoint, "POST", Callback, JsonObject);
+	}
+	return FGuid();
 }
 
 FGuid UUserAPIHandler::ClearLeaderboardEntry(const FString& LeaderboardName, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/clear_my_leaderboard_entries?authentication_token=%s&leaderboard_name=%s")
-	                                            , UserData.Id, *UserData.AuthenticationToken, *LeaderboardName);
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
+
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/clear_my_leaderboard_entries"), UserData.Id);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Clearing Leaderboard : %s"), *LeaderboardName);
-
 	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-FGuid UUserAPIHandler::FetchMyLeaderboardEntries(const int Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	const FString OnePerUserStr = (bOnePerUser) ? TEXT("true") : TEXT("false");
-	const FString ApiEndpoint = FString::Printf(
-	TEXT("/users/%d/leaderboard_entries?authentication_token=%s&limit=%d&one_per_user=%s")
-	, UserData.Id, *UserData.AuthenticationToken, Limit, *OnePerUserStr);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/leaderboard_entries?authentication_token=%s&limit=%d&one_per_user=%s"), UserData.Id, *UserData.AuthenticationToken, Limit, *OnePerUserStr);
 
-	UE_LOG(LogGameFuse, Verbose, TEXT("Fetching My Leaderboard : %d : %s"), Limit, *OnePerUserStr);
+	// SetAuthHeader(UserData.AuthenticationToken);
+	// const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/leaderboard_entries?limit=%d&one_per_user=%s"),UserData.Id, Limit, bOnePerUser ? TEXT("true") : TEXT("false"));
 
+	UE_LOG(LogGameFuse, Verbose, TEXT("Fetching My Leaderboard : %d : %s"), Limit, bOnePerUser ? TEXT("true") : TEXT("false"));
 	return SendRequest(ApiEndpoint, "GET", Callback);
 }
 
 
 FGuid UUserAPIHandler::FetchAttributes(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/game_user_attributes?authentication_token=%s")
-	                                            , UserData.Id, *UserData.AuthenticationToken);
+
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
+
+	SetAuthHeader(UserData.AuthenticationToken);
+
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/game_user_attributes"), UserData.Id);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Fetching Attributes"));
 
@@ -176,8 +273,14 @@ FGuid UUserAPIHandler::FetchAttributes(const FGFUserData& UserData, const FGFApi
 
 FGuid UUserAPIHandler::FetchPurchaseStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/game_user_store_items?authentication_token=%s")
-	                                            , UserData.Id, *UserData.AuthenticationToken);
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
+
+	SetAuthHeader(UserData.AuthenticationToken);
+
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/game_user_store_items"), UserData.Id);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Fetching Purchased Store Items"));
 

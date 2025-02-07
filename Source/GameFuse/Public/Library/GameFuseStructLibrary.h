@@ -33,7 +33,6 @@ struct FGFGameData
 	{
 		return Id == Other.Id && Token == Other.Token && Name == Other.Name && Description == Other.Description;
 	}
-
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|UserData")
@@ -98,11 +97,7 @@ struct FGFStoreItem
 
 	bool operator==(const FGFStoreItem& Other) const
 	{
-		return Name == Other.Name &&
-		Category == Other.Category &&
-		Description == Other.Description &&
-		Cost == Other.Cost &&
-		Id == Other.Id;
+		return Name == Other.Name && Category == Other.Category && Description == Other.Description && Cost == Other.Cost && Id == Other.Id;
 	}
 };
 
@@ -126,11 +121,10 @@ struct FGFLeaderboardEntry
 	int32 GameUserId = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
-	FString ExtraAttributes = "";
+	TMap<FString, FString> Metadata;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString DateTime = "";
-
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|Leaderboard")
@@ -166,10 +160,13 @@ struct FGFAPIResponse
 	FString ResponseStr = "";
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
-	FString RequestId = "";
+	FGuid RequestId;
 	FGFAPIResponse() = default;
 
-	FGFAPIResponse(bool _bSuccess, const FString& _Response, const FString& _RequestId = "")
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
+	int ResponseCode = 0;
+
+	FGFAPIResponse(bool _bSuccess, const FString& _Response, const FGuid& _RequestId = FGuid(), int _ResponseCode = 0)
 	{
 		bSuccess = _bSuccess;
 		ResponseStr = _Response;

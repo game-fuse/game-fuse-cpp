@@ -15,6 +15,24 @@ UAPIRequestHandler::UAPIRequestHandler()
 }
 
 
+bool UAPIRequestHandler::VerifyUserData(const FGFUserData& UserData)
+{
+	if (UserData.Id == 0) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid user ID: %d"), UserData.Id);
+		return false;
+	}
+	return true;
+}
+
+bool UAPIRequestHandler::VerifyGameData(const FGFGameData& GameData)
+{
+	if (GameData.Id == 0) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid game ID: %d"), GameData.Id);
+		return false;
+	}
+	return true;
+}
+
 FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject>& Body)
 {
 
@@ -59,15 +77,15 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	// Add Default Headers
 	AddCommonHeaders(HttpRequest);
 
-	//Capture request in the lambda to prevent collection before handle response is called.
+	// Capture request in the lambda to prevent collection before handle response is called.
 	HttpRequest->OnProcessRequestComplete().BindLambda([this, RequestId](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
 		HandleResponse(Request, Response, bWasSuccessful, RequestId);
 	});
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Request [%s] to endpoint: %s"), *RequestId.ToString(), *Endpoint);
-
-	//Store in maps for retrieval in response
-	// Add to ActiveRequests map
+	GameFuseUtilities::LogRequest(HttpRequest);
+	// Store in maps for retrieval in response
+	//  Add to ActiveRequests map
 	ActiveRequests.Add(RequestId, HttpRequest);
 
 	// Store the response delegate
@@ -77,16 +95,20 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid RequestId or OnResponseReceived callback, request not sent"));
 		return RequestId;
 	}
-
 	// Execute request asynchronously
 	HttpRequest->ProcessRequest();
 
 	return RequestId;
 }
 
+void UAPIRequestHandler::SetAuthHeader(const FString& AuthToken)
+{
+	CommonHeaders.Add(TEXT("authentication-token"), AuthToken);
+}
+
 void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, const bool bWasSuccessful, const FGuid& RequestId)
 {
-	//error checking
+	// error checking
 	if (!ActiveRequests.Contains(RequestId)) {
 		UE_LOG(LogGameFuse, Log, TEXT("Got response without an active request"));
 	}
@@ -97,8 +119,17 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 	}
 
 	if (!Response.IsValid()) {
-		UE_LOG(LogGameFuse, Error, TEXT("Invalid response for request:"));
+
+		ResponseDelegates.Contains(RequestId);
+		{
+			const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
+			FString ResponseContent = TEXT("Bad Response, Request is not valid");
+
+			Delegate.Broadcast(FGFAPIResponse(false, ResponseContent, RequestId, 404));
+			ResponseDelegates.Remove(RequestId);
+		}
 		GameFuseUtilities::LogRequest(Request);
+		ActiveRequests.Remove(RequestId);
 		return;
 	}
 
@@ -114,7 +145,7 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 		const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 		FString ResponseContent = bSuccessfulAndValid ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
 
-		Delegate.Broadcast(FGFAPIResponse(bSuccessfulAndValid && bIsGoodResponse, ResponseContent, RequestId.ToString()));
+		Delegate.Broadcast(FGFAPIResponse(bSuccessfulAndValid && bIsGoodResponse, ResponseContent, RequestId, ResponseCode));
 		ResponseDelegates.Remove(RequestId);
 	}
 

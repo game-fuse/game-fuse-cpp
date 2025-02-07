@@ -1,5 +1,5 @@
 /**
-*  Copyright (c) 2023-11-06 GameFuse
+ *  Copyright (c) 2023-11-06 GameFuse
  *  All rights reserved.
  *
  *  https://GameFuse.co/
@@ -7,9 +7,8 @@
  */
 
 #include "Library/GameFuseUtilities.h"
-#include "Library/GameFuseLog.h"
 #include "Interfaces/IHttpResponse.h"
-
+#include "Library/GameFuseLog.h"
 
 
 void GameFuseUtilities::ConvertJsonToMap(TMap<FString, FString>& InMap, const FString& JsonString)
@@ -20,23 +19,28 @@ void GameFuseUtilities::ConvertJsonToMap(TMap<FString, FString>& InMap, const FS
 	TSharedPtr<FJsonObject> JsonObject;
 	const TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonString);
 
-	if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid()) {
+	if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
+	{
 		// Reserve memory in the map to avoid reallocations
 		InMap.Reserve(JsonObject->Values.Num());
 
 		// Iterate over the JSON object's key-value pairs
-		for (const auto& JsonField : JsonObject->Values) {
+		for (const auto& JsonField : JsonObject->Values)
+		{
 			const FString& Key = JsonField.Key;
 			const TSharedPtr<FJsonValue>& JsonValue = JsonField.Value;
 
 			// Check if the JSON value is a string
-			if (JsonValue.IsValid() && JsonValue->Type == EJson::String) {
+			if (JsonValue.IsValid() && JsonValue->Type == EJson::String)
+			{
 				// Access the string value directly
 				const FString& Value = JsonValue->AsString();
 
 				// Add the key-value pair to the map without unnecessary copies
 				InMap.Emplace(Key, Value);
-			} else {
+			}
+			else
+			{
 				UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON value for key: %s \n Input String :\n %s"), *Key, *JsonString);
 			}
 		}
@@ -47,7 +51,8 @@ void GameFuseUtilities::ConvertJsonToMap(TMap<FString, FString>& InMap, const FS
 bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const TSharedPtr<FJsonObject>& JsonObject)
 {
 
-	if (!JsonObject.IsValid()) {
+	if (!JsonObject.IsValid())
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for GameData conversion"));
 		return false;
 	}
@@ -58,12 +63,12 @@ bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const TSh
 	JsonObject->TryGetStringField(TEXT("description"), InGameData.Description);
 
 	return true;
-
 }
 
 bool GameFuseUtilities::ConvertJsonToUserData(FGFUserData& InUserData, const TSharedPtr<FJsonObject>& JsonObject)
 {
-	if (!JsonObject.IsValid()) {
+	if (!JsonObject.IsValid())
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for UserData conversion"));
 		return false;
 	}
@@ -81,7 +86,8 @@ bool GameFuseUtilities::ConvertJsonToUserData(FGFUserData& InUserData, const TSh
 
 bool GameFuseUtilities::ConvertJsonToStoreItem(FGFStoreItem& InStoreItem, const TSharedPtr<FJsonValue>& JsonValue)
 {
-	if (JsonValue->Type != EJson::Object) {
+	if (JsonValue->Type != EJson::Object)
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("Fetching Store Items Failed to parse JSON Items"));
 		return false;
 	}
@@ -101,30 +107,73 @@ bool GameFuseUtilities::ConvertJsonToStoreItem(FGFStoreItem& InStoreItem, const 
 
 bool GameFuseUtilities::ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue)
 {
-	if (JsonValue->Type != EJson::Object) {
-		UE_LOG(LogGameFuse, Error, TEXT("Fetching Leaderboard Items Failed to parse JSON Items"));
+	if (JsonValue->Type != EJson::Object)
+	{
 		return false;
 	}
 
-	const TSharedPtr<FJsonObject> JsonObject = JsonValue->AsObject();
+	const TSharedPtr<FJsonObject>& JsonObject = JsonValue->AsObject();
 
-	JsonObject->TryGetStringField(TEXT("username"), InLeaderboardItem.Username);
-	JsonObject->TryGetStringField(TEXT("leaderboard_name"), InLeaderboardItem.LeaderboardName);
-	JsonObject->TryGetStringField(TEXT("extra_attributes"), InLeaderboardItem.ExtraAttributes);
+	InLeaderboardItem.LeaderboardName = JsonObject->GetStringField(TEXT("leaderboard_name"));
+	InLeaderboardItem.Username = JsonObject->GetStringField(TEXT("username"));
+	InLeaderboardItem.Score = JsonObject->GetNumberField(TEXT("score"));
+	InLeaderboardItem.GameUserId = JsonObject->GetNumberField(TEXT("game_user_id"));
+	InLeaderboardItem.DateTime = JsonObject->GetStringField(TEXT("created_at"));
 
-	JsonObject->TryGetNumberField(TEXT("score"), InLeaderboardItem.Score);
-	JsonObject->TryGetNumberField(TEXT("game_user_id"), InLeaderboardItem.GameUserId);
+	// Convert metadata from JSON
+	const TSharedPtr<FJsonObject>* MetadataObject;
+	if (JsonObject->TryGetObjectField(TEXT("metadata"), MetadataObject))
+	{
+		ConvertJsonObjectToStringMap(*MetadataObject, InLeaderboardItem.Metadata);
+	}
 
+	return true;
+}
+
+bool GameFuseUtilities::ConvertLeaderboardItemToJson(const FGFLeaderboardEntry& LeaderboardItem, TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (LeaderboardItem.LeaderboardName.IsEmpty())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Leaderboard name is required"));
+		return false;
+	}
+	JsonObject->SetStringField(TEXT("leaderboard_name"), LeaderboardItem.LeaderboardName);
+	JsonObject->SetNumberField(TEXT("score"), LeaderboardItem.Score);
+	// Convert metadata to JSON
+	if (!LeaderboardItem.Metadata.IsEmpty())
+	{
+		TSharedPtr<FJsonObject> MetadataObject = ConvertMapToJsonObject(LeaderboardItem.Metadata);
+		JsonObject->SetObjectField(TEXT("metadata"), MetadataObject);
+	}
 
 	return true;
 }
 
 
+#pragma region Utility Functions
+
+TSharedPtr<FJsonObject> GameFuseUtilities::ConvertMapToJsonObject(const TMap<FString, FString>& Map)
+{
+	if (Map.Num() == 0)
+	{
+		return nullptr;
+	}
+
+
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+	for (const auto& Pair : Map)
+	{
+		JsonObject->SetStringField(Pair.Key, Pair.Value);
+	}
+	return JsonObject;
+}
+
 FString GameFuseUtilities::ConvertMapToJsonStr(const TMap<FString, FString>& OurMap)
 {
 	const TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
-	for (const TPair<FString, FString>& Pair : OurMap) {
+	for (const TPair<FString, FString>& Pair : OurMap)
+	{
 		JsonObject->SetStringField(Pair.Key, Pair.Value);
 	}
 
@@ -146,7 +195,8 @@ FString GameFuseUtilities::MakeStrRequestBody(const FString& AuthenticationToken
 	TArray<TSharedPtr<FJsonValue>> AttributesArray;
 
 	// Populate the array with attributes
-	for (const auto& Attribute : OurMap) {
+	for (const auto& Attribute : OurMap)
+	{
 		TSharedPtr<FJsonObject> AttrObject = MakeShareable(new FJsonObject());
 		AttrObject->SetStringField(TEXT("key"), Attribute.Key);
 		AttrObject->SetStringField(TEXT("value"), Attribute.Value);
@@ -167,16 +217,20 @@ FString GameFuseUtilities::MakeStrRequestBody(const FString& AuthenticationToken
 
 EGFCoreAPIResponseType GameFuseUtilities::DetermineCoreAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("game_variables"))) {
+	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("game_variables")))
+	{
 		return EGFCoreAPIResponseType::SetUpGame;
 	}
-	if (JsonObject->HasField(TEXT("leaderboard_entries"))) {
+	if (JsonObject->HasField(TEXT("leaderboard_entries")))
+	{
 		return EGFCoreAPIResponseType::ListLeaderboardEntries;
 	}
-	if (JsonObject->HasField(TEXT("store_items"))) {
+	if (JsonObject->HasField(TEXT("store_items")))
+	{
 		return EGFCoreAPIResponseType::ListStoreItems;
 	}
-	if (JsonObject->HasField(TEXT("mailer_response"))) {
+	if (JsonObject->HasField(TEXT("mailer_response")))
+	{
 		return EGFCoreAPIResponseType::ForgotPassword;
 	}
 	return EGFCoreAPIResponseType::None;
@@ -184,22 +238,28 @@ EGFCoreAPIResponseType GameFuseUtilities::DetermineCoreAPIResponseType(const TSh
 
 EGFUserAPIResponseType GameFuseUtilities::DetermineUserAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("username"))) {
+	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("username")) && JsonObject->HasField(TEXT("number_of_logins")))
+	{
 		return EGFUserAPIResponseType::Login;
 	}
-	if (JsonObject->HasField(TEXT("game_user_attributes"))) {
+	if (JsonObject->HasField(TEXT("game_user_attributes")))
+	{
 		return EGFUserAPIResponseType::Attributes;
 	}
-	if (JsonObject->HasField(TEXT("game_user_store_items"))) {
+	if (JsonObject->HasField(TEXT("game_user_store_items")))
+	{
 		return EGFUserAPIResponseType::StoreItems;
 	}
-	if (JsonObject->HasField(TEXT("leaderboard_entries"))) {
+	if (JsonObject->HasField(TEXT("leaderboard_entries")))
+	{
 		return EGFUserAPIResponseType::LeaderboardEntries;
 	}
-	if (JsonObject->HasField(TEXT("credits"))) {
+	if (JsonObject->HasField(TEXT("credits")))
+	{
 		return EGFUserAPIResponseType::Credits;
 	}
-	if (JsonObject->HasField(TEXT("score"))) {
+	if (JsonObject->HasField(TEXT("score")))
+	{
 		return EGFUserAPIResponseType::Score;
 	}
 	return EGFUserAPIResponseType::None;
@@ -209,13 +269,15 @@ void GameFuseUtilities::LogRequest(FHttpRequestPtr HttpRequest)
 {
 	UE_LOG(LogGameFuse, Log, TEXT("=========   URL   ========= \n %s"), *(HttpRequest->GetURL()));
 	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
-	for (const FString& currHeader : HttpRequest->GetAllHeaders()) {
+	for (const FString& currHeader : HttpRequest->GetAllHeaders())
+	{
 		UE_LOG(LogGameFuse, Log, TEXT("%s"), *currHeader);
 	}
 
 	// Log the content body if it exists
 	TArray<uint8> ContentArray = HttpRequest->GetContent();
-	if (!ContentArray.IsEmpty()) {
+	if (!ContentArray.IsEmpty())
+	{
 		FString ContentBody = FString(UTF8_TO_TCHAR(reinterpret_cast<const char*>(ContentArray.GetData())));
 		UE_LOG(LogGameFuse, Log, TEXT("========= CONTENT BODY ========="));
 		UE_LOG(LogGameFuse, Log, TEXT("%s"), *ContentBody);
@@ -227,13 +289,90 @@ void GameFuseUtilities::LogResponse(FHttpResponsePtr HttpResponse)
 	UE_LOG(LogGameFuse, Log, TEXT("======== RESPONSE ========="))
 	UE_LOG(LogGameFuse, Log, TEXT("=== ResponseCode : %i ===="), HttpResponse->GetResponseCode());
 	UE_LOG(LogGameFuse, Log, TEXT("%s"), *HttpResponse->GetContentAsString());
-
 }
 
 void GameFuseUtilities::LogHeaders(const TMap<FString, FString>& Headers)
 {
 	UE_LOG(LogGameFuse, Log, TEXT("========= HEADERS ========="))
-	for (const auto& Pair : Headers) {
+	for (const auto& Pair : Headers)
+	{
 		UE_LOG(LogGameFuse, Log, TEXT("%s : %s"), *Pair.Key, *Pair.Value);
 	}
 }
+
+FString GameFuseUtilities::DateTimeToString(const FDateTime& DateTime)
+{
+	return DateTime.ToIso8601();
+}
+
+FDateTime GameFuseUtilities::StringToDateTime(const FString& DateTimeStr)
+{
+	FDateTime Result;
+	FDateTime::ParseIso8601(*DateTimeStr, Result);
+	return Result;
+}
+
+bool GameFuseUtilities::ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObject>& JsonObject, TMap<FString, FString>& InMap, const FString& FieldKey)
+{
+	InMap.Empty(); // Clear existing metadata
+
+	// if FieldKey is empty, assume the object is the map
+	// aka the json object looks like {"key1": "value1", "key2": "value2"}
+	if (FieldKey.IsEmpty())
+	{
+		// assume the object is the map
+		for (const auto& Pair : JsonObject->Values)
+		{
+			if (Pair.Value.IsValid() && Pair.Value->Type == EJson::String)
+			{
+				InMap.Add(Pair.Key, Pair.Value->AsString());
+			}
+		}
+		return true;
+	}
+
+
+	// if field is null, return success and skip
+	if (JsonObject->HasTypedField(FStringView(FieldKey), EJson::Null))
+	{
+		UE_LOG(LogGameFuse, Log, TEXT("ConvertJsonToGameRound: %s field is null, skipping"), *FieldKey);
+		return true;
+	}
+
+	// if FieldKey is not empty, assume the object is a field in the map
+	// aka the json object looks like {"field_key": {"key1": "value1", "key2": "value2"}}
+	const TSharedPtr<FJsonObject>* SrcJsonObject = nullptr;
+	if (JsonObject->TryGetObjectField(FStringView(FieldKey), SrcJsonObject))
+	{
+		if (!SrcJsonObject->IsValid())
+		{
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid object value for field: %s"), *FieldKey);
+			return false;
+		}
+
+		if ((*SrcJsonObject)->Values.Num() == 0)
+		{
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: object was empty: %s"), *FieldKey);
+			return true;
+		}
+
+		for (const auto& Pair : (*SrcJsonObject)->Values)
+		{
+			if (!Pair.Value.IsValid())
+			{
+				UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid object value for key: %s"), *Pair.Key);
+				continue;
+			}
+
+			FString ValueStr;
+			if (Pair.Value->TryGetString(ValueStr))
+			{
+				InMap.Add(Pair.Key, ValueStr);
+			}
+		}
+		return true;
+	}
+	return true;
+}
+
+#pragma endregion
