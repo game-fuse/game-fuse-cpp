@@ -81,7 +81,16 @@ public:
 	 * @param JsonValue The JSON value to convert
 	 * @return true if successful
 	 */
-	static bool ConvertJsonToLeaderboardItem(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
+	static bool ConvertJsonToLeaderboardEntry(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue);
+
+	static bool ConvertJsonToLeaderboardEntries(TArray<FGFLeaderboardEntry>& InLeaderboardArray, const FString& JsonString);
+	/**
+	 * Converts a JSON value into list of LeaderboardEntries
+	 * @param InLeaderboardItem LeaderboardEntry struct to store converted data
+	 * @param JsonValue The JSON value to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToLeaderboardEntries(TArray<FGFLeaderboardEntry>& InLeaderboardArray, const TSharedPtr<FJsonObject>& JsonObject);
 
 	/**
 	 * Converts a LeaderboardEntry into a JSON object
@@ -308,6 +317,21 @@ public:
 	 */
 	static bool ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObject>& JsonObject, TMap<FString, FString>& InMap, const FString& FieldKey = "");
 
+	/**
+	 * Converts a JSON string into list of store items
+	 * @param InStoreItems Array to store the converted store items
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToStoreItems(TArray<FGFStoreItem>& InStoreItems, const FString& JsonString);
+
+	/**
+	 * Converts a JSON string into attributes
+	 * @param InAttributes AttributeList struct to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToAttributes(FGFAttributeList& InAttributes, const FString& JsonString);
 
 #pragma endregion
 };

@@ -272,6 +272,30 @@ struct GAMEFUSE_API FGFGroupConnection
 	}
 };
 
+USTRUCT(BlueprintType)
+struct GAMEFUSE_API FGFAttributeList
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Attributes")
+	TMap<FString, FString> Attributes;
+
+	bool operator==(const FGFAttributeList& Other) const
+	{
+		if (Attributes.Num() != Other.Attributes.Num()) {
+			return false;
+		}
+
+		for (const auto& Pair : Attributes) {
+			const FString* OtherValue = Other.Attributes.Find(Pair.Key);
+			if (!OtherValue || *OtherValue != Pair.Value) {
+				return false;
+			}
+		}
+		return true;
+	}
+};
+
 USTRUCT(BlueprintType, Category = "GameFuse| API")
 
 struct FGFAPIResponse

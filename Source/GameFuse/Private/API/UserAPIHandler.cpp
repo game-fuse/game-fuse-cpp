@@ -128,8 +128,7 @@ FGuid UUserAPIHandler::SetAttributes(const TMap<FString, FString>& Attributes, c
 	TArray<TSharedPtr<FJsonValue>> AttributesArray;
 
 	// Convert attributes map to array of key-value objects
-	for (const auto& Pair : Attributes)
-	{
+	for (const auto& Pair : Attributes) {
 		TSharedPtr<FJsonObject> AttributeObject = MakeShareable(new FJsonObject);
 		AttributeObject->SetStringField("key", Pair.Key);
 		AttributeObject->SetStringField("value", Pair.Value);
@@ -223,7 +222,7 @@ FGuid UUserAPIHandler::ClearLeaderboardEntry(const FString& LeaderboardName, con
 	}
 
 	SetAuthHeader(UserData.AuthenticationToken);
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/clear_my_leaderboard_entries"), UserData.Id);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/clear_my_leaderboard_entries?leaderboard_name=%s"), UserData.Id, *LeaderboardName);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Clearing Leaderboard : %s"), *LeaderboardName);
 	return SendRequest(ApiEndpoint, "POST", Callback);
@@ -260,7 +259,7 @@ FGuid UUserAPIHandler::FetchAttributes(const FGFUserData& UserData, const FGFApi
 	return SendRequest(ApiEndpoint, "GET", Callback);
 }
 
-FGuid UUserAPIHandler::FetchPurchaseStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::FetchPurchasedStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	if (!VerifyUserData(UserData)) {
 		return FGuid();

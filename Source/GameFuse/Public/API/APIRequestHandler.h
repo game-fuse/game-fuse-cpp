@@ -9,8 +9,11 @@
 
 #include "ApiRequestHandler.generated.h"
 
-// Single-cast delegates for user callbacks
+
 DECLARE_DYNAMIC_DELEGATE_OneParam(FGFSuccessCallback, bool, bSuccess);
+
+// Multicast delegate for internal success callbacks
+DECLARE_MULTICAST_DELEGATE_OneParam(FGFInternalSuccessCallback, bool);
 
 /**
  * @brief BP Specific Callback Delegate. Only bound to the Delegate pin on a given node.
@@ -59,23 +62,29 @@ public:
 	static bool VerifyUserData(const FGFUserData& UserData);
 	static bool VerifyGameData(const FGFGameData& GameData);
 
-protected:
-
-	// Sends an HTTP Request, optionally with a JSON object as the body, returns unique Request ID
+	// Sends an HTTP request with the specified parameters
 	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject>& Body = nullptr);
+
+	// Sends an HTTP request with an internal success callback
+	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const FGFInternalSuccessCallback& InternalCallback, const TSharedPtr<FJsonObject>& Body = nullptr);
+
+protected:
 
 	void SetAuthHeader(const FString& AuthToken);
 
 private:
 
 	// Generates a unique Request ID
-	static FGuid GenerateRequestId();
+	FGuid GenerateRequestId();
 
 	// Map to store active requests and their data by Request ID
 	TMap<FGuid, TSharedPtr<IHttpRequest, ESPMode::ThreadSafe>> ActiveRequests;
 
 	// Map to store response delegates by Request ID
 	TMap<FGuid, FGFApiCallback> ResponseDelegates;
+
+	// Map to store internal success callbacks by Request ID
+	TMap<FGuid, FGFInternalSuccessCallback> InternalSuccessCallbacks;
 
 	// Handles the response received for the HTTP request
 	void HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, const FGuid& RequestId);

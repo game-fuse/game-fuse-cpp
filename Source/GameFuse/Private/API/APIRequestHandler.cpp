@@ -101,6 +101,15 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	return RequestId;
 }
 
+FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const FGFInternalSuccessCallback& InternalCallback, const TSharedPtr<FJsonObject>& Body)
+{
+	FGuid RequestId = SendRequest(Endpoint, HttpMethod, OnResponseReceived, Body);
+	if (RequestId.IsValid()) {
+		InternalSuccessCallbacks.Add(RequestId, InternalCallback);
+	}
+	return RequestId;
+}
+
 void UAPIRequestHandler::SetAuthHeader(const FString& AuthToken)
 {
 	CommonHeaders.Add(TEXT("authentication-token"), AuthToken);
@@ -119,44 +128,46 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 	}
 
 	if (!Response.IsValid()) {
-
-		ResponseDelegates.Contains(RequestId);
-		{
+		if (ResponseDelegates.Contains(RequestId)) {
 			const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 			FString ResponseContent = TEXT("Bad Response, Request is not valid");
-
 			Delegate.Broadcast(FGFAPIResponse(false, ResponseContent, RequestId, 404));
 			ResponseDelegates.Remove(RequestId);
 		}
+
+		if (InternalSuccessCallbacks.Contains(RequestId)) {
+			InternalSuccessCallbacks[RequestId].Broadcast(false);
+			InternalSuccessCallbacks.Remove(RequestId);
+		}
+
 		GameFuseUtilities::LogRequest(Request);
 		ActiveRequests.Remove(RequestId);
 		return;
 	}
 
-
 	bool bSuccessfulAndValid = bWasSuccessful && Response.IsValid();
-
 	int ResponseCode = Response->GetResponseCode();
 	bool bIsGoodResponse = ResponseCode >= 200 && ResponseCode < 300;
-
 
 	// Retrieve and execute the response delegate
 	if (ResponseDelegates.Contains(RequestId)) {
 		const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 		FString ResponseContent = bSuccessfulAndValid ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
-
 		Delegate.Broadcast(FGFAPIResponse(bSuccessfulAndValid && bIsGoodResponse, ResponseContent, RequestId, ResponseCode));
 		ResponseDelegates.Remove(RequestId);
 	}
 
+	// Broadcast to internal success callbacks
+	if (InternalSuccessCallbacks.Contains(RequestId)) {
+		InternalSuccessCallbacks[RequestId].Broadcast(bSuccessfulAndValid && bIsGoodResponse);
+		InternalSuccessCallbacks.Remove(RequestId);
+	}
 
 	if (bSuccessfulAndValid) {
-
 		if (bIsGoodResponse) {
 			UE_LOG(LogTemp, Log, TEXT("Request %s succeeded"), *RequestId.ToString());
 			GameFuseUtilities::LogResponse(Response);
 		} else {
-
 			UE_LOG(LogTemp, Error, TEXT("Request %s failed"), *RequestId.ToString());
 			GameFuseUtilities::LogRequest(Request);
 			GameFuseUtilities::LogResponse(Response);

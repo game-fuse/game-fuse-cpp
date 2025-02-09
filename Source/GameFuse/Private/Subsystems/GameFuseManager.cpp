@@ -336,7 +336,7 @@ void UGameFuseManager::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& Js
 
 	for (const TSharedPtr<FJsonValue>& AttributeValue : AttributeArray) {
 		const size_t newIndex = CurrLeaderboardEntries.AddDefaulted();
-		const bool bSuccess = GameFuseUtilities::ConvertJsonToLeaderboardItem(CurrLeaderboardEntries[newIndex], AttributeValue);
+		const bool bSuccess = GameFuseUtilities::ConvertJsonToLeaderboardEntry(CurrLeaderboardEntries[newIndex], AttributeValue);
 		if (!bSuccess) {
 			CurrLeaderboardEntries.RemoveAt(newIndex);
 		}

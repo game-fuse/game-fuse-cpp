@@ -30,13 +30,17 @@ public:
 	FGuid PurchaseStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid RemoveStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid AddLeaderboardEntry(const FString& LeaderboardName, const int32 Score, const TMap<FString, FString>& Metadata, const FGFUserData& UserData, const FGFApiCallback& Callback);
+
+	/**
+	 * No Metadata version of AddLeaderboardEntry
+	 */
 	FGuid AddLeaderboardEntry(const FGFLeaderboardEntry& LeaderboardEntry, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid ClearLeaderboardEntry(const FString& LeaderboardName, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	//> Action Requests
 	FGuid FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid FetchAttributes(const FGFUserData& UserData, const FGFApiCallback& Callback);
-	FGuid FetchPurchaseStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid FetchPurchasedStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	//> Helper Functions
 	// TFunction<void(FHttpRequestPtr, const FHttpResponsePtr&, bool)> HandleResponseReceived(const FGFApiCallback& Callback);
