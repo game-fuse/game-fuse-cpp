@@ -146,32 +146,31 @@ void GameFuseRoundsSpec::Define()
 			OriginalRoundData->bMultiplayer = true;
 			OriginalRoundData->Place = 10;
 
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->SetCredits(888, FGFApiCallback())));
-				return true;
-			}));
-
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OriginalRoundData]() -> bool {
-				FGFGameRoundCallback TypedCallback;
-				TypedCallback.BindLambda([this, OriginalRoundData](const FGFGameRound& _RoundData) {
-					AddInfo("CreateGameRound 1 :: Create Multiplayer Round");
-					TestTrue("has good id", _RoundData.Id != 0);
-					TestTrue("has good score", _RoundData.Score == 100);
-					TestTrue("has good multiplayer game round id", _RoundData.MultiplayerGameRoundId != 0);
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(), GameFuseUser->SetCredits(888, FGFUserDataCallback())));
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OriginalRoundData]() -> bool {
+					FGFGameRoundCallback TypedCallback;
+					TypedCallback.BindLambda([this, OriginalRoundData](const FGFGameRound& _RoundData) {
+						AddInfo("CreateGameRound 1 :: Create Multiplayer Round");
+						TestTrue("has good id", _RoundData.Id != 0);
+						TestTrue("has good score", _RoundData.Score == 100);
+						TestTrue("has good multiplayer game round id", _RoundData.MultiplayerGameRoundId != 0);
 
-					TestTrue("has round rankings", !_RoundData.Rankings.IsEmpty());
+						TestTrue("has round rankings", !_RoundData.Rankings.IsEmpty());
 
-					if (!_RoundData.Rankings.IsEmpty()) {
-						const FGFGameRoundRanking& Ranking = _RoundData.Rankings[0];
-						TestTrue("has good ranking place", Ranking.Place == 10);
-						TestTrue("has good ranking score", Ranking.Score == 100);
+						if (!_RoundData.Rankings.IsEmpty()) {
+							const FGFGameRoundRanking& Ranking = _RoundData.Rankings[0];
+							TestTrue("has good ranking place", Ranking.Place == 10);
+							TestTrue("has good ranking score", Ranking.Score == 100);
 
-						TestTrue("has good ranking user id", Ranking.User.Id == UserData->Id);
-						TestTrue("has good credits", Ranking.User.Credits == 888);
-					}
-				});
+							TestTrue("has good ranking user id", Ranking.User.Id == UserData->Id);
+							TestTrue("has good credits", Ranking.User.Credits == 888);
+						}
+					});
 
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*OriginalRoundData, TypedCallback)));
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(), GameFuseRounds->CreateGameRound(*OriginalRoundData, TypedCallback)));
+					return true;
+				}));
 				return true;
 			}));
 		});

@@ -22,7 +22,6 @@ DECLARE_DELEGATE_TwoParams(FGFUserDataCallback, bool, const FGFUserData&);
 DECLARE_DELEGATE_TwoParams(FGFStoreItemsCallback, bool, const TArray<FGFStoreItem>&);
 DECLARE_DELEGATE_TwoParams(FGFLeaderboardEntriesCallback, bool, const TArray<FGFLeaderboardEntry>&);
 DECLARE_DELEGATE_TwoParams(FGFAttributesCallback, bool, const FGFAttributeList&);
-DECLARE_DELEGATE_OneParam(FGFUserActionCallback, bool);
 
 UCLASS()
 class GAMEFUSE_API UGameFuseUser : public UGameInstanceSubsystem

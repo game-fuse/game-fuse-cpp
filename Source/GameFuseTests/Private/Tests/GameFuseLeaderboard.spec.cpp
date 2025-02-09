@@ -81,44 +81,42 @@ void GameFuseLeaderboard::Define()
 
 		It("adds a leaderboard entry", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				const FString LeaderboardName = TEXT("TestLeaderboard");
-				constexpr int32 Score = 1000;
-				TMap<FString, FString> Metadata;
-				FGFApiCallback Callback;
-				Callback.AddLambda([this](const FGFAPIResponse& Response) {
+				FGFInternalSuccessCallback AddEntryCallback;
+				AddEntryCallback.AddLambda([this](bool bSuccess) {
 					AddInfo("AddLeaderboardEntry 1 :: Add Entry");
-					TestTrue("Add leaderboard entry succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Add leaderboard entry failed: %s"), *Response.ResponseStr));
+					TestTrue("Add leaderboard entry request succeeded", bSuccess);
+					if (!bSuccess) {
+						AddError(TEXT("Add leaderboard entry failed"));
 					}
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, Metadata, Callback)));
+																  GameFuseUser->AddLeaderboardEntry("Test Leaderboard", 100, TMap<FString, FString>(), AddEntryCallback)));
 
-				// Verify internal state after adding entry
-				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score]() -> bool {
-					FGFApiCallback FetchCallback;
-					FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
+				// Verify the entry was added
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					FGFLeaderboardEntriesCallback FetchCallback;
+					FetchCallback.BindLambda([this](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
 						AddInfo("AddLeaderboardEntry 2 :: Fetch Entries");
-						TestTrue("Fetch after add succeeded", Response.bSuccess);
+						TestTrue("Fetch entries request succeeded", bSuccess);
+						if (!bSuccess) {
+							AddError(TEXT("Failed to fetch leaderboard entries"));
+							return;
+						}
+						TestEqual("Should have exactly one entry", Entries.Num(), 1);
+						if (Entries.Num() > 0) {
+							TestEqual("Entry score should match", Entries[0].Score, 100);
+						}
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																	  GameFuseUser->FetchMyLeaderboardEntries(10, true, FetchCallback)));
-
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score]() -> bool {
-						const TArray<FGFLeaderboardEntry>& Entries = GameFuseUser->GetLeaderboardEntries();
-						TestTrue("Should have at least one entry", Entries.Num() > 0);
-						if (Entries.Num() > 0) {
-							TestEqual("Score should match what we added", Entries[0].Score, Score);
-						}
-						return true;
-					}));
+																	  GameFuseUser->FetchMyLeaderboardEntries(10, false, FetchCallback)));
 					return true;
 				}));
 				return true;
 			}));
+
+			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("adds a leaderboard entry with metadata", [this]() {
@@ -129,12 +127,12 @@ void GameFuseLeaderboard::Define()
 			Metadata.Add(TEXT("Level"), TEXT("5"));
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score, Metadata]() -> bool {
-				FGFApiCallback AddCallback;
-				AddCallback.AddLambda([this](const FGFAPIResponse& Response) {
+				FGFInternalSuccessCallback AddCallback;
+				AddCallback.AddLambda([this](bool bSuccess) {
 					AddInfo("AddLeaderboardEntry 1 :: Add Entry With Metadata");
-					TestTrue("Add leaderboard entry with metadata succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Add leaderboard entry with metadata failed: %s"), *Response.ResponseStr));
+					TestTrue("Add leaderboard entry with metadata succeeded", bSuccess);
+					if (!bSuccess) {
+						AddError(TEXT("Add leaderboard entry with metadata failed"));
 					}
 				});
 
@@ -143,81 +141,87 @@ void GameFuseLeaderboard::Define()
 
 				// Verify the entry was added and metadata is correct
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score, Metadata]() -> bool {
-					FGFApiCallback FetchCallback;
-					FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
-						AddInfo("AddLeaderboardEntry 2 :: Fetch Entry");
-						TestTrue("Fetch after add succeeded", Response.bSuccess);
-					});
-
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																	  GameFuseUser->FetchMyLeaderboardEntries(10, true, FetchCallback)));
-
-					// Verify the fetched data
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score, Metadata]() -> bool {
-						const TArray<FGFLeaderboardEntry>& Entries = GameFuseUser->GetLeaderboardEntries();
+					FGFLeaderboardEntriesCallback FetchCallback;
+					FetchCallback.BindLambda([this, Score, Metadata](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+						AddInfo("AddLeaderboardEntry 2 :: Fetch Entries");
+						TestTrue("Fetch entries request succeeded", bSuccess);
+						if (!bSuccess) {
+							AddError(TEXT("Failed to fetch leaderboard entries"));
+							return;
+						}
 						TestTrue("Should have at least one entry", Entries.Num() > 0);
-
 						if (Entries.Num() > 0) {
 							const FGFLeaderboardEntry& Entry = Entries[0];
 							TestEqual("Score should match what we added", Entry.Score, Score);
 
-							// Verify metadata exists
+							// Verify metadata exists and matches
 							TestTrue("Should have weapon metadata", Entry.Metadata.Contains(TEXT("Weapon")));
 							TestTrue("Should have level metadata", Entry.Metadata.Contains(TEXT("Level")));
 
-							// Only compare metadata if they exist
-							AddErrorIfFalse(Entry.Metadata.Contains(TEXT("Weapon")), "Missing Weapon metadata");
-							AddErrorIfFalse(Entry.Metadata.Contains(TEXT("Level")), "Missing Level metadata");
-							TestEqual("Weapon metadata should match", Entry.Metadata[TEXT("Weapon")], Metadata[TEXT("Weapon")]);
-							TestEqual("Level metadata should match", Entry.Metadata[TEXT("Level")], Metadata[TEXT("Level")]);
+							if (Entry.Metadata.Contains(TEXT("Weapon"))) {
+								TestEqual("Weapon metadata should match", Entry.Metadata[TEXT("Weapon")], Metadata[TEXT("Weapon")]);
+							}
+							if (Entry.Metadata.Contains(TEXT("Level"))) {
+								TestEqual("Level metadata should match", Entry.Metadata[TEXT("Level")], Metadata[TEXT("Level")]);
+							}
 						}
-						return true;
-					}));
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->FetchMyLeaderboardEntries(10, false, FetchCallback)));
 					return true;
 				}));
 				return true;
 			}));
+
+			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("clears a leaderboard entry", [this]() {
 			const FString LeaderboardName = TEXT("TestLeaderboard");
 			constexpr int32 Score = 1500;
-			TMap<FString, FString> Metadata;
 
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score, Metadata]() -> bool {
-				FGFApiCallback AddCallback;
-				AddCallback.AddLambda([this](const FGFAPIResponse& Response) {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score]() -> bool {
+				FGFInternalSuccessCallback AddCallback;
+				AddCallback.AddLambda([this](bool bSuccess) {
 					AddInfo("ClearLeaderboardEntry 1 :: Add Entry");
-					TestTrue("Add leaderboard entry succeeded", Response.bSuccess);
+					TestTrue("Add leaderboard entry succeeded", bSuccess);
+					if (!bSuccess) {
+						AddError(TEXT("Add leaderboard entry failed"));
+					}
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, Metadata, AddCallback)));
+																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, TMap<FString, FString>(), AddCallback)));
 
 				// Verify entry was added
-				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score]() -> bool {
-					FGFApiCallback VerifyAddCallback;
-					VerifyAddCallback.AddLambda([this](const FGFAPIResponse& Response) {
-						TestTrue("Fetch after add succeeded", Response.bSuccess);
-					});
-
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																	  GameFuseUser->FetchMyLeaderboardEntries(10, true, VerifyAddCallback)));
-
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score]() -> bool {
-						const TArray<FGFLeaderboardEntry>& Entries = GameFuseUser->GetLeaderboardEntries();
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score, LeaderboardName]() -> bool {
+					FGFLeaderboardEntriesCallback FetchCallback;
+					FetchCallback.BindLambda([this, Score](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+						AddInfo("ClearLeaderboardEntry 2 :: Fetch After Add");
+						TestTrue("Fetch entries request succeeded", bSuccess);
+						if (!bSuccess) {
+							AddError(TEXT("Failed to fetch leaderboard entries"));
+							return;
+						}
 						TestTrue("Should have one entry before clearing", Entries.Num() > 0);
 						if (Entries.Num() > 0) {
 							TestEqual("Score should match what we added", Entries[0].Score, Score);
 						}
-						return true;
-					}));
+					});
 
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->FetchMyLeaderboardEntries(10, false, FetchCallback)));
+
+					// Clear the entry
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName]() -> bool {
-						FGFApiCallback ClearCallback;
-						ClearCallback.AddLambda([this](const FGFAPIResponse& Response) {
-							AddInfo("ClearLeaderboardEntry 2 :: Clear Entry");
-							TestTrue("Clear leaderboard entry succeeded", Response.bSuccess);
+						FGFInternalSuccessCallback ClearCallback;
+						ClearCallback.AddLambda([this](bool bSuccess) {
+							AddInfo("ClearLeaderboardEntry 3 :: Clear Entry");
+							TestTrue("Clear leaderboard entry succeeded", bSuccess);
+							if (!bSuccess) {
+								AddError(TEXT("Clear leaderboard entry failed"));
+							}
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -225,19 +229,19 @@ void GameFuseLeaderboard::Define()
 
 						// Verify entry was cleared
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-							FGFApiCallback FetchCallback;
-							FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
-								AddInfo("ClearLeaderboardEntry 3 :: Fetch Entries");
-								TestTrue("Fetch leaderboard entries succeeded", Response.bSuccess);
+							FGFLeaderboardEntriesCallback VerifyCallback;
+							VerifyCallback.BindLambda([this](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+								AddInfo("ClearLeaderboardEntry 4 :: Verify Clear");
+								TestTrue("Fetch after clear succeeded", bSuccess);
+								if (!bSuccess) {
+									AddError(TEXT("Failed to fetch leaderboard entries after clear"));
+									return;
+								}
+								TestEqual("Leaderboard should be empty after clearing", Entries.Num(), 0);
 							});
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																			  GameFuseUser->FetchMyLeaderboardEntries(10, true, FetchCallback)));
-
-							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-								TestEqual("Leaderboard should be empty after clearing", GameFuseUser->GetLeaderboardEntries().Num(), 0);
-								return true;
-							}));
+																			  GameFuseUser->FetchMyLeaderboardEntries(10, false, VerifyCallback)));
 							return true;
 						}));
 						return true;
@@ -246,6 +250,8 @@ void GameFuseLeaderboard::Define()
 				}));
 				return true;
 			}));
+
+			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("clears a specific leaderboard entry while keeping others", [this]() {
@@ -256,10 +262,10 @@ void GameFuseLeaderboard::Define()
 			TMap<FString, FString> Metadata;
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, LeaderboardName2, Score1, Score2, Metadata]() -> bool {
-				FGFApiCallback AddCallback1;
-				AddCallback1.AddLambda([this](const FGFAPIResponse& Response) {
+				FGFInternalSuccessCallback AddCallback1;
+				AddCallback1.AddLambda([this](bool bSuccess) {
 					AddInfo("ClearSpecificEntry 1 :: Add First Entry");
-					TestTrue("Add first leaderboard entry succeeded", Response.bSuccess);
+					TestTrue("Add first leaderboard entry succeeded", bSuccess);
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -267,9 +273,18 @@ void GameFuseLeaderboard::Define()
 
 				// Verify first entry was added
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, LeaderboardName2, Score1, Metadata]() -> bool {
-					FGFApiCallback VerifyFirstCallback;
-					VerifyFirstCallback.AddLambda([this](const FGFAPIResponse& Response) {
-						TestTrue("Fetch after first add succeeded", Response.bSuccess);
+					FGFLeaderboardEntriesCallback VerifyFirstCallback;
+					VerifyFirstCallback.BindLambda([this, Score1](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+						AddInfo("ClearSpecificEntry 2 :: Fetch After First Add");
+						TestTrue("Fetch after first add succeeded", bSuccess);
+						if (!bSuccess) {
+							AddError(TEXT("Failed to fetch entries after first add"));
+							return;
+						}
+						TestEqual("Should have one entry after first add", Entries.Num(), 1);
+						if (Entries.Num() > 0) {
+							TestEqual("First score should match", Entries[0].Score, Score1);
+						}
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -285,10 +300,10 @@ void GameFuseLeaderboard::Define()
 					}));
 
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, LeaderboardName2, Score2, Metadata]() -> bool {
-						FGFApiCallback AddCallback2;
-						AddCallback2.AddLambda([this](const FGFAPIResponse& Response) {
+						FGFInternalSuccessCallback AddCallback2;
+						AddCallback2.AddLambda([this](bool bSuccess) {
 							AddInfo("ClearSpecificEntry 2 :: Add Second Entry");
-							TestTrue("Add second leaderboard entry succeeded", Response.bSuccess);
+							TestTrue("Add second leaderboard entry succeeded", bSuccess);
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -296,16 +311,14 @@ void GameFuseLeaderboard::Define()
 
 						// Verify both entries exist
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1, Score1, Score2]() -> bool {
-							FGFApiCallback VerifyBothCallback;
-							VerifyBothCallback.AddLambda([this](const FGFAPIResponse& Response) {
-								TestTrue("Fetch after second add succeeded", Response.bSuccess);
-							});
-
-							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																			  GameFuseUser->FetchMyLeaderboardEntries(10, true, VerifyBothCallback)));
-
-							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score1, Score2]() -> bool {
-								const TArray<FGFLeaderboardEntry>& Entries = GameFuseUser->GetLeaderboardEntries();
+							FGFLeaderboardEntriesCallback VerifyBothCallback;
+							VerifyBothCallback.BindLambda([this, Score1, Score2](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+								AddInfo("ClearSpecificEntry 3 :: Fetch After Second Add");
+								TestTrue("Fetch after second add succeeded", bSuccess);
+								if (!bSuccess) {
+									AddError(TEXT("Failed to fetch entries after second add"));
+									return;
+								}
 								TestEqual("Should have two entries", Entries.Num(), 2);
 								bool bFoundScore1 = false;
 								bool bFoundScore2 = false;
@@ -315,14 +328,16 @@ void GameFuseLeaderboard::Define()
 								}
 								TestTrue("Should find first score", bFoundScore1);
 								TestTrue("Should find second score", bFoundScore2);
-								return true;
-							}));
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->FetchMyLeaderboardEntries(10, true, VerifyBothCallback)));
 
 							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName1]() -> bool {
-								FGFApiCallback ClearCallback;
-								ClearCallback.AddLambda([this](const FGFAPIResponse& Response) {
+								FGFInternalSuccessCallback ClearCallback;
+								ClearCallback.AddLambda([this](bool bSuccess) {
 									AddInfo("ClearSpecificEntry 3 :: Clear First Entry");
-									TestTrue("Clear first leaderboard entry succeeded", Response.bSuccess);
+									TestTrue("Clear first leaderboard entry succeeded", bSuccess);
 								});
 
 								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -330,23 +345,22 @@ void GameFuseLeaderboard::Define()
 
 								// Verify only second entry remains
 								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score2]() -> bool {
-									FGFApiCallback FetchCallback;
-									FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
-										AddInfo("ClearSpecificEntry 4 :: Fetch Entries");
-										TestTrue("Fetch after clear succeeded", Response.bSuccess);
-									});
-
-									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																					  GameFuseUser->FetchMyLeaderboardEntries(10, true, FetchCallback)));
-
-									ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score2]() -> bool {
-										const TArray<FGFLeaderboardEntry>& Entries = GameFuseUser->GetLeaderboardEntries();
+									FGFLeaderboardEntriesCallback FinalVerifyCallback;
+									FinalVerifyCallback.BindLambda([this, Score2](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+										AddInfo("ClearSpecificEntry 4 :: Verify After Clear");
+										TestTrue("Fetch after clear succeeded", bSuccess);
+										if (!bSuccess) {
+											AddError(TEXT("Failed to fetch entries after clear"));
+											return;
+										}
 										TestEqual("Should have one entry remaining", Entries.Num(), 1);
 										if (Entries.Num() > 0) {
 											TestEqual("Remaining entry should be second score", Entries[0].Score, Score2);
 										}
-										return true;
-									}));
+									});
+
+									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																					  GameFuseUser->FetchMyLeaderboardEntries(10, true, FinalVerifyCallback)));
 									return true;
 								}));
 								return true;
@@ -367,37 +381,68 @@ void GameFuseLeaderboard::Define()
 			TMap<FString, FString> Metadata;
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, LeaderboardName, Score, Metadata]() -> bool {
-				FGFApiCallback AddCallback;
-				AddCallback.AddLambda([this](const FGFAPIResponse& Response) {
+				FGFInternalSuccessCallback AddCallback;
+				AddCallback.AddLambda([this](bool bSuccess) {
 					AddInfo("FetchLeaderboardEntries 1 :: Add Entry");
-					TestTrue("Add leaderboard entry succeeded", Response.bSuccess);
+					TestTrue("Add leaderboard entry succeeded", bSuccess);
+					if (!bSuccess) {
+						AddError("Add leaderboard entry failed");
+						return;
+					}
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, Metadata, AddCallback)));
+																  GameFuseUser->AddLeaderboardEntry(LeaderboardName, Score, AddCallback)));
 
 				// Verify entry was added
-				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score]() -> bool {
-					FGFApiCallback FetchCallback;
-					FetchCallback.AddLambda([this](const FGFAPIResponse& Response) {
-						AddInfo("FetchLeaderboardEntries 2 :: Fetch Entries");
-						TestTrue("Fetch leaderboard entries succeeded", Response.bSuccess);
+				FGFLeaderboardEntriesCallback FetchCallback;
+				FetchCallback.BindLambda([this](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+					AddInfo("FetchLeaderboardEntries :: Verify Entries");
+					TestTrue("Fetch succeeded", bSuccess);
+					if (!bSuccess) {
+						AddError(TEXT("Failed to fetch leaderboard entries"));
+						return;
+					}
+					TestTrue("Should have at least one entry", Entries.Num() > 0);
+					if (Entries.Num() > 0) {
+						TestEqual("Score should match what was added", Entries[0].Score, Score);
+					}
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																  GameFuseUser->FetchMyLeaderboardEntries(10, false, FetchCallback)));
+				return true;
+			}));
+		});
+
+		It("clears all leaderboard entries", [this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				FGFInternalSuccessCallback ClearCallback;
+				ClearCallback.AddLambda([this](bool bSuccess) {
+					AddInfo("ClearLeaderboardEntries 1 :: Clear All");
+					TestTrue("Clear leaderboard entries request succeeded", bSuccess);
+					if (!bSuccess) {
+						AddError(TEXT("Clear leaderboard entries failed"));
+					}
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																  GameFuseUser->ClearLeaderboardEntry("", ClearCallback)));
+
+				// Verify all entries were cleared
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					FGFLeaderboardEntriesCallback FetchCallback;
+					FetchCallback.BindLambda([this](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+						AddInfo("ClearLeaderboardEntries 2 :: Verify Clear");
+						TestEqual("Should have no entries", Entries.Num(), 0);
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																	  GameFuseUser->FetchMyLeaderboardEntries(10, true, FetchCallback)));
-
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score]() -> bool {
-						const TArray<FGFLeaderboardEntry>& Entries = GameFuseUser->GetLeaderboardEntries();
-						TestTrue("Should have at least one entry", Entries.Num() > 0);
-						if (Entries.Num() > 0) {
-							TestEqual("Score should match what we added", Entries[0].Score, Score);
-						}
-						return true;
-					}));
+																	  GameFuseUser->FetchMyLeaderboardEntries(10, false, FetchCallback)));
 					return true;
 				}));
 				return true;
+				ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 			}));
 		});
 	});

@@ -8,6 +8,7 @@
 #include "Subsystems/GameFuseGroups.h"
 #include "Commands/TestSuiteCommands.h"
 #include "Library/GameFuseStructLibrary.h"
+#include "Library/GameFuseEnumLibrary.h"
 #include "Subsystems/GameFuseManager.h"
 
 BEGIN_DEFINE_SPEC(FGameFuseGroupsSpec, "GameFuseTests.GameFuseGroups",
@@ -178,7 +179,7 @@ void FGameFuseGroupsSpec::Define()
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-															  GameFuseGroups->CreateGroup(Group2Data, CreateCallback2)));
+																  GameFuseGroups->CreateGroup(Group2Data, CreateCallback2)));
 
 				// After creating both groups, fetch all groups to verify
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
@@ -202,8 +203,7 @@ void FGameFuseGroupsSpec::Define()
 								TestEqual("Group 1 has correct max size", Group.MaxGroupSize, 10);
 								TestTrue("Group 1 can auto join", Group.bCanAutoJoin);
 								TestTrue("Group 1 is searchable", Group.bSearchable);
-							}
-							else if (Group.Name == "Test Group 2 for FetchAll") {
+							} else if (Group.Name == "Test Group 2 for FetchAll") {
 								bFoundGroup2 = true;
 								TestEqual("Group 2 has correct type", Group.GroupType, "Clan");
 								TestEqual("Group 2 has correct max size", Group.MaxGroupSize, 20);
@@ -217,7 +217,7 @@ void FGameFuseGroupsSpec::Define()
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-																  GameFuseGroups->FetchAllGroups(FetchCallback)));
+																	  GameFuseGroups->FetchAllGroups(FetchCallback)));
 					return true;
 				}));
 				return true;
@@ -252,13 +252,10 @@ void FGameFuseGroupsSpec::Define()
 
 			// Sign in second user before attempting to join
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
-				FGFApiCallback SignInCallback;
-				SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
+				FGFUserDataCallback SignInCallback;
+				SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 					AddInfo("JoinGroup :: Sign In Second User");
-					TestTrue("Second user sign in succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Second user sign in failed: %s"), *Response.ResponseStr));
-					}
+					TestTrue("User ID should be valid", UserData.Id > 0);
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -318,13 +315,10 @@ void FGameFuseGroupsSpec::Define()
 
 			// Sign in second user to request joining
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
-				FGFApiCallback SignInCallback;
-				SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					AddInfo("AcceptJoinRequest 2 :: Sign In Second User");
-					TestTrue("Second user sign in succeeded", Response.bSuccess);
-					if (!Response.bSuccess) {
-						AddError(FString::Printf(TEXT("Second user sign in failed: %s"), *Response.ResponseStr));
-					}
+				FGFUserDataCallback SignInCallback;
+				SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+					AddInfo("SignIn :: User Data");
+					TestTrue("User ID should be valid", UserData.Id > 0);
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -341,7 +335,6 @@ void FGameFuseGroupsSpec::Define()
 
 						// Store the connection data for later use
 						TestConnectionData = MakeShared<FGFGroupConnection>(Connection);
-						UE_LOG(LogGameFuse, Log, TEXT("Stored connection data - ID: %d, User ID: %d"), TestConnectionData->Id, TestConnectionData->User.Id);
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
@@ -349,13 +342,10 @@ void FGameFuseGroupsSpec::Define()
 
 					// Sign back in as first user to accept the request
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-						FGFApiCallback SignInCallback;
-						SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
-							AddInfo("AcceptJoinRequest 4 :: Sign In First User");
-							TestTrue("First user sign in succeeded", Response.bSuccess);
-							if (!Response.bSuccess) {
-								AddError(FString::Printf(TEXT("First user sign in failed: %s"), *Response.ResponseStr));
-							}
+						FGFUserDataCallback SignInCallback;
+						SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+							AddInfo("SignIn :: User Data");
+							TestTrue("User ID should be valid", UserData.Id > 0);
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -417,10 +407,10 @@ void FGameFuseGroupsSpec::Define()
 
 			// Sign in second user to request joining
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
-				FGFApiCallback SignInCallback;
-				SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
-					AddInfo("DeclineJoinRequest 2 :: Sign In Second User");
-					TestTrue("Second user sign in succeeded", Response.bSuccess);
+				FGFUserDataCallback SignInCallback;
+				SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+					AddInfo("SignIn :: User Data");
+					TestTrue("User ID should be valid", UserData.Id > 0);
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -437,7 +427,6 @@ void FGameFuseGroupsSpec::Define()
 
 						// Store the connection data for later use
 						TestConnectionData = MakeShared<FGFGroupConnection>(Connection);
-						UE_LOG(LogGameFuse, Log, TEXT("Stored connection data - ID: %d, User ID: %d"), TestConnectionData->Id, TestConnectionData->User.Id);
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
@@ -445,10 +434,10 @@ void FGameFuseGroupsSpec::Define()
 
 					// Sign back in as first user to decline the request
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-						FGFApiCallback SignInCallback;
-						SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
-							AddInfo("DeclineJoinRequest 4 :: Sign In First User");
-							TestTrue("First user sign in succeeded", Response.bSuccess);
+						FGFUserDataCallback SignInCallback;
+						SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+							AddInfo("SignIn :: User Data");
+							TestTrue("User ID should be valid", UserData.Id > 0);
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),

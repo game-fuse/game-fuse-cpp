@@ -499,7 +499,7 @@ void UGameFuseUser::BP_RemoveStoreItem(const int32 StoreItemId, FGFSuccessCallba
 void UGameFuseUser::BP_PurchaseStoreItem(const int32 StoreItemId, FGFSuccessCallback Callback)
 {
 	FGFStoreItemsCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
+	TypedCallback.BindLambda([Callback](bool bSuccess, const TArray<FGFStoreItem>&) {
 		Callback.ExecuteIfBound(bSuccess);
 	});
 	PurchaseStoreItem(StoreItemId, TypedCallback);
@@ -651,12 +651,11 @@ void UGameFuseUser::HandleLeaderboardEntriesResponse(FGFAPIResponse Response)
 		return;
 	}
 
-	if (GameFuseUtilities::ConvertJsonToLeaderboardEntries(LeaderboardEntries, Response.ResponseStr)) {
-	}
+	bool bConvertSuccess = GameFuseUtilities::ConvertJsonToLeaderboardEntries(LeaderboardEntries, Response.ResponseStr);
 
 	// Update stored entries and execute callback
 	if (LeaderboardEntriesCallbacks.Contains(Response.RequestId)) {
-		LeaderboardEntriesCallbacks[Response.RequestId].Execute(true, LeaderboardEntries);
+		LeaderboardEntriesCallbacks[Response.RequestId].Execute(bConvertSuccess, LeaderboardEntries);
 		LeaderboardEntriesCallbacks.Remove(Response.RequestId);
 	}
 
