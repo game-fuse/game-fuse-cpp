@@ -111,12 +111,11 @@ void GameFuseLeaderboard::Define()
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
 																	  GameFuseUser->FetchMyLeaderboardEntries(10, false, FetchCallback)));
+					ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 					return true;
 				}));
 				return true;
 			}));
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("adds a leaderboard entry with metadata", [this]() {
@@ -169,12 +168,11 @@ void GameFuseLeaderboard::Define()
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
 																	  GameFuseUser->FetchMyLeaderboardEntries(10, false, FetchCallback)));
+					ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 					return true;
 				}));
 				return true;
 			}));
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("clears a leaderboard entry", [this]() {
@@ -242,6 +240,7 @@ void GameFuseLeaderboard::Define()
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
 																			  GameFuseUser->FetchMyLeaderboardEntries(10, false, VerifyCallback)));
+							ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 							return true;
 						}));
 						return true;
@@ -250,8 +249,6 @@ void GameFuseLeaderboard::Define()
 				}));
 				return true;
 			}));
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("clears a specific leaderboard entry while keeping others", [this]() {
@@ -417,32 +414,76 @@ void GameFuseLeaderboard::Define()
 
 		It("clears all leaderboard entries", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-				FGFInternalSuccessCallback ClearCallback;
-				ClearCallback.AddLambda([this](bool bSuccess) {
-					AddInfo("ClearLeaderboardEntries 1 :: Clear All");
-					TestTrue("Clear leaderboard entries request succeeded", bSuccess);
+				// First add a test entry
+				FGFInternalSuccessCallback AddCallback;
+				AddCallback.AddLambda([this](bool bSuccess) {
+					AddInfo("ClearLeaderboardEntries 1 :: Add Entry");
+					TestTrue("Add leaderboard entry request succeeded", bSuccess);
 					if (!bSuccess) {
-						AddError(TEXT("Clear leaderboard entries failed"));
+						AddError(TEXT("Add leaderboard entry failed"));
 					}
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																  GameFuseUser->ClearLeaderboardEntry("", ClearCallback)));
+																  GameFuseUser->AddLeaderboardEntry("TestLeaderboard", 100, TMap<FString, FString>(), AddCallback)));
 
-				// Verify all entries were cleared
+				// Verify the entry was added
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-					FGFLeaderboardEntriesCallback FetchCallback;
-					FetchCallback.BindLambda([this](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
-						AddInfo("ClearLeaderboardEntries 2 :: Verify Clear");
-						TestEqual("Should have no entries", Entries.Num(), 0);
+					FGFLeaderboardEntriesCallback VerifyCallback;
+					VerifyCallback.BindLambda([this](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+						AddInfo("ClearLeaderboardEntries 2 :: Verify Entry Added");
+						TestTrue("Fetch entries request succeeded", bSuccess);
+						if (!bSuccess) {
+							AddError(TEXT("Failed to fetch leaderboard entries"));
+							return;
+						}
+						TestEqual("Should have exactly one entry", Entries.Num(), 1);
+						if (Entries.Num() > 0) {
+							TestEqual("Entry score should match", Entries[0].Score, 100);
+							TestEqual("Entry leaderboard name should match", Entries[0].LeaderboardName, TEXT("TestLeaderboard"));
+						}
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																	  GameFuseUser->FetchMyLeaderboardEntries(10, false, FetchCallback)));
+																	  GameFuseUser->FetchMyLeaderboardEntries(10, false, VerifyCallback)));
+
+					// Now clear all entries
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+						FGFInternalSuccessCallback ClearCallback;
+						ClearCallback.AddLambda([this](bool bSuccess) {
+							AddInfo("ClearLeaderboardEntries 3 :: Clear All");
+							TestTrue("Clear leaderboard entries request succeeded", bSuccess);
+							if (!bSuccess) {
+								AddError(TEXT("Clear leaderboard entries failed"));
+							}
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																		  GameFuseUser->ClearLeaderboardEntry("TestLeaderboard", ClearCallback)));
+
+						// Verify all entries were cleared
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+							FGFLeaderboardEntriesCallback FetchCallback;
+							FetchCallback.BindLambda([this](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+								AddInfo("ClearLeaderboardEntries 4 :: Verify Clear");
+								TestTrue("Fetch after clear succeeded", bSuccess);
+								if (!bSuccess) {
+									AddError(TEXT("Failed to fetch leaderboard entries after clear"));
+									return;
+								}
+								TestEqual("Should have no entries", Entries.Num(), 0);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->FetchMyLeaderboardEntries(10, false, FetchCallback)));
+							ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+							return true;
+						}));
+						return true;
+					}));
 					return true;
 				}));
 				return true;
-				ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 			}));
 		});
 	});

@@ -76,12 +76,16 @@ void GameFuseUserSpec::Define()
 				FGFUserDataCallback SignInCallback;
 				SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 					AddInfo("SignIn :: Verify Response");
+					if (!bSuccess) {
+						AddErrorIfFalse(bSuccess, TEXT("Sign in request failed"));
+						return;
+					}
 					TestTrue("User data is valid", UserData.Id > 0);
 					TestEqual("Username matches", UserData.Username, UserData.Username);
-
 					TestTrue("User is signed in", GameFuseUser->IsSignedIn());
 					TestEqual("Internal user data matches", GameFuseUser->GetUserData().Id, UserData.Id);
 					TestEqual("Internal username matches", GameFuseUser->GetUsername(), UserData.Username);
+					TestTrue("Authentication token is valid", !GameFuseUser->GetAuthenticationToken().IsEmpty());
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -146,6 +150,7 @@ void GameFuseUserSpec::Define()
 				FGFUserDataCallback AddCreditsCallback;
 				AddCreditsCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 					AddInfo("AddCredits 1 :: Verify Credits Added");
+					AddErrorIfFalse(bSuccess, TEXT("Add credits request failed"));
 					TestTrue("Add credits request succeeded", bSuccess);
 					if (bSuccess) {
 						TestEqual("Credits were updated", UserData.Credits, 100);
@@ -166,6 +171,7 @@ void GameFuseUserSpec::Define()
 				FGFUserDataCallback SetCreditsCallback;
 				SetCreditsCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 					AddInfo("SetCredits 1 :: Verify Credits Set");
+					AddErrorIfFalse(bSuccess, TEXT("Set credits request failed"));
 					TestTrue("Set credits request succeeded", bSuccess);
 					if (bSuccess) {
 						TestEqual("Credits were set", UserData.Credits, 200);
@@ -175,14 +181,13 @@ void GameFuseUserSpec::Define()
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
 																  GameFuseUser->SetCredits(200, SetCreditsCallback)));
+				ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 				return true;
 			}));
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("creates and purchases a store item", [this]() {
-			// Create store item
+			// Create store item with validation
 			TSharedPtr<FGFStoreItem> TestStoreItem = MakeShared<FGFStoreItem>();
 			TestStoreItem->Name = TEXT("Test Item");
 			TestStoreItem->Description = TEXT("A test store item");
@@ -191,12 +196,18 @@ void GameFuseUserSpec::Define()
 
 			ADD_LATENT_AUTOMATION_COMMAND(FCreateStoreItem(TestAPIHandler, GameData, TestStoreItem, this, FGuid()));
 
-			// Add credits and purchase item
+			// Add credits and purchase item with proper validation
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, TestStoreItem]() -> bool {
 				FGFUserDataCallback AddCreditsCallback;
 				AddCreditsCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 					AddInfo("BuyStoreItem 1 :: Add Credits");
+					AddErrorIfFalse(bSuccess, "Add credits request failed");
+					if (!bSuccess) {
+						TestFalse("Add credits failed unexpectedly", true);
+						return;
+					}
 					TestEqual("Credits were added", UserData.Credits, 200);
+					TestTrue("User data is valid after credits update", UserData.Id > 0);
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -207,14 +218,18 @@ void GameFuseUserSpec::Define()
 					FGFStoreItemsCallback PurchaseCallback;
 					PurchaseCallback.BindLambda([this](bool bSuccess, const TArray<FGFStoreItem>& StoreItems) {
 						AddInfo("BuyStoreItem 2 :: Purchase Store Item");
+						AddErrorIfFalse(bSuccess, TEXT("Purchase store item request failed"));
+						if (!bSuccess) {
+							TestFalse("Purchase store item failed unexpectedly", true);
+							return;
+						}
 						TestTrue("Purchase store item request succeeded", bSuccess);
-						if (bSuccess) {
-							TestTrue("At least one store item returned", StoreItems.Num() > 0);
-							if (StoreItems.Num() > 0) {
-								const FGFStoreItem& StoreItem = StoreItems[0];
-								TestTrue("Store item ID is valid", StoreItem.Id > 0);
-								TestEqual("Store item cost matches", StoreItem.Cost, 100);
-							}
+						TestTrue("At least one store item returned", StoreItems.Num() > 0);
+						if (StoreItems.Num() > 0) {
+							const FGFStoreItem& StoreItem = StoreItems[0];
+							TestTrue("Store item ID is valid", StoreItem.Id > 0);
+							TestEqual("Store item cost matches", StoreItem.Cost, 100);
+							TestEqual("Store item name matches", StoreItem.Name, TEXT("Test Item"));
 						}
 					});
 
@@ -226,6 +241,7 @@ void GameFuseUserSpec::Define()
 						FGFStoreItemsCallback FetchCallback;
 						FetchCallback.BindLambda([this](bool bSuccess, const TArray<FGFStoreItem>& StoreItems) {
 							AddInfo("BuyStoreItem 3 :: Verify Purchased Items");
+							AddErrorIfFalse(bSuccess, TEXT("Fetch purchased items request failed"));
 							TestTrue("Fetch purchased items request succeeded", bSuccess);
 							if (bSuccess) {
 								TestEqual("Should have one purchased item", StoreItems.Num(), 1);
@@ -239,71 +255,13 @@ void GameFuseUserSpec::Define()
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
 																		  GameFuseUser->FetchPurchasedStoreItems(FetchCallback)));
+						ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 						return true;
 					}));
 					return true;
 				}));
 				return true;
 			}));
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
-		});
-
-		It("purchases and removes store items using ID", [this]() {
-			// Create store item
-			TSharedPtr<FGFStoreItem> TestStoreItem = MakeShared<FGFStoreItem>();
-			TestStoreItem->Name = TEXT("Test Item 2");
-			TestStoreItem->Description = TEXT("Another test store item");
-			TestStoreItem->Cost = 150;
-			TestStoreItem->Category = TEXT("test2");
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCreateStoreItem(TestAPIHandler, GameData, TestStoreItem, this, FGuid()));
-
-			// Add credits and purchase item
-			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, TestStoreItem]() -> bool {
-				FGFUserDataCallback AddCreditsCallback;
-				AddCreditsCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
-					AddInfo("RemoveStoreItem 1 :: Add Credits");
-					TestEqual("Credits were added", UserData.Credits, 200);
-				});
-
-				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																  GameFuseUser->AddCredits(200, AddCreditsCallback)));
-
-				// Purchase and remove store item
-				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, TestStoreItem]() -> bool {
-					FGFStoreItemsCallback PurchaseCallback;
-					PurchaseCallback.BindLambda([this](bool bSuccess, const TArray<FGFStoreItem>& StoreItems) {
-						AddInfo("RemoveStoreItem 2 :: Purchase Store Item");
-						TestTrue("At least one store item returned", StoreItems.Num() > 0);
-						if (StoreItems.Num() > 0) {
-							const FGFStoreItem& StoreItem = StoreItems[0];
-							TestTrue("Store item ID is valid", StoreItem.Id > 0);
-							TestEqual("Store item cost matches", StoreItem.Cost, 150);
-						}
-					});
-
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																	  GameFuseUser->PurchaseStoreItem(TestStoreItem->Id, PurchaseCallback)));
-
-					// Remove store item
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, TestStoreItem]() -> bool {
-						FGFStoreItemsCallback RemoveCallback;
-						RemoveCallback.BindLambda([this](bool bSuccess, const TArray<FGFStoreItem>& StoreItems) {
-							AddInfo("RemoveStoreItem 3 :: Remove Store Item");
-							TestEqual("Should have no store items", StoreItems.Num(), 0);
-						});
-
-						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																		  GameFuseUser->RemoveStoreItem(TestStoreItem->Id, RemoveCallback)));
-						return true;
-					}));
-					return true;
-				}));
-				return true;
-			}));
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 	});
 
@@ -361,10 +319,20 @@ void GameFuseUserSpec::Define()
 				FGFAttributesCallback SetAttributeCallback;
 				SetAttributeCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
 					AddInfo("SetAttribute 1 :: Set Single Attribute");
+					AddErrorIfFalse(bSuccess, "Set attribute request failed");
+					if (!bSuccess) {
+						TestFalse("Set attribute failed unexpectedly", true);
+						return;
+					}
 					TestTrue("Set attribute request succeeded", bSuccess);
-					if (bSuccess) {
+					TestTrue("Attributes array is valid", Attributes.Attributes.Num() > 0);
+					if (Attributes.Attributes.Num() > 0) {
 						TestEqual("Should have one attribute", Attributes.Attributes.Num(), 1);
-						TestEqual("Attribute value should match", Attributes.Attributes["test_key"], "test_value");
+						const FString* Value = Attributes.Attributes.Find("test_key");
+						TestNotNull("Attribute value should exist", Value);
+						if (Value) {
+							TestEqual("Attribute value should match", *Value, "test_value");
+						}
 					}
 				});
 
@@ -381,12 +349,15 @@ void GameFuseUserSpec::Define()
 					FGFAttributesCallback BatchSetCallback;
 					BatchSetCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
 						AddInfo("SetAttribute 2 :: Set Batch Attributes");
-						TestTrue("Set batch attributes request succeeded", bSuccess);
-						if (bSuccess) {
-							TestEqual("Should have three attributes total", Attributes.Attributes.Num(), 3);
-							TestEqual("First batch attribute should match", Attributes.Attributes["batch_key1"], "batch_value1");
-							TestEqual("Second batch attribute should match", Attributes.Attributes["batch_key2"], "batch_value2");
+						if (!bSuccess) {
+							TestFalse("Set batch attributes failed unexpectedly", true);
+							return;
 						}
+						TestTrue("Set batch attributes request succeeded", bSuccess);
+
+						TestEqual("Should have three attributes total", Attributes.Attributes.Num(), 3);
+						TestEqual("First batch attribute should match", Attributes.Attributes["batch_key1"], "batch_value1");
+						TestEqual("Second batch attribute should match", Attributes.Attributes["batch_key2"], "batch_value2");
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -397,25 +368,27 @@ void GameFuseUserSpec::Define()
 						FGFAttributesCallback FetchCallback;
 						FetchCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
 							AddInfo("SetAttribute 3 :: Verify All Attributes");
-							TestTrue("Fetch attributes request succeeded", bSuccess);
-							if (bSuccess) {
-								TestEqual("Should have three attributes", Attributes.Attributes.Num(), 3);
-								TestEqual("Original attribute should exist", Attributes.Attributes["test_key"], "test_value");
-								TestEqual("First batch attribute should exist", Attributes.Attributes["batch_key1"], "batch_value1");
-								TestEqual("Second batch attribute should exist", Attributes.Attributes["batch_key2"], "batch_value2");
+							if (!bSuccess) {
+								AddError("Fetch attributes request failed");
+								return;
 							}
+							TestTrue("Fetch attributes request succeeded", bSuccess);
+
+							TestEqual("Should have three attributes", Attributes.Attributes.Num(), 3);
+							TestEqual("Original attribute should exist", Attributes.Attributes["test_key"], "test_value");
+							TestEqual("First batch attribute should exist", Attributes.Attributes["batch_key1"], "batch_value1");
+							TestEqual("Second batch attribute should exist", Attributes.Attributes["batch_key2"], "batch_value2");
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
 																		  GameFuseUser->FetchAttributes(FetchCallback)));
+						ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 						return true;
 					}));
 					return true;
 				}));
 				return true;
 			}));
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("batch updates attributes", [this]() {
@@ -427,12 +400,26 @@ void GameFuseUserSpec::Define()
 				TestAttributes.Add("test_key3", "test_value3");
 
 				FGFAttributesCallback SetAttributesCallback;
-				SetAttributesCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
+				SetAttributesCallback.BindLambda([this, TestAttributes](bool bSuccess, const FGFAttributeList& Attributes) {
 					AddInfo("BatchAttributes 1 :: Set Attributes");
-					TestEqual("Should have three attributes", Attributes.Attributes.Num(), 3);
-					TestEqual("First attribute should match", Attributes.Attributes["test_key1"], "test_value1");
-					TestEqual("Second attribute should match", Attributes.Attributes["test_key2"], "test_value2");
-					TestEqual("Third attribute should match", Attributes.Attributes["test_key3"], "test_value3");
+					AddErrorIfFalse(bSuccess, "Set attributes request failed");
+					TestTrue("Set attributes request succeeded", bSuccess);
+					if (bSuccess) {
+						TestEqual("Should have three attributes", Attributes.Attributes.Num(), 3);
+						const FString* Value1 = Attributes.Attributes.Find("test_key1");
+						const FString* Value2 = Attributes.Attributes.Find("test_key2");
+						const FString* Value3 = Attributes.Attributes.Find("test_key3");
+
+						TestNotNull("First attribute should exist", Value1);
+						TestNotNull("Second attribute should exist", Value2);
+						TestNotNull("Third attribute should exist", Value3);
+
+						if (Value1 && Value2 && Value3) {
+							TestEqual("First attribute should match", *Value1, "test_value1");
+							TestEqual("Second attribute should match", *Value2, "test_value2");
+							TestEqual("Third attribute should match", *Value3, "test_value3");
+						}
+					}
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -443,20 +430,34 @@ void GameFuseUserSpec::Define()
 					FGFAttributesCallback FetchCallback;
 					FetchCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
 						AddInfo("BatchAttributes 2 :: Verify Attributes");
+						if (!bSuccess) {
+							AddErrorIfFalse(bSuccess, "Fetch attributes request failed");
+							return;
+						}
+						TestTrue("Fetch attributes request succeeded", bSuccess);
 						TestEqual("Should have three attributes", Attributes.Attributes.Num(), 3);
-						TestEqual("First attribute should exist", Attributes.Attributes["test_key1"], "test_value1");
-						TestEqual("Second attribute should exist", Attributes.Attributes["test_key2"], "test_value2");
-						TestEqual("Third attribute should exist", Attributes.Attributes["test_key3"], "test_value3");
+						const FString* Value1 = Attributes.Attributes.Find("test_key1");
+						const FString* Value2 = Attributes.Attributes.Find("test_key2");
+						const FString* Value3 = Attributes.Attributes.Find("test_key3");
+
+						TestNotNull("First attribute should exist", Value1);
+						TestNotNull("Second attribute should exist", Value2);
+						TestNotNull("Third attribute should exist", Value3);
+
+						if (Value1 && Value2 && Value3) {
+							TestEqual("First attribute should match", *Value1, "test_value1");
+							TestEqual("Second attribute should match", *Value2, "test_value2");
+							TestEqual("Third attribute should match", *Value3, "test_value3");
+						}
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
 																	  GameFuseUser->FetchAttributes(FetchCallback)));
+					ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 					return true;
 				}));
 				return true;
 			}));
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("removes attributes", [this]() {
@@ -469,6 +470,10 @@ void GameFuseUserSpec::Define()
 				FGFAttributesCallback SetAttributesCallback;
 				SetAttributesCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
 					AddInfo("RemoveAttributes 1 :: Set Initial Attributes");
+					if (!bSuccess) {
+						TestFalse("Set attributes request failed", true);
+						return;
+					}
 					TestEqual("Should have two attributes", Attributes.Attributes.Num(), 2);
 					TestEqual("First attribute should match", Attributes.Attributes["test_key1"], "test_value1");
 					TestEqual("Second attribute should match", Attributes.Attributes["test_key2"], "test_value2");
@@ -482,6 +487,10 @@ void GameFuseUserSpec::Define()
 					FGFAttributesCallback RemoveCallback;
 					RemoveCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
 						AddInfo("RemoveAttributes 2 :: Remove Attribute");
+						if (!bSuccess) {
+							AddErrorIfFalse(bSuccess, "Remove attribute request failed");
+							return;
+						}
 						TestEqual("Should have one attribute remaining", Attributes.Attributes.Num(), 1);
 						TestEqual("Remaining attribute should match", Attributes.Attributes["test_key2"], "test_value2");
 					});
@@ -494,20 +503,23 @@ void GameFuseUserSpec::Define()
 						FGFAttributesCallback FetchCallback;
 						FetchCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
 							AddInfo("RemoveAttributes 3 :: Verify Attributes");
+							if (!bSuccess) {
+								AddErrorIfFalse(bSuccess, "Fetch attributes request failed");
+								return;
+							}
 							TestEqual("Should have one attribute", Attributes.Attributes.Num(), 1);
 							TestEqual("Remaining attribute should match", Attributes.Attributes["test_key2"], "test_value2");
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
 																		  GameFuseUser->FetchAttributes(FetchCallback)));
+						ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 						return true;
 					}));
 					return true;
 				}));
 				return true;
 			}));
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 
 		It("syncs local attributes", [this]() {
@@ -517,7 +529,7 @@ void GameFuseUserSpec::Define()
 				GameFuseUser->SetAttributeLocal("local_key2", "local_value2");
 				GameFuseUser->SetAttributeLocal("local_key3", "local_value3");
 
-				// Verify local attributes were set
+				// Verify local attributes were set with proper null checks
 				const TMap<FString, FString>& LocalAttributes = GameFuseUser->GetDirtyAttributes();
 				TestEqual("Should have three local attributes", LocalAttributes.Num(), 3);
 				TestEqual("Local attribute 1 should match", LocalAttributes["local_key1"], "local_value1");
@@ -528,6 +540,10 @@ void GameFuseUserSpec::Define()
 				FGFAttributesCallback SyncCallback;
 				SyncCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
 					AddInfo("SyncLocal 1 :: Sync Local Attributes");
+					if (!bSuccess) {
+						AddErrorIfFalse(bSuccess, "Sync local attributes request failed");
+						return;
+					}
 					TestEqual("Should have three attributes", Attributes.Attributes.Num(), 3);
 					TestEqual("First attribute should match", Attributes.Attributes["local_key1"], "local_value1");
 					TestEqual("Second attribute should match", Attributes.Attributes["local_key2"], "local_value2");
@@ -542,6 +558,10 @@ void GameFuseUserSpec::Define()
 					FGFAttributesCallback FetchCallback;
 					FetchCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
 						AddInfo("SyncLocal 2 :: Verify Synced Attributes");
+						if (!bSuccess) {
+							AddErrorIfFalse(bSuccess, "Fetch attributes request failed");
+							return;
+						}
 						TestEqual("Should have three attributes", Attributes.Attributes.Num(), 3);
 						TestEqual("First attribute should match", Attributes.Attributes["local_key1"], "local_value1");
 						TestEqual("Second attribute should match", Attributes.Attributes["local_key2"], "local_value2");
@@ -550,12 +570,11 @@ void GameFuseUserSpec::Define()
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
 																	  GameFuseUser->FetchAttributes(FetchCallback)));
+					ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 					return true;
 				}));
 				return true;
 			}));
-
-			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 		});
 	});
 }

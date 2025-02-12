@@ -137,6 +137,7 @@ public:
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Attributes", Category = "GameFuse|User")
 	void BP_SetAttributes(const TMap<FString, FString>& NewAttributes, FGFSuccessCallback Callback);
 
+
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Attribute Local", Category = "GameFuse|User")
 	void BP_SetAttributeLocal(const FString& Key, const FString& Value);
 
@@ -179,12 +180,11 @@ public:
 protected:
 
 	//> Response Handlers
-	bool HandleUserDataResponse(FGFAPIResponse Response);
+	bool HandleUserDataResponse(FGFAPIResponse Response, bool bLogIn = false);
 	void HandleStoreItemsResponse(FGFAPIResponse Response);
 	void HandleLeaderboardEntriesResponse(FGFAPIResponse Response);
 	void HandleAttributesResponse(FGFAPIResponse Response);
 	void HandleUserActionResponse(FGFAPIResponse Response);
-	void HandleUserLogin(FGFAPIResponse Response);
 
 private:
 

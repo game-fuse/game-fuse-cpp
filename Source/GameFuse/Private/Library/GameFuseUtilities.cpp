@@ -156,6 +156,19 @@ bool GameFuseUtilities::ConvertJsonToStoreItem(FGFStoreItem& InStoreItem, const 
 	return true;
 }
 
+bool GameFuseUtilities::ConvertJsonStringToStringMap(const FString& String, TMap<FString, FString>& Map)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(String);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	return ConvertJsonObjectToStringMap(JsonObject, Map);
+}
+
 bool GameFuseUtilities::ConvertJsonToLeaderboardEntry(FGFLeaderboardEntry& InLeaderboardItem, const TSharedPtr<FJsonValue>& JsonValue)
 {
 	if (JsonValue->Type != EJson::Object) {
@@ -171,9 +184,10 @@ bool GameFuseUtilities::ConvertJsonToLeaderboardEntry(FGFLeaderboardEntry& InLea
 	InLeaderboardItem.DateTime = JsonObject->GetStringField(TEXT("created_at"));
 
 	// Convert metadata from JSON
-	const TSharedPtr<FJsonObject>* MetadataObject;
-	if (JsonObject->TryGetObjectField(TEXT("metadata"), MetadataObject)) {
-		return ConvertJsonObjectToStringMap(*MetadataObject, InLeaderboardItem.Metadata);
+	FString MetadataString;
+	if (JsonObject->TryGetStringField(TEXT("metadata"), MetadataString)) {
+		const TSharedPtr<FJsonObject>& MetaDataObject = JsonValue->AsObject();
+		return ConvertJsonStringToStringMap(MetadataString, InLeaderboardItem.Metadata);
 	}
 
 	return true;
@@ -199,19 +213,17 @@ bool GameFuseUtilities::ConvertJsonToLeaderboardEntries(TArray<FGFLeaderboardEnt
 
 bool GameFuseUtilities::ConvertJsonToLeaderboardEntries(TArray<FGFLeaderboardEntry>& InLeaderboardArray, const TSharedPtr<FJsonObject>& JsonObject)
 {
-	if (!JsonObject->HasField(TEXT("leaderboard_entries")) || !JsonObject->HasField(TEXT("leaderboard_name")) || !JsonObject->HasField(TEXT("leaderboard_entries"))) {
+	if (!JsonObject->HasField(TEXT("leaderboard_entries"))) {
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for LeaderboardEntries conversion"));
 		return false;
 	}
 
-	const FString LeaderboardName = JsonObject->GetStringField(TEXT("leaderboard_name"));
 	const TArray<TSharedPtr<FJsonValue>>* JsonArray;
 	if (!JsonObject->TryGetArrayField(TEXT("leaderboard_entries"), JsonArray)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to get leaderboard_entries array from JSON"));
 		return false;
 	}
 
-	InLeaderboardArray.Empty();
 	for (const TSharedPtr<FJsonValue>& JsonValue : *JsonArray) {
 		FGFLeaderboardEntry LeaderboardEntry;
 		if (ConvertJsonToLeaderboardEntry(LeaderboardEntry, JsonValue)) {
@@ -854,7 +866,7 @@ bool GameFuseUtilities::ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObjec
 
 	// if field is null, return success and skip
 	if (JsonObject->HasTypedField(FStringView(FieldKey), EJson::Null)) {
-		UE_LOG(LogGameFuse, Log, TEXT("ConvertJsonToGameRound: %s field is null, skipping"), *FieldKey);
+		UE_LOG(LogGameFuse, Log, TEXT("ConvertJsonObjectToStringMap: %s field is null, skipping"), *FieldKey);
 		return true;
 	}
 
@@ -863,18 +875,18 @@ bool GameFuseUtilities::ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObjec
 	const TSharedPtr<FJsonObject>* SrcJsonObject = nullptr;
 	if (JsonObject->TryGetObjectField(FStringView(FieldKey), SrcJsonObject)) {
 		if (!SrcJsonObject->IsValid()) {
-			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid object value for field: %s"), *FieldKey);
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonObjectToStringMap: Invalid object value for field: %s"), *FieldKey);
 			return false;
 		}
 
 		if ((*SrcJsonObject)->Values.Num() == 0) {
-			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: object was empty: %s"), *FieldKey);
+			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonObjectToStringMap: object was empty: %s"), *FieldKey);
 			return true;
 		}
 
 		for (const auto& Pair : (*SrcJsonObject)->Values) {
 			if (!Pair.Value.IsValid()) {
-				UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Invalid object value for key: %s"), *Pair.Key);
+				UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonObjectToStringMap: Invalid object value for key: %s"), *Pair.Key);
 				continue;
 			}
 
@@ -926,15 +938,40 @@ bool GameFuseUtilities::ConvertJsonToAttributes(FGFAttributeList& InAttributes, 
 		return false;
 	}
 
+
 	// Parse attributes object
-	const TSharedPtr<FJsonObject>* AttributesObject;
-	if (!JsonObject->TryGetObjectField(TEXT("attributes"), AttributesObject)) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to find attributes object in response"));
+	const TArray<TSharedPtr<FJsonValue>>* AttributesValues;
+	if (!JsonObject->TryGetArrayField(TEXT("game_user_attributes"), AttributesValues)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to find game_user_attributes object in response"));
 		return false;
 	}
 
 	// Convert attributes to map
-	return ConvertJsonObjectToStringMap(*AttributesObject, InAttributes.Attributes);
+	return ConvertJsonArrayToAttributes(InAttributes, AttributesValues);
+}
+
+bool GameFuseUtilities::ConvertJsonArrayToAttributes(FGFAttributeList& InAttributes, const TArray<TSharedPtr<FJsonValue>>* Array)
+{
+	for (const auto& JsonValue : *Array) {
+		if (JsonValue->Type != EJson::Object) {
+			UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON value in attributes array"));
+			return false;
+		}
+
+		const TSharedPtr<FJsonObject>& JsonObject = JsonValue->AsObject();
+		FString Key, Value;
+		if (!JsonObject->HasField("key") || !JsonObject->HasField("value")) {
+			UE_LOG(LogGameFuse, Error, TEXT("Missing key or value field in attribute object"));
+			return false;
+		}
+
+		JsonObject->TryGetStringField("key", Key);
+		JsonObject->TryGetStringField("value", Value);
+		InAttributes.Attributes.Add(Key, Value);
+	}
+
+
+	return true;
 }
 
 #pragma endregion

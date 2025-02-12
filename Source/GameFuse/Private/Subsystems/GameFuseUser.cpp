@@ -77,8 +77,7 @@ FGuid UGameFuseUser::SignUp(const FGFGameData& GameData, const FString& Email, c
 {
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleUserDataResponse(Response);
-		HandleUserLogin(Response);
+		HandleUserDataResponse(Response, true);
 	});
 
 	FGuid RequestId = RequestHandler->SignUp(Email, Password, PasswordConfirmation, Username, GameData.Id, GameData.Token, InternalCallback);
@@ -98,8 +97,7 @@ FGuid UGameFuseUser::SignIn(const FGFGameData& GameData, const FString& Email, c
 {
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleUserDataResponse(Response);
-		HandleUserLogin(Response);
+		HandleUserDataResponse(Response, true);
 	});
 
 	FGuid RequestId = RequestHandler->SignIn(Email, Password, GameData.Id, GameData.Token, InternalCallback);
@@ -295,12 +293,31 @@ FGuid UGameFuseUser::FetchAttributes(FGFAttributesCallback TypedCallback)
 
 FGuid UGameFuseUser::SyncLocalAttributes(FGFAttributesCallback TypedCallback)
 {
+	// If there are no local attributes to sync, just fetch current attributes
+	if (LocalAttributes.Num() == 0) {
+		FGFApiCallback InternalCallback;
+		InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+			HandleAttributesResponse(Response);
+		});
+
+		FGuid RequestId = RequestHandler->FetchAttributes(UserData, InternalCallback);
+		if (TypedCallback.IsBound()) {
+			AttributesCallbacks.Add(RequestId, TypedCallback);
+		}
+		return RequestId;
+	}
+
+	// Sync local attributes to server using SetAttributes
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		if (Response.bSuccess) {
+			// Clear local attributes after successful sync
+			LocalAttributes.Empty();
+		}
 		HandleAttributesResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchAttributes(UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->SetAttributes(LocalAttributes, UserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		AttributesCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -572,7 +589,7 @@ void UGameFuseUser::BP_SetAttributes(const TMap<FString, FString>& NewAttributes
 
 #pragma region Response Handlers
 
-bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response)
+bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response, bool bLogIn)
 {
 	if (!Response.bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("User data response failed: %s"), *Response.ResponseStr);
@@ -595,7 +612,18 @@ bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response)
 	}
 
 	// Update the stored user data
-	UserData = NewUserData;
+	if (bLogIn) {
+		UserData = NewUserData;
+		UserData.bSignedIn = true;
+		UE_LOG(LogGameFuse, Warning, TEXT("Successfully signed in user token: %s"), *UserData.AuthenticationToken);
+	} else {
+		// dont update authentication tokeen
+		FString CachedToken = UserData.AuthenticationToken;
+		UserData = NewUserData;
+		UserData.AuthenticationToken = CachedToken;
+		UserData.bSignedIn = true;
+	}
+
 
 	// Execute the specific callback for this request if it exists
 	if (UserDataCallbacks.Contains(Response.RequestId)) {
@@ -640,8 +668,7 @@ void UGameFuseUser::HandleStoreItemsResponse(FGFAPIResponse Response)
 
 void UGameFuseUser::HandleLeaderboardEntriesResponse(FGFAPIResponse Response)
 {
-	// existing list is not cleared even if the response is not successful
-	LeaderboardEntries.Empty();
+
 	if (!Response.bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("Leaderboard entries response failed: %s"), *Response.ResponseStr);
 		if (LeaderboardEntriesCallbacks.Contains(Response.RequestId)) {
@@ -650,6 +677,8 @@ void UGameFuseUser::HandleLeaderboardEntriesResponse(FGFAPIResponse Response)
 		}
 		return;
 	}
+	// existing list is only cleared if the response is successful
+	LeaderboardEntries.Empty();
 
 	bool bConvertSuccess = GameFuseUtilities::ConvertJsonToLeaderboardEntries(LeaderboardEntries, Response.ResponseStr);
 
@@ -701,30 +730,6 @@ void UGameFuseUser::HandleUserActionResponse(FGFAPIResponse Response)
 		SimpleSuccessCallbacks[Response.RequestId].Broadcast(Response.bSuccess);
 		SimpleSuccessCallbacks.Remove(Response.RequestId);
 	}
-}
-
-void UGameFuseUser::HandleUserLogin(FGFAPIResponse Response)
-{
-	if (!Response.bSuccess) {
-		UE_LOG(LogGameFuse, Error, TEXT("User failed to login"));
-		return;
-	}
-	UserData.bSignedIn = true;
-
-	UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::CreateSaveGameObject(UGameFuseSaveData::StaticClass()));
-	SaveGameInstance->UserData = UserData;
-
-	UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
-	UE_LOG(LogGameFuse, Log, TEXT("Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
-
-	// Execute login callback with success
-	if (LoginCallbacks.Contains(Response.RequestId)) {
-		LoginCallbacks[Response.RequestId].Execute(true, UserData);
-		LoginCallbacks.Remove(Response.RequestId);
-	}
-
-	// Log successful login
-	UE_LOG(LogGameFuse, Log, TEXT("User successfully logged in: %s"), *UserData.Username);
 }
 
 

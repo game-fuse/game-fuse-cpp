@@ -76,6 +76,7 @@ public:
 	 */
 	static bool ConvertJsonToStoreItem(FGFStoreItem& InStoreItem, const TSharedPtr<FJsonValue>& JsonValue);
 
+	static bool ConvertJsonStringToStringMap(const FString& String, TMap<FString, FString>& Map);
 	/**
 	 * Converts a JSON value into a LeaderboardEntry
 	 * @param InLeaderboardItem LeaderboardEntry struct to store converted data
@@ -326,6 +327,7 @@ public:
 	 */
 	static bool ConvertJsonToStoreItems(TArray<FGFStoreItem>& InStoreItems, const FString& JsonString);
 
+
 	/**
 	 * Converts a JSON string into attributes
 	 * @param InAttributes AttributeList struct to store converted data
@@ -333,6 +335,8 @@ public:
 	 * @return true if successful
 	 */
 	static bool ConvertJsonToAttributes(FGFAttributeList& InAttributes, const FString& JsonString);
+
+	static bool ConvertJsonArrayToAttributes(FGFAttributeList& InAttributes, const TArray<TSharedPtr<FJsonValue>>* Array);
 
 #pragma endregion
 };
