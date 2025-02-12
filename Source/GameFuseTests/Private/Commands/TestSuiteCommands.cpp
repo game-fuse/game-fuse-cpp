@@ -1,6 +1,5 @@
 #include "Commands/TestSuiteCommands.h"
 
-#include "JsonObjectConverter.h"
 #include "Library/GameFuseLog.h"
 #include "Library/GameFuseUtilities.h"
 
@@ -21,7 +20,7 @@ bool FCreateGame::Update()
 			return;
 		}
 
-		bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameData.Get());
+		bool parseSuccess = GameFuseUtilities::ConvertJsonToGameData(*GameData, Response.ResponseStr);
 		UE_LOG(LogGameFuse, Log, TEXT("Parsing CreateGame response. Success: %d, GameData: ID=%d, Token=%s"),
 			   parseSuccess, GameData->Id, *GameData->Token);
 
@@ -96,25 +95,33 @@ bool FCreateStoreItem::Update()
 			return;
 		}
 
-		bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, StoreItem.Get());
+		TSharedPtr<FJsonValue> StoreItemResponse;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
+
+		if (!FJsonSerializer::Deserialize(Reader, StoreItemResponse) || !StoreItemResponse.IsValid()) {
+			Test->AddError(FString::Printf(TEXT("failed to parse string. Response: %s"), *Response.ResponseStr));
+			return;
+		}
+		FGFStoreItem NewStoreItem;
+		bool parseSuccess = GameFuseUtilities::ConvertJsonToStoreItem(NewStoreItem, StoreItemResponse);
 		Test->TestTrue("Store Item parsed successfully", parseSuccess);
+
+		Test->AddErrorIfFalse(parseSuccess, TEXT("Failed to parse store item response"));
+		Test->TestTrue("receives good id", NewStoreItem.Id > 0);
+		Test->TestEqual("store item name matches", NewStoreItem.Name, StoreItem->Name);
+		Test->TestEqual("store item cost matches", NewStoreItem.Cost, StoreItem->Cost);
+		Test->TestEqual("description matches", NewStoreItem.Description, StoreItem->Description);
+
+		StoreItem->Id = NewStoreItem.Id;
+		Test->AddInfo("CreateStoreItem :: Verified Store Item");
 		if (!parseSuccess) {
 			Test->AddError(TEXT("Failed to parse store item response"));
+			return;
 		}
 	});
 
-	// Generate random store item name and description
-	FString RandomGuid = FGuid::NewGuid().ToString();
-	FString StoreItemName = FString::Printf(TEXT("Item_%s"), *RandomGuid.Left(8));
-	FString StoreItemDescription = FString::Printf(TEXT("This is a description for item %s"), *StoreItemName);
 
-	// Create a store item object with the provided data
-	FGFStoreItem Item;
-	Item.Name = StoreItemName;
-	Item.Description = StoreItemDescription;
-	Item.Cost = 10;
-
-	RequestId = APIHandler->CreateStoreItem(GameData->Id, Item, Callback);
+	RequestId = APIHandler->CreateStoreItem(GameData->Id, *StoreItem, Callback);
 	return false;
 }
 
@@ -198,7 +205,7 @@ bool FSetupGame::Update()
 				return;
 			}
 
-			bool parseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(Response.ResponseStr, GameData.Get());
+			bool parseSuccess = GameFuseUtilities::ConvertJsonToGameData(*GameData, Response.ResponseStr);
 			Test->TestTrue("got game data from response", parseSuccess);
 			Test->TestTrue("Game ID should be valid", GameData->Id != 0);
 			if (!parseSuccess || GameData->Id == 0) {

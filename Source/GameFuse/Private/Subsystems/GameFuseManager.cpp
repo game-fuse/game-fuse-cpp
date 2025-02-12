@@ -9,8 +9,6 @@
 
 #include "Subsystems/GameFuseManager.h"
 
-#include "JsonObjectConverter.h"
-
 #include "Subsystems/GameFuseUser.h"
 #include "Library/GameFuseLog.h"
 #include "Library/GameFuseUtilities.h"
@@ -272,7 +270,7 @@ void UGameFuseManager::InternalResponseManager(FGFAPIResponse ResponseData)
 
 void UGameFuseManager::SetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	const bool bSuccess = FJsonObjectConverter::JsonObjectToUStruct(JsonObject.ToSharedRef(), &GameData);
+	const bool bSuccess = GameFuseUtilities::ConvertJsonToGameData(GameData, JsonObject);
 	if (!bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse Game Data"));
 	}

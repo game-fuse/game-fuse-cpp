@@ -39,6 +39,7 @@ public:
 	 * @return true if successful
 	 */
 	static bool ConvertGroupToJson(const FGFGroup& Group, const TSharedPtr<FJsonObject>& JsonObject);
+	static bool ConvertJsonToGameData(FGFGameData& InGameData, const FString& JsonString);
 
 #pragma endregion
 #pragma region JSON => Struct Conversion

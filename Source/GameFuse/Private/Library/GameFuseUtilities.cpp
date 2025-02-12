@@ -73,6 +73,24 @@ bool GameFuseUtilities::ConvertGroupToJson(const FGFGroup& Group, const TSharedP
 
 #pragma region JSON => Struct Conversion
 
+bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const FString& JsonString)
+{
+	if (JsonString.IsEmpty()) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameData: Empty JSON string"));
+		return false;
+	}
+
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameData: Failed to parse JSON string: %s"), *JsonString);
+		return false;
+	}
+
+	return ConvertJsonToGameData(InGameData, JsonObject);
+}
+
 
 bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const TSharedPtr<FJsonObject>& JsonObject)
 {
@@ -95,6 +113,7 @@ bool GameFuseUtilities::ConvertJsonToUserData(FGFUserData& InUserData, const FSt
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
 
 	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToUserData: Failed to parse JSON string: %s"), *JsonString);
 		return false;
 	}
 
@@ -112,6 +131,7 @@ bool GameFuseUtilities::ConvertJsonToUserData(FGFUserData& InUserData, const TSh
 	JsonObject->TryGetStringField(TEXT("username"), InUserData.Username);
 	JsonObject->TryGetNumberField(TEXT("credits"), InUserData.Credits);
 	JsonObject->TryGetStringField(TEXT("last_login"), InUserData.LastLogin);
+	JsonObject->TryGetStringField(TEXT("authentication_token"), InUserData.AuthenticationToken);
 
 	return true;
 }
@@ -153,7 +173,7 @@ bool GameFuseUtilities::ConvertJsonToLeaderboardEntry(FGFLeaderboardEntry& InLea
 	// Convert metadata from JSON
 	const TSharedPtr<FJsonObject>* MetadataObject;
 	if (JsonObject->TryGetObjectField(TEXT("metadata"), MetadataObject)) {
-		ConvertJsonObjectToStringMap(*MetadataObject, InLeaderboardItem.Metadata);
+		return ConvertJsonObjectToStringMap(*MetadataObject, InLeaderboardItem.Metadata);
 	}
 
 	return true;
@@ -880,8 +900,8 @@ bool GameFuseUtilities::ConvertJsonToStoreItems(TArray<FGFStoreItem>& InStoreIte
 
 	// Parse store items array
 	const TArray<TSharedPtr<FJsonValue>>* StoreItemsArray;
-	if (!JsonObject->TryGetArrayField(TEXT("store_items"), StoreItemsArray)) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to find store_items array in response"));
+	if (!JsonObject->TryGetArrayField(TEXT("game_user_store_items"), StoreItemsArray)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to find game_user_store_items array in response"));
 		return false;
 	}
 

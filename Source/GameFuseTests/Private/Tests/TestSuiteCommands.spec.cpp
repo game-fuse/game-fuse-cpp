@@ -68,7 +68,14 @@ void FTestSuiteCommandsSpec::Define()
 		It("creates a store item", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(TestAPIHandler, GameData, this, FGuid()));
 
-			ADD_LATENT_AUTOMATION_COMMAND(FCreateStoreItem(TestAPIHandler, GameData, StoreItem, this, FGuid()))
+			TSharedPtr<FGFStoreItem> NewStoreItem = MakeShared<FGFStoreItem>();
+			NewStoreItem->Name = "Test Item";
+			NewStoreItem->Description = "A test store item";
+			NewStoreItem->Cost = 100;
+			NewStoreItem->Category = "test";
+
+
+			ADD_LATENT_AUTOMATION_COMMAND(FCreateStoreItem(TestAPIHandler, GameData, NewStoreItem, this, FGuid()))
 
 			ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() {
