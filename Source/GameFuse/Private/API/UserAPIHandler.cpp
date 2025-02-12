@@ -34,8 +34,7 @@ FGuid UUserAPIHandler::SignIn(const FString& Email, const FString& Password, con
 
 FGuid UUserAPIHandler::AddCredits(const int32 Credits, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -51,8 +50,7 @@ FGuid UUserAPIHandler::AddCredits(const int32 Credits, const FGFUserData& UserDa
 
 FGuid UUserAPIHandler::SetCredits(const int SetCredits, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -69,8 +67,7 @@ FGuid UUserAPIHandler::SetCredits(const int SetCredits, const FGFUserData& UserD
 
 FGuid UUserAPIHandler::AddScore(const int32 Score, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -86,8 +83,7 @@ FGuid UUserAPIHandler::AddScore(const int32 Score, const FGFUserData& UserData, 
 
 FGuid UUserAPIHandler::SetScore(const int32 Score, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -103,8 +99,7 @@ FGuid UUserAPIHandler::SetScore(const int32 Score, const FGFUserData& UserData, 
 
 FGuid UUserAPIHandler::SetAttribute(const FString& SetKey, const FString& SetValue, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -121,8 +116,7 @@ FGuid UUserAPIHandler::SetAttribute(const FString& SetKey, const FString& SetVal
 
 FGuid UUserAPIHandler::SetAttributes(const TMap<FString, FString>& Attributes, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -134,8 +128,7 @@ FGuid UUserAPIHandler::SetAttributes(const TMap<FString, FString>& Attributes, c
 	TArray<TSharedPtr<FJsonValue>> AttributesArray;
 
 	// Convert attributes map to array of key-value objects
-	for (const auto& Pair : Attributes)
-	{
+	for (const auto& Pair : Attributes) {
 		TSharedPtr<FJsonObject> AttributeObject = MakeShareable(new FJsonObject);
 		AttributeObject->SetStringField("key", Pair.Key);
 		AttributeObject->SetStringField("value", Pair.Value);
@@ -150,8 +143,7 @@ FGuid UUserAPIHandler::SetAttributes(const TMap<FString, FString>& Attributes, c
 
 FGuid UUserAPIHandler::RemoveAttribute(const FString& Key, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -164,8 +156,7 @@ FGuid UUserAPIHandler::RemoveAttribute(const FString& Key, const FGFUserData& Us
 
 FGuid UUserAPIHandler::PurchaseStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -181,8 +172,7 @@ FGuid UUserAPIHandler::PurchaseStoreItem(const int32 StoreItemId, const FGFUserD
 
 FGuid UUserAPIHandler::RemoveStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -208,8 +198,7 @@ FGuid UUserAPIHandler::AddLeaderboardEntry(const FString& LeaderboardName, const
 
 FGuid UUserAPIHandler::AddLeaderboardEntry(const FGFLeaderboardEntry& LeaderboardEntry, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -217,8 +206,7 @@ FGuid UUserAPIHandler::AddLeaderboardEntry(const FGFLeaderboardEntry& Leaderboar
 
 	// Create JSON body with all parameters
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-	if (GameFuseUtilities::ConvertLeaderboardItemToJson(LeaderboardEntry, JsonObject))
-	{
+	if (GameFuseUtilities::ConvertLeaderboardItemToJson(LeaderboardEntry, JsonObject)) {
 		const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/add_leaderboard_entry"), UserData.Id);
 
 		UE_LOG(LogGameFuse, Verbose, TEXT("User Adding Leaderboard : %s : %d"), *LeaderboardEntry.LeaderboardName, LeaderboardEntry.Score);
@@ -229,13 +217,12 @@ FGuid UUserAPIHandler::AddLeaderboardEntry(const FGFLeaderboardEntry& Leaderboar
 
 FGuid UUserAPIHandler::ClearLeaderboardEntry(const FString& LeaderboardName, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
 	SetAuthHeader(UserData.AuthenticationToken);
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/clear_my_leaderboard_entries"), UserData.Id);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/clear_my_leaderboard_entries?leaderboard_name=%s"), UserData.Id, *LeaderboardName);
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("User Clearing Leaderboard : %s"), *LeaderboardName);
 	return SendRequest(ApiEndpoint, "POST", Callback);
@@ -243,11 +230,13 @@ FGuid UUserAPIHandler::ClearLeaderboardEntry(const FString& LeaderboardName, con
 
 FGuid UUserAPIHandler::FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	const FString OnePerUserStr = (bOnePerUser) ? TEXT("true") : TEXT("false");
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/leaderboard_entries?authentication_token=%s&limit=%d&one_per_user=%s"), UserData.Id, *UserData.AuthenticationToken, Limit, *OnePerUserStr);
+	if (!VerifyUserData(UserData)) {
+		return FGuid();
+	}
 
-	// SetAuthHeader(UserData.AuthenticationToken);
-	// const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/leaderboard_entries?limit=%d&one_per_user=%s"),UserData.Id, Limit, bOnePerUser ? TEXT("true") : TEXT("false"));
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/leaderboard_entries?limit=%d&one_per_user=%s"),
+												UserData.Id, Limit, bOnePerUser ? TEXT("true") : TEXT("false"));
 
 	UE_LOG(LogGameFuse, Verbose, TEXT("Fetching My Leaderboard : %d : %s"), Limit, bOnePerUser ? TEXT("true") : TEXT("false"));
 	return SendRequest(ApiEndpoint, "GET", Callback);
@@ -257,8 +246,7 @@ FGuid UUserAPIHandler::FetchMyLeaderboardEntries(const int32 Limit, bool bOnePer
 FGuid UUserAPIHandler::FetchAttributes(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 
@@ -271,10 +259,9 @@ FGuid UUserAPIHandler::FetchAttributes(const FGFUserData& UserData, const FGFApi
 	return SendRequest(ApiEndpoint, "GET", Callback);
 }
 
-FGuid UUserAPIHandler::FetchPurchaseStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::FetchPurchasedStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData))
-	{
+	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 

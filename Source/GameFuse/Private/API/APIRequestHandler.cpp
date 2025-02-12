@@ -1,7 +1,7 @@
 #include "API/APIRequestHandler.h"
 
-#include "Interfaces/IHttpResponse.h"
 #include "HttpModule.h"
+#include "Interfaces/IHttpResponse.h"
 
 #include "Library/GameFuseLog.h"
 #include "Library/GameFuseUtilities.h"
@@ -17,7 +17,8 @@ UAPIRequestHandler::UAPIRequestHandler()
 
 bool UAPIRequestHandler::VerifyUserData(const FGFUserData& UserData)
 {
-	if (UserData.Id == 0) {
+	if (UserData.Id == 0)
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid user ID: %d"), UserData.Id);
 		return false;
 	}
@@ -26,7 +27,8 @@ bool UAPIRequestHandler::VerifyUserData(const FGFUserData& UserData)
 
 bool UAPIRequestHandler::VerifyGameData(const FGFGameData& GameData)
 {
-	if (GameData.Id == 0) {
+	if (GameData.Id == 0)
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid game ID: %d"), GameData.Id);
 		return false;
 	}
@@ -37,12 +39,14 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 {
 
 	// Error Checking
-	if (!OnResponseReceived.IsBound()) {
+	if (!OnResponseReceived.IsBound())
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("OnResponseReceived is not bound"));
 		return FGuid();
 	}
 
-	if (Endpoint.IsEmpty() || HttpMethod.IsEmpty()) {
+	if (Endpoint.IsEmpty() || HttpMethod.IsEmpty())
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid input parameters for SendRequest"));
 		return FGuid();
 	}
@@ -58,7 +62,8 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	// Create HTTP Request
 	FHttpRequestPtr HttpRequest = FHttpModule::Get().CreateRequest();
 
-	if (!HttpRequest.IsValid()) {
+	if (!HttpRequest.IsValid())
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to create HTTP request"));
 		return RequestId;
 	}
@@ -67,7 +72,8 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	HttpRequest->SetVerb(HttpMethod);
 
 	// Serialize JSON object and set as request body if provided
-	if (Body.IsValid()) {
+	if (Body.IsValid())
+	{
 		FString RequestBody;
 		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
 		FJsonSerializer::Serialize(Body.ToSharedRef(), Writer);
@@ -78,9 +84,7 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	AddCommonHeaders(HttpRequest);
 
 	// Capture request in the lambda to prevent collection before handle response is called.
-	HttpRequest->OnProcessRequestComplete().BindLambda([this, RequestId](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
-		HandleResponse(Request, Response, bWasSuccessful, RequestId);
-	});
+	HttpRequest->OnProcessRequestComplete().BindLambda([this, RequestId](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) { HandleResponse(Request, Response, bWasSuccessful, RequestId); });
 
 	UE_LOG(LogGameFuse, Log, TEXT("Sending Request [%s] to endpoint: %s"), *RequestId.ToString(), *Endpoint);
 	GameFuseUtilities::LogRequest(HttpRequest);
@@ -89,9 +93,12 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	ActiveRequests.Add(RequestId, HttpRequest);
 
 	// Store the response delegate
-	if (OnResponseReceived.IsBound()) {
+	if (OnResponseReceived.IsBound())
+	{
 		ResponseDelegates.Add(RequestId, OnResponseReceived);
-	} else {
+	}
+	else
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid RequestId or OnResponseReceived callback, request not sent"));
 		return RequestId;
 	}
@@ -109,22 +116,23 @@ void UAPIRequestHandler::SetAuthHeader(const FString& AuthToken)
 void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, const bool bWasSuccessful, const FGuid& RequestId)
 {
 	// error checking
-	if (!ActiveRequests.Contains(RequestId)) {
+	if (!ActiveRequests.Contains(RequestId))
+	{
 		UE_LOG(LogGameFuse, Log, TEXT("Got response without an active request"));
 	}
 
-	if (!RequestId.IsValid()) {
+	if (!RequestId.IsValid())
+	{
 		UE_LOG(LogGameFuse, Error, TEXT("Request not found"));
 		return;
 	}
 
-	if (!Response.IsValid()) {
-
-		ResponseDelegates.Contains(RequestId);
+	if (!Response.IsValid())
+	{
+		if (ResponseDelegates.Contains(RequestId))
 		{
 			const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 			FString ResponseContent = TEXT("Bad Response, Request is not valid");
-
 			Delegate.Broadcast(FGFAPIResponse(false, ResponseContent, RequestId, 404));
 			ResponseDelegates.Remove(RequestId);
 		}
@@ -133,35 +141,35 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 		return;
 	}
 
-
 	bool bSuccessfulAndValid = bWasSuccessful && Response.IsValid();
-
 	int ResponseCode = Response->GetResponseCode();
 	bool bIsGoodResponse = ResponseCode >= 200 && ResponseCode < 300;
 
-
 	// Retrieve and execute the response delegate
-	if (ResponseDelegates.Contains(RequestId)) {
+	if (ResponseDelegates.Contains(RequestId))
+	{
 		const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 		FString ResponseContent = bSuccessfulAndValid ? Response->GetContentAsString() : TEXT("Request failed or invalid response");
-
 		Delegate.Broadcast(FGFAPIResponse(bSuccessfulAndValid && bIsGoodResponse, ResponseContent, RequestId, ResponseCode));
 		ResponseDelegates.Remove(RequestId);
 	}
 
-
-	if (bSuccessfulAndValid) {
-
-		if (bIsGoodResponse) {
+	if (bSuccessfulAndValid)
+	{
+		if (bIsGoodResponse)
+		{
 			UE_LOG(LogTemp, Log, TEXT("Request %s succeeded"), *RequestId.ToString());
 			GameFuseUtilities::LogResponse(Response);
-		} else {
-
+		}
+		else
+		{
 			UE_LOG(LogTemp, Error, TEXT("Request %s failed"), *RequestId.ToString());
 			GameFuseUtilities::LogRequest(Request);
 			GameFuseUtilities::LogResponse(Response);
 		}
-	} else {
+	}
+	else
+	{
 		// Handle failure case here
 		UE_LOG(LogTemp, Error, TEXT("Request %s failed"), *RequestId.ToString());
 		GameFuseUtilities::LogRequest(Request);
@@ -174,9 +182,11 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 void UAPIRequestHandler::AddCommonHeaders(FHttpRequestPtr HttpRequest)
 {
 
-	for (auto Header : CommonHeaders) {
+	for (auto Header : CommonHeaders)
+	{
 
-		if (Header.Key.IsEmpty() || Header.Value.IsEmpty()) {
+		if (Header.Key.IsEmpty() || Header.Value.IsEmpty())
+		{
 			UE_LOG(LogGameFuse, Error, TEXT("Header Key or Value is empty"));
 			continue;
 		}

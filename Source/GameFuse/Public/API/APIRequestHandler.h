@@ -1,16 +1,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Interfaces/IHttpRequest.h"
 #include "Delegates/Delegate.h"
 #include "Dom/JsonObject.h"
+#include "Interfaces/IHttpRequest.h"
 
 #include "Library/GameFuseStructLibrary.h"
 
 #include "ApiRequestHandler.generated.h"
 
-// Single-cast delegates for user callbacks
+
 DECLARE_DYNAMIC_DELEGATE_OneParam(FGFSuccessCallback, bool, bSuccess);
+
+// Multicast delegate for internal success callbacks
+DECLARE_MULTICAST_DELEGATE_OneParam(FGFInternalSuccessCallback, bool);
 
 /**
  * @brief BP Specific Callback Delegate. Only bound to the Delegate pin on a given node.
@@ -59,10 +62,10 @@ public:
 	static bool VerifyUserData(const FGFUserData& UserData);
 	static bool VerifyGameData(const FGFGameData& GameData);
 
-protected:
-
-	// Sends an HTTP Request, optionally with a JSON object as the body, returns unique Request ID
+	// Sends an HTTP request with the specified parameters
 	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject>& Body = nullptr);
+
+protected:
 
 	void SetAuthHeader(const FString& AuthToken);
 
