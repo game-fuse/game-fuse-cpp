@@ -8,12 +8,12 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "GameFuseManager.h"
 #include "API/UserAPIHandler.h"
-#include "Subsystems/GameInstanceSubsystem.h"
+#include "CoreMinimal.h"
 #include "Dom/JsonObject.h"
+#include "GameFuseManager.h"
 #include "Library/GameFuseStructLibrary.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 
 #include "GameFuseUser.generated.h"
 
@@ -113,63 +113,65 @@ public:
 
 	//> Blueprint Wrapper Functions
 	UFUNCTION(BlueprintCallable, DisplayName = "Sign Up", Category = "GameFuse|User")
-	void BP_SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FGFSuccessCallback Callback);
+	void BP_SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Sign In", Category = "GameFuse|User")
-	void BP_SignIn(const FString& Email, const FString& Password, FGFSuccessCallback Callback);
+	void BP_SignIn(const FString& Email, const FString& Password, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Add Score", Category = "GameFuse|User")
-	void BP_AddScore(const int32 Score, FGFSuccessCallback Callback);
+	void BP_AddScore(const int32 Score, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Score", Category = "GameFuse|User")
-	void BP_SetScore(const int32 Score, FGFSuccessCallback Callback);
+	void BP_SetScore(const int32 Score, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Add Credits", Category = "GameFuse|User")
-	void BP_AddCredits(const int32 Credits, FGFSuccessCallback Callback);
+	void BP_AddCredits(const int32 Credits, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Credits", Category = "GameFuse|User")
-	void BP_SetCredits(const int32 Credits, FGFSuccessCallback Callback);
+	void BP_SetCredits(const int32 Credits, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Attribute", Category = "GameFuse|User")
-	void BP_SetAttribute(const FString& Key, const FString& Value, FGFSuccessCallback Callback);
+	void BP_SetAttribute(const FString& Key, const FString& Value, FBP_GFApiCallback Callback);
 
-	void BP_GetStoreItems(FGFSuccessCallback Callback);
+	void BP_GetStoreItems(FBP_GFApiCallback Callback);
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Attributes", Category = "GameFuse|User")
-	void BP_SetAttributes(const TMap<FString, FString>& NewAttributes, FGFSuccessCallback Callback);
-
+	void BP_SetAttributes(const TMap<FString, FString>& NewAttributes, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Attribute Local", Category = "GameFuse|User")
 	void BP_SetAttributeLocal(const FString& Key, const FString& Value);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Remove Attribute", Category = "GameFuse|User")
-	void BP_RemoveAttribute(const FString& Key, FGFSuccessCallback Callback);
+	void BP_RemoveAttribute(const FString& Key, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Attributes", Category = "GameFuse|User")
-	void BP_FetchAttributes(FGFSuccessCallback Callback);
+	void BP_FetchAttributes(FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Sync Local Attributes", Category = "GameFuse|User")
-	void BP_SyncLocalAttributes(FGFSuccessCallback Callback);
+	void BP_SyncLocalAttributes(FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Add Leaderboard Entry", Category = "GameFuse|User")
-	void BP_AddLeaderboardEntry(const FString& LeaderboardName, const int32 Score, const TMap<FString, FString>& Metadata, FGFSuccessCallback Callback);
+	void BP_AddLeaderboardEntry(const FString& LeaderboardName, const int32 Score, FBP_GFApiCallback Callback);
+
+	UFUNCTION(BlueprintCallable, DisplayName = "Add Leaderboard Entry With Attributes", Category = "GameFuse|User")
+	void BP_AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int32 Score, const TMap<FString, FString>& Metadata, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Clear Leaderboard Entry", Category = "GameFuse|User")
-	void BP_ClearLeaderboardEntry(const FString& LeaderboardName, FGFSuccessCallback Callback);
+	void BP_ClearLeaderboardEntry(const FString& LeaderboardName, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch My Leaderboard Entries", Category = "GameFuse|User")
-	void BP_FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, FGFSuccessCallback Callback);
+	void BP_FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Purchase Store Item", Category = "GameFuse|User")
-	void BP_PurchaseStoreItem(const int32 StoreItemId, FGFSuccessCallback Callback);
+	void BP_PurchaseStoreItem(const int32 StoreItemId, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Remove Store Item", Category = "GameFuse|User")
-	void BP_RemoveStoreItem(const int32 StoreItemId, FGFSuccessCallback Callback);
+	void BP_RemoveStoreItem(const int32 StoreItemId, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Purchased Store Items", Category = "GameFuse|User")
-	void BP_FetchPurchasedStoreItems(FGFSuccessCallback Callback);
+	void BP_FetchPurchasedStoreItems(FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Get Attributes", Category = "GameFuse|User")
-	void BP_GetAttributes(FGFSuccessCallback Callback);
+	void BP_GetAttributes(FBP_GFApiCallback Callback);
 
 	//> Internal
 	TObjectPtr<UUserAPIHandler> GetRequestHandler() const
@@ -185,6 +187,9 @@ protected:
 	void HandleLeaderboardEntriesResponse(FGFAPIResponse Response);
 	void HandleAttributesResponse(FGFAPIResponse Response);
 	void HandleUserActionResponse(FGFAPIResponse Response);
+
+	//> Helper Functions
+	void ExecuteBlueprintCallback(const FGFAPIResponse& Response);
 
 private:
 
@@ -205,5 +210,5 @@ private:
 	TMap<FGuid, FGFLeaderboardEntriesCallback> LeaderboardEntriesCallbacks;
 	TMap<FGuid, FGFAttributesCallback> AttributesCallbacks;
 	TMap<FGuid, FGFInternalSuccessCallback> SimpleSuccessCallbacks;
-	TMap<FGuid, FGFUserDataCallback> LoginCallbacks;
+	TMap<FGuid, FBP_GFApiCallback> BlueprintCallbacks; // Store blueprint callbacks
 };

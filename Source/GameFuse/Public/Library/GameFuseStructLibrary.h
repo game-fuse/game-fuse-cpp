@@ -78,6 +78,9 @@ struct FGFStoreItem
 	FGFStoreItem() = default;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
+	int32 Id = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Name = "";
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
@@ -89,8 +92,6 @@ struct FGFStoreItem
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	int32 Cost = 0;
 
-	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
-	int32 Id = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString IconUrl = "";
@@ -158,16 +159,13 @@ struct GAMEFUSE_API FGFAttributeList
 
 	bool operator==(const FGFAttributeList& Other) const
 	{
-		if (Attributes.Num() != Other.Attributes.Num())
-		{
+		if (Attributes.Num() != Other.Attributes.Num()) {
 			return false;
 		}
 
-		for (const auto& Pair : Attributes)
-		{
+		for (const auto& Pair : Attributes) {
 			const FString* OtherValue = Other.Attributes.Find(Pair.Key);
-			if (!OtherValue || *OtherValue != Pair.Value)
-			{
+			if (!OtherValue || *OtherValue != Pair.Value) {
 				return false;
 			}
 		}

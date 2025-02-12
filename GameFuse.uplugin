@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
-  "Version": "0209000",
-  "VersionName": "2.9.0",
+  "Version": "0209002",
+  "VersionName": "2.9.2",
   "FriendlyName": "GameFuse",
   "Description": "GameFuse is a web service for game developers. Add authentication, user data, leaderboards, in-game-store and more, all without setting up servers or managing API calls.",
   "Category": "CodePlugins",
@@ -10,7 +10,7 @@
   "DocsURL": "https://gamefuse.co/pages/docs?language=cpp",
   "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/6214da75e30c4ba5a713596d735589d8",
   "SupportURL": "https://gamefuse.co/pages/faq",
-  "EngineVersion": "5.4",
+  "EngineVersion": "5.5",
   "CanContainContent": true,
   "Installed": false,
   "Modules": [
