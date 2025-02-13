@@ -1,9 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Interfaces/IHttpRequest.h"
 #include "Delegates/Delegate.h"
 #include "Dom/JsonObject.h"
+#include "Interfaces/IHttpRequest.h"
 
 #include "Library/GameFuseStructLibrary.h"
 
@@ -65,9 +65,6 @@ public:
 	// Sends an HTTP request with the specified parameters
 	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const TSharedPtr<FJsonObject>& Body = nullptr);
 
-	// Sends an HTTP request with an internal success callback
-	FGuid SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const FGFInternalSuccessCallback& InternalCallback, const TSharedPtr<FJsonObject>& Body = nullptr);
-
 protected:
 
 	void SetAuthHeader(const FString& AuthToken);
@@ -75,16 +72,13 @@ protected:
 private:
 
 	// Generates a unique Request ID
-	FGuid GenerateRequestId();
+	static FGuid GenerateRequestId();
 
 	// Map to store active requests and their data by Request ID
 	TMap<FGuid, TSharedPtr<IHttpRequest, ESPMode::ThreadSafe>> ActiveRequests;
 
 	// Map to store response delegates by Request ID
 	TMap<FGuid, FGFApiCallback> ResponseDelegates;
-
-	// Map to store internal success callbacks by Request ID
-	TMap<FGuid, FGFInternalSuccessCallback> InternalSuccessCallbacks;
 
 	// Handles the response received for the HTTP request
 	void HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, const FGuid& RequestId);

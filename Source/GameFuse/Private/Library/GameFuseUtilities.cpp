@@ -7,12 +7,11 @@
  */
 
 #include "Library/GameFuseUtilities.h"
-
-#include "GenericPlatform/GenericPlatformHttp.h"
+#include "Interfaces/IHttpResponse.h"
+#include "Library/GameFuseEnumLibrary.h"
 #include "Library/GameFuseLog.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Library/GameFuseStructLibrary.h"
-#include "Library/GameFuseEnumLibrary.h"
 
 
 #pragma region Struct => JSON Conversion
@@ -94,6 +93,7 @@ bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const FSt
 
 bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const TSharedPtr<FJsonObject>& JsonObject)
 {
+
 	if (!JsonObject.IsValid()) {
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for GameData conversion"));
 		return false;
@@ -123,15 +123,18 @@ bool GameFuseUtilities::ConvertJsonToUserData(FGFUserData& InUserData, const FSt
 bool GameFuseUtilities::ConvertJsonToUserData(FGFUserData& InUserData, const TSharedPtr<FJsonObject>& JsonObject)
 {
 	if (!JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for UserData conversion"));
 		return false;
 	}
 
 	// Extract basic user data
 	JsonObject->TryGetNumberField(TEXT("id"), InUserData.Id);
 	JsonObject->TryGetStringField(TEXT("username"), InUserData.Username);
+	JsonObject->TryGetNumberField(TEXT("number_of_logins"), InUserData.NumberOfLogins);
+	JsonObject->TryGetStringField(TEXT("authentication_token"), InUserData.AuthenticationToken);
+	JsonObject->TryGetNumberField(TEXT("score"), InUserData.Score);
 	JsonObject->TryGetNumberField(TEXT("credits"), InUserData.Credits);
 	JsonObject->TryGetStringField(TEXT("last_login"), InUserData.LastLogin);
-	JsonObject->TryGetStringField(TEXT("authentication_token"), InUserData.AuthenticationToken);
 
 	return true;
 }
@@ -762,6 +765,8 @@ FString GameFuseUtilities::MakeStrRequestBody(const FString& AuthenticationToken
 	return OutputString;
 }
 
+//> Check JSON data to determine what response was received
+
 EGFCoreAPIResponseType GameFuseUtilities::DetermineCoreAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject)
 {
 	if (JsonObject->HasField(TEXT("id")) && JsonObject->HasField(TEXT("game_variables"))) {
@@ -960,13 +965,13 @@ bool GameFuseUtilities::ConvertJsonArrayToAttributes(FGFAttributeList& InAttribu
 
 		const TSharedPtr<FJsonObject>& JsonObject = JsonValue->AsObject();
 		FString Key, Value;
-		if (!JsonObject->HasField("key") || !JsonObject->HasField("value")) {
+		if (!JsonObject->HasField(TEXT("key")) || !JsonObject->HasField(TEXT("value"))) {
 			UE_LOG(LogGameFuse, Error, TEXT("Missing key or value field in attribute object"));
 			return false;
 		}
 
-		JsonObject->TryGetStringField("key", Key);
-		JsonObject->TryGetStringField("value", Value);
+		JsonObject->TryGetStringField(TEXT("key"), Key);
+		JsonObject->TryGetStringField(TEXT("value"), Value);
 		InAttributes.Attributes.Add(Key, Value);
 	}
 

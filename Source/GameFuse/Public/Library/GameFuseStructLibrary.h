@@ -13,7 +13,6 @@
 
 // Add this new struct to the file
 USTRUCT(BlueprintType, Category = "GameFuse|GameData")
-
 struct FGFGameData
 {
 	GENERATED_BODY()
@@ -37,7 +36,6 @@ struct FGFGameData
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|UserData")
-
 struct FGFUserData
 {
 	GENERATED_BODY()
@@ -74,11 +72,13 @@ struct FGFUserData
 
 
 USTRUCT(BlueprintType, Category = "GameFuse|StoreItem")
-
 struct FGFStoreItem
 {
 	GENERATED_BODY()
 	FGFStoreItem() = default;
+
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
+	int32 Id = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Name = "";
@@ -92,8 +92,6 @@ struct FGFStoreItem
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	int32 Cost = 0;
 
-	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
-	int32 Id = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString IconUrl = "";
@@ -109,7 +107,6 @@ struct FGFStoreItem
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|LeaderboardItem")
-
 struct FGFLeaderboardEntry
 {
 	GENERATED_BODY()
@@ -136,7 +133,6 @@ struct FGFLeaderboardEntry
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|Leaderboard")
-
 struct FGFLeaderboard
 {
 	GENERATED_BODY()
@@ -155,6 +151,30 @@ struct FGFLeaderboard
 
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	TArray<FGFLeaderboardEntry> Entries;
+};
+
+USTRUCT(BlueprintType)
+struct GAMEFUSE_API FGFAttributeList
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Attributes")
+	TMap<FString, FString> Attributes;
+
+	bool operator==(const FGFAttributeList& Other) const
+	{
+		if (Attributes.Num() != Other.Attributes.Num()) {
+			return false;
+		}
+
+		for (const auto& Pair : Attributes) {
+			const FString* OtherValue = Other.Attributes.Find(Pair.Key);
+			if (!OtherValue || *OtherValue != Pair.Value) {
+				return false;
+			}
+		}
+		return true;
+	}
 };
 
 /**
@@ -177,7 +197,7 @@ struct GAMEFUSE_API FGFGroupAttribute
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
 	FString Value;
 
-	/** 
+	/**
 	 * When creating/updating an attribute: Set this to the target group's ID
 	 * When receiving an attribute from the server: Contains the ID of the user who created the attribute
 	 */
@@ -272,32 +292,7 @@ struct GAMEFUSE_API FGFGroupConnection
 	}
 };
 
-USTRUCT(BlueprintType)
-struct GAMEFUSE_API FGFAttributeList
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Attributes")
-	TMap<FString, FString> Attributes;
-
-	bool operator==(const FGFAttributeList& Other) const
-	{
-		if (Attributes.Num() != Other.Attributes.Num()) {
-			return false;
-		}
-
-		for (const auto& Pair : Attributes) {
-			const FString* OtherValue = Other.Attributes.Find(Pair.Key);
-			if (!OtherValue || *OtherValue != Pair.Value) {
-				return false;
-			}
-		}
-		return true;
-	}
-};
-
 USTRUCT(BlueprintType, Category = "GameFuse| API")
-
 struct FGFAPIResponse
 {
 	GENERATED_BODY()

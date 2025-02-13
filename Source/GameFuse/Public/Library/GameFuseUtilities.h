@@ -18,10 +18,11 @@
 #include "Library/GameFuseEnumLibrary.h"
 #include "Library/GameFuseStructLibrary.h"
 
-
 class GAMEFUSE_API GameFuseUtilities
 {
 public:
+	static void ConvertJsonToMap(TMap<FString, FString>& InMap, const FString& JsonString);
+
 
 #pragma region Struct => JSON Conversion
 	/**
@@ -39,11 +40,9 @@ public:
 	 * @return true if successful
 	 */
 	static bool ConvertGroupToJson(const FGFGroup& Group, const TSharedPtr<FJsonObject>& JsonObject);
-	static bool ConvertJsonToGameData(FGFGameData& InGameData, const FString& JsonString);
 
-#pragma endregion
 #pragma region JSON => Struct Conversion
-
+	static bool ConvertJsonToGameData(FGFGameData& InGameData, const FString& JsonString);
 	/**
 	 * Converts a JSON object into GameData
 	 * @param InGameData GameData struct to store converted data

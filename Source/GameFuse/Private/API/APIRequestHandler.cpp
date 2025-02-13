@@ -77,7 +77,7 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	// Add Default Headers
 	AddCommonHeaders(HttpRequest);
 
-	// Capture request in the lambda to prevent collection before handle response is called.
+	//Capture request in the lambda to prevent collection before handle response is called.
 	HttpRequest->OnProcessRequestComplete().BindLambda([this, RequestId](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
 		HandleResponse(Request, Response, bWasSuccessful, RequestId);
 	});
@@ -101,15 +101,6 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	return RequestId;
 }
 
-FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& HttpMethod, const FGFApiCallback& OnResponseReceived, const FGFInternalSuccessCallback& InternalCallback, const TSharedPtr<FJsonObject>& Body)
-{
-	FGuid RequestId = SendRequest(Endpoint, HttpMethod, OnResponseReceived, Body);
-	if (RequestId.IsValid()) {
-		InternalSuccessCallbacks.Add(RequestId, InternalCallback);
-	}
-	return RequestId;
-}
-
 void UAPIRequestHandler::SetAuthHeader(const FString& AuthToken)
 {
 	CommonHeaders.Add(TEXT("authentication-token"), AuthToken);
@@ -117,7 +108,7 @@ void UAPIRequestHandler::SetAuthHeader(const FString& AuthToken)
 
 void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, const bool bWasSuccessful, const FGuid& RequestId)
 {
-	// error checking
+	//error checking
 	if (!ActiveRequests.Contains(RequestId)) {
 		UE_LOG(LogGameFuse, Log, TEXT("Got response without an active request"));
 	}
@@ -127,19 +118,15 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 		return;
 	}
 
-	if (!Response.IsValid()) {
-		if (ResponseDelegates.Contains(RequestId)) {
+	if (!Response.IsValid())
+	{
+		if (ResponseDelegates.Contains(RequestId))
+		{
 			const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 			FString ResponseContent = TEXT("Bad Response, Request is not valid");
 			Delegate.Broadcast(FGFAPIResponse(false, ResponseContent, RequestId, 404));
 			ResponseDelegates.Remove(RequestId);
 		}
-
-		if (InternalSuccessCallbacks.Contains(RequestId)) {
-			InternalSuccessCallbacks[RequestId].Broadcast(false);
-			InternalSuccessCallbacks.Remove(RequestId);
-		}
-
 		GameFuseUtilities::LogRequest(Request);
 		ActiveRequests.Remove(RequestId);
 		return;
@@ -157,13 +144,9 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 		ResponseDelegates.Remove(RequestId);
 	}
 
-	// Broadcast to internal success callbacks
-	if (InternalSuccessCallbacks.Contains(RequestId)) {
-		InternalSuccessCallbacks[RequestId].Broadcast(bSuccessfulAndValid && bIsGoodResponse);
-		InternalSuccessCallbacks.Remove(RequestId);
-	}
 
 	if (bSuccessfulAndValid) {
+
 		if (bIsGoodResponse) {
 			UE_LOG(LogTemp, Log, TEXT("Request %s succeeded"), *RequestId.ToString());
 			GameFuseUtilities::LogResponse(Response);

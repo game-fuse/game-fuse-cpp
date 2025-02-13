@@ -82,7 +82,7 @@ FGuid UGameFuseUser::SignUp(const FGFGameData& GameData, const FString& Email, c
 
 	FGuid RequestId = RequestHandler->SignUp(Email, Password, PasswordConfirmation, Username, GameData.Id, GameData.Token, InternalCallback);
 	if (TypedCallback.IsBound()) {
-		LoginCallbacks.Add(RequestId, TypedCallback);
+		UserDataCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
 }
@@ -102,7 +102,7 @@ FGuid UGameFuseUser::SignIn(const FGFGameData& GameData, const FString& Email, c
 
 	FGuid RequestId = RequestHandler->SignIn(Email, Password, GameData.Id, GameData.Token, InternalCallback);
 	if (TypedCallback.IsBound()) {
-		LoginCallbacks.Add(RequestId, TypedCallback);
+		UserDataCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
 }
@@ -417,67 +417,67 @@ FGuid UGameFuseUser::FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUs
 
 #pragma region Blueprint Wrapper Functions
 
-void UGameFuseUser::BP_SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FBP_GFApiCallback Callback)
 {
 	FGFUserDataCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFUserData& Data) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	SignUp(Email, Password, PasswordConfirmation, Username, TypedCallback);
+	FGuid RequestId = SignUp(Email, Password, PasswordConfirmation, Username, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_SignIn(const FString& Email, const FString& Password, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_SignIn(const FString& Email, const FString& Password, FBP_GFApiCallback Callback)
 {
 	FGFUserDataCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFUserData& Data) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	SignIn(Email, Password, TypedCallback);
+	FGuid RequestId = SignIn(Email, Password, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_AddCredits(const int32 Credits, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_AddCredits(const int32 Credits, FBP_GFApiCallback Callback)
 {
 	FGFUserDataCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFUserData& Data) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	AddCredits(Credits, TypedCallback);
+	FGuid RequestId = AddCredits(Credits, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_SetCredits(const int32 Credits, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_SetCredits(const int32 Credits, FBP_GFApiCallback Callback)
 {
 	FGFUserDataCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFUserData&) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	SetCredits(Credits, TypedCallback);
+	FGuid RequestId = SetCredits(Credits, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_AddScore(const int32 Score, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_AddScore(const int32 Score, FBP_GFApiCallback Callback)
 {
 	FGFUserDataCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFUserData& Data) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	AddScore(Score, TypedCallback);
+	FGuid RequestId = AddScore(Score, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_SetScore(const int32 Score, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_SetScore(const int32 Score, FBP_GFApiCallback Callback)
 {
 	FGFUserDataCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFUserData&) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	SetScore(Score, TypedCallback);
+	FGuid RequestId = SetScore(Score, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_SetAttribute(const FString& Key, const FString& Value, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_SetAttribute(const FString& Key, const FString& Value, FBP_GFApiCallback Callback)
 {
 	FGFAttributesCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFAttributeList& AttributeList) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	SetAttribute(Key, Value, TypedCallback);
+	FGuid RequestId = SetAttribute(Key, Value, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
 void UGameFuseUser::BP_SetAttributeLocal(const FString& Key, const FString& Value)
@@ -486,103 +486,112 @@ void UGameFuseUser::BP_SetAttributeLocal(const FString& Key, const FString& Valu
 	LocalAttributes.Add(Key, Value);
 }
 
-void UGameFuseUser::BP_RemoveAttribute(const FString& Key, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_RemoveAttribute(const FString& Key, FBP_GFApiCallback Callback)
 {
 	FGFAttributesCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFAttributeList& AttributeList) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	RemoveAttribute(Key, TypedCallback);
+	FGuid RequestId = RemoveAttribute(Key, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_FetchPurchasedStoreItems(FGFSuccessCallback Callback)
+void UGameFuseUser::BP_FetchPurchasedStoreItems(FBP_GFApiCallback Callback)
 {
 	FGFStoreItemsCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const TArray<FGFStoreItem>& Items) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	FetchPurchasedStoreItems(TypedCallback);
+	FGuid RequestId = FetchPurchasedStoreItems(TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_RemoveStoreItem(const int32 StoreItemId, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_RemoveStoreItem(const int32 StoreItemId, FBP_GFApiCallback Callback)
 {
 	FGFStoreItemsCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const TArray<FGFStoreItem>&) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	RemoveStoreItem(StoreItemId, TypedCallback);
+	FGuid RequestId = RemoveStoreItem(StoreItemId, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_PurchaseStoreItem(const int32 StoreItemId, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_PurchaseStoreItem(const int32 StoreItemId, FBP_GFApiCallback Callback)
 {
 	FGFStoreItemsCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const TArray<FGFStoreItem>&) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	PurchaseStoreItem(StoreItemId, TypedCallback);
+	FGuid RequestId = PurchaseStoreItem(StoreItemId, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_AddLeaderboardEntry(const FString& LeaderboardName, const int32 Score, const TMap<FString, FString>& Metadata, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_AddLeaderboardEntry(const FString& LeaderboardName, const int32 Score, FBP_GFApiCallback Callback)
 {
 	FGFInternalSuccessCallback TypedCallback;
-	TypedCallback.AddLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	AddLeaderboardEntry(LeaderboardName, Score, Metadata, TypedCallback);
+	FGuid RequestId = AddLeaderboardEntry(LeaderboardName, Score, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_ClearLeaderboardEntry(const FString& LeaderboardName, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_AddLeaderboardEntryWithAttributes(const FString& LeaderboardName, const int32 Score, const TMap<FString, FString>& Metadata, FBP_GFApiCallback Callback)
 {
 	FGFInternalSuccessCallback TypedCallback;
-	TypedCallback.AddLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	ClearLeaderboardEntry(LeaderboardName, TypedCallback);
+	FGuid RequestId = AddLeaderboardEntry(LeaderboardName, Score, Metadata, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_FetchAttributes(FGFSuccessCallback Callback)
+void UGameFuseUser::BP_ClearLeaderboardEntry(const FString& LeaderboardName, FBP_GFApiCallback Callback)
+{
+	FGFInternalSuccessCallback TypedCallback;
+	FGuid RequestId = ClearLeaderboardEntry(LeaderboardName, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
+}
+
+void UGameFuseUser::BP_FetchAttributes(FBP_GFApiCallback Callback)
 {
 	FGFAttributesCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFAttributeList&) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	FetchAttributes(TypedCallback);
+	FGuid RequestId = FetchAttributes(TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, FBP_GFApiCallback Callback)
 {
 	FGFLeaderboardEntriesCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	FetchMyLeaderboardEntries(Limit, bOnePerUser, TypedCallback);
+	FGuid RequestId = FetchMyLeaderboardEntries(Limit, bOnePerUser, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_SyncLocalAttributes(FGFSuccessCallback Callback)
+void UGameFuseUser::BP_SyncLocalAttributes(FBP_GFApiCallback Callback)
 {
 	FGFAttributesCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFAttributeList& AttributeList) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	SyncLocalAttributes(TypedCallback);
+	FGuid RequestId = SyncLocalAttributes(TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_GetAttributes(FGFSuccessCallback Callback)
+void UGameFuseUser::BP_GetAttributes(FBP_GFApiCallback Callback)
 {
 	FGFAttributesCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFAttributeList&) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	FetchAttributes(TypedCallback);
+	FGuid RequestId = FetchAttributes(TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
-void UGameFuseUser::BP_SetAttributes(const TMap<FString, FString>& NewAttributes, FGFSuccessCallback Callback)
+void UGameFuseUser::BP_SetAttributes(const TMap<FString, FString>& NewAttributes, FBP_GFApiCallback Callback)
 {
 	FGFAttributesCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess, const FGFAttributeList&) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	SetAttributes(NewAttributes, TypedCallback);
+	FGuid RequestId = SetAttributes(NewAttributes, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
 }
 
 #pragma endregion
@@ -597,6 +606,7 @@ bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response, bool bLogIn)
 			UserDataCallbacks[Response.RequestId].Execute(false, FGFUserData());
 			UserDataCallbacks.Remove(Response.RequestId);
 		}
+		ExecuteBlueprintCallback(Response);
 		return false;
 	}
 
@@ -608,6 +618,7 @@ bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response, bool bLogIn)
 			UserDataCallbacks[Response.RequestId].Execute(false, FGFUserData());
 			UserDataCallbacks.Remove(Response.RequestId);
 		}
+		ExecuteBlueprintCallback(Response);
 		return false;
 	}
 
@@ -616,6 +627,8 @@ bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response, bool bLogIn)
 		UserData = NewUserData;
 		UserData.bSignedIn = true;
 		UE_LOG(LogGameFuse, Warning, TEXT("Successfully signed in user token: %s"), *UserData.AuthenticationToken);
+
+		UE_LOG(LogGameFuse, Log, TEXT("Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
 	} else {
 		// dont update authentication tokeen
 		FString CachedToken = UserData.AuthenticationToken;
@@ -624,6 +637,10 @@ bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response, bool bLogIn)
 		UserData.bSignedIn = true;
 	}
 
+	UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::CreateSaveGameObject(UGameFuseSaveData::StaticClass()));
+	SaveGameInstance->UserData = UserData;
+
+	UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
 
 	// Execute the specific callback for this request if it exists
 	if (UserDataCallbacks.Contains(Response.RequestId)) {
@@ -631,6 +648,7 @@ bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response, bool bLogIn)
 		UserDataCallbacks.Remove(Response.RequestId);
 	}
 
+	ExecuteBlueprintCallback(Response);
 	return true;
 }
 
@@ -642,6 +660,7 @@ void UGameFuseUser::HandleStoreItemsResponse(FGFAPIResponse Response)
 			StoreItemsCallbacks[Response.RequestId].Execute(false, TArray<FGFStoreItem>());
 			StoreItemsCallbacks.Remove(Response.RequestId);
 		}
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
@@ -653,6 +672,7 @@ void UGameFuseUser::HandleStoreItemsResponse(FGFAPIResponse Response)
 			StoreItemsCallbacks[Response.RequestId].Execute(false, TArray<FGFStoreItem>());
 			StoreItemsCallbacks.Remove(Response.RequestId);
 		}
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
@@ -663,18 +683,19 @@ void UGameFuseUser::HandleStoreItemsResponse(FGFAPIResponse Response)
 		StoreItemsCallbacks.Remove(Response.RequestId);
 	}
 
+	ExecuteBlueprintCallback(Response);
 	UE_LOG(LogGameFuse, Log, TEXT("Successfully retrieved %d store items"), NewStoreItems.Num());
 }
 
 void UGameFuseUser::HandleLeaderboardEntriesResponse(FGFAPIResponse Response)
 {
-
 	if (!Response.bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("Leaderboard entries response failed: %s"), *Response.ResponseStr);
 		if (LeaderboardEntriesCallbacks.Contains(Response.RequestId)) {
 			LeaderboardEntriesCallbacks[Response.RequestId].Execute(false, TArray<FGFLeaderboardEntry>());
 			LeaderboardEntriesCallbacks.Remove(Response.RequestId);
 		}
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 	// existing list is only cleared if the response is successful
@@ -688,6 +709,7 @@ void UGameFuseUser::HandleLeaderboardEntriesResponse(FGFAPIResponse Response)
 		LeaderboardEntriesCallbacks.Remove(Response.RequestId);
 	}
 
+	ExecuteBlueprintCallback(Response);
 	UE_LOG(LogGameFuse, Log, TEXT("Successfully retrieved %d leaderboard entries"), LeaderboardEntries.Num());
 }
 
@@ -699,6 +721,7 @@ void UGameFuseUser::HandleAttributesResponse(FGFAPIResponse Response)
 			AttributesCallbacks[Response.RequestId].Execute(false, FGFAttributeList());
 			AttributesCallbacks.Remove(Response.RequestId);
 		}
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
@@ -710,6 +733,7 @@ void UGameFuseUser::HandleAttributesResponse(FGFAPIResponse Response)
 			AttributesCallbacks[Response.RequestId].Execute(false, FGFAttributeList());
 			AttributesCallbacks.Remove(Response.RequestId);
 		}
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
@@ -720,6 +744,7 @@ void UGameFuseUser::HandleAttributesResponse(FGFAPIResponse Response)
 		AttributesCallbacks.Remove(Response.RequestId);
 	}
 
+	ExecuteBlueprintCallback(Response);
 	UE_LOG(LogGameFuse, Log, TEXT("Successfully retrieved user attributes"));
 }
 
@@ -730,7 +755,17 @@ void UGameFuseUser::HandleUserActionResponse(FGFAPIResponse Response)
 		SimpleSuccessCallbacks[Response.RequestId].Broadcast(Response.bSuccess);
 		SimpleSuccessCallbacks.Remove(Response.RequestId);
 	}
+
+	ExecuteBlueprintCallback(Response);
 }
 
+void UGameFuseUser::ExecuteBlueprintCallback(const FGFAPIResponse& Response)
+{
+	if (BlueprintCallbacks.Contains(Response.RequestId))
+	{
+		BlueprintCallbacks[Response.RequestId].ExecuteIfBound(Response);
+		BlueprintCallbacks.Remove(Response.RequestId);
+	}
+}
 
 #pragma endregion
