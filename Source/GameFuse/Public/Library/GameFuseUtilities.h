@@ -137,7 +137,7 @@ public:
 	 * @param JsonString The JSON string to convert
 	 * @return true if successful
 	 */
-	static bool ConvertJsonArrayToGameRounds(TArray<FGFGameRound>& GameRounds, const FString& JsonString);
+	static bool ConvertJsonToGameRounds(TArray<FGFGameRound>& GameRounds, const FString& JsonString);
 
 
 	/**

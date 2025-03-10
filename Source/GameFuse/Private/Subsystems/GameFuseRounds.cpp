@@ -212,7 +212,7 @@ void UGameFuseRounds::HandleGameRoundListResponse(FGFAPIResponse Response)
 
 	UserGameRounds.Empty();
 
-	if (!GameFuseUtilities::ConvertJsonArrayToGameRounds(UserGameRounds, Response.ResponseStr)) {
+	if (!GameFuseUtilities::ConvertJsonToGameRounds(UserGameRounds, Response.ResponseStr)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse game rounds from response"));
 		if (GameRoundListCallbacks.Contains(Response.RequestId)) {
 			GameRoundListCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGameRound>());

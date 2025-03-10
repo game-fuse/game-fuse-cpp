@@ -456,22 +456,28 @@ bool GameFuseUtilities::ConvertJsonArrayToGameRoundRankings(const TArray<TShared
 	return true;
 }
 
-bool GameFuseUtilities::ConvertJsonArrayToGameRounds(TArray<FGFGameRound>& InGameRounds, const FString& JsonString)
+bool GameFuseUtilities::ConvertJsonToGameRounds(TArray<FGFGameRound>& InGameRounds, const FString& JsonString)
 {
 	if (JsonString.IsEmpty()) {
 		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Empty JSON string"));
 		return false;
 	}
 
-	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	TSharedPtr<FJsonObject> JsonObject;
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
 
-	if (!FJsonSerializer::Deserialize(Reader, JsonArray) || JsonArray.Num() == 0) {
-		UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonToGameRound: Failed to parse JSON string: %s"), *JsonString);
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize game rounds JSON string to JSON object"));
 		return false;
 	}
 
-	for (const TSharedPtr<FJsonValue>& JsonValue : JsonArray) {
+	const TArray<TSharedPtr<FJsonValue>>* JsonArray;
+	if (!JsonObject->TryGetArrayField(TEXT("game_rounds"), JsonArray)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to get game rounds array from JSON"));
+		return false;
+	}
+
+	for (const TSharedPtr<FJsonValue>& JsonValue : *JsonArray) {
 		if (JsonValue->Type != EJson::Object) {
 			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonArrayToGameRounds: Invalid JSON value"));
 			return false;
