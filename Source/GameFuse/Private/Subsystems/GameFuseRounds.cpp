@@ -16,13 +16,26 @@ void UGameFuseRounds::Deinitialize()
 	Super::Deinitialize();
 }
 
-void UGameFuseRounds::BP_CreateGameRound(const FGFGameRound& GameRound, FGFSuccessCallback Callback)
+void UGameFuseRounds::StoreBlueprintCallback(const FGuid& RequestId, const FBP_GFApiCallback& Callback)
+{
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
+}
+
+void UGameFuseRounds::ExecuteBlueprintCallback(const FGFAPIResponse& Response)
+{
+	if (BlueprintCallbacks.Contains(Response.RequestId)) {
+		BlueprintCallbacks[Response.RequestId].ExecuteIfBound(Response);
+		BlueprintCallbacks.Remove(Response.RequestId);
+	}
+}
+
+void UGameFuseRounds::BP_CreateGameRound(const FGFGameRound& GameRound, const FBP_GFApiCallback& Callback)
 {
 	FGFGameRoundCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const FGFGameRound&) {
-		Callback.ExecuteIfBound(true);
-	});
-	CreateGameRound(GameRound, TypedCallback);
+	FGuid RequestId = CreateGameRound(GameRound, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 FGuid UGameFuseRounds::CreateGameRound(const FGFGameRound& GameRound, FGFGameRoundCallback TypedCallback)
@@ -47,13 +60,11 @@ FGuid UGameFuseRounds::CreateGameRound(const FGFGameRound& GameRound, const FGFU
 	return RequestId;
 }
 
-void UGameFuseRounds::BP_FetchGameRound(const int32 RoundId, FGFSuccessCallback Callback)
+void UGameFuseRounds::BP_FetchGameRound(const int32 RoundId, const FBP_GFApiCallback& Callback)
 {
 	FGFGameRoundCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const FGFGameRound&) {
-		Callback.ExecuteIfBound(true);
-	});
-	FetchGameRound(RoundId, TypedCallback);
+	FGuid RequestId = FetchGameRound(RoundId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 FGuid UGameFuseRounds::FetchGameRound(const int32 RoundId, FGFGameRoundCallback TypedCallback)
@@ -73,13 +84,11 @@ FGuid UGameFuseRounds::FetchGameRound(const int32 RoundId, FGFGameRoundCallback 
 	return FGuid();
 }
 
-void UGameFuseRounds::BP_UpdateGameRound(const int32 RoundId, const FGFGameRound& GameRound, FGFSuccessCallback Callback)
+void UGameFuseRounds::BP_UpdateGameRound(const int32 RoundId, const FGFGameRound& GameRound, const FBP_GFApiCallback& Callback)
 {
 	FGFGameRoundCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const FGFGameRound&) {
-		Callback.ExecuteIfBound(true);
-	});
-	UpdateGameRound(RoundId, GameRound, TypedCallback);
+	FGuid RequestId = UpdateGameRound(RoundId, GameRound, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 FGuid UGameFuseRounds::UpdateGameRound(const int32 RoundId, const FGFGameRound& GameRound, FGFGameRoundCallback TypedCallback)
@@ -99,13 +108,11 @@ FGuid UGameFuseRounds::UpdateGameRound(const int32 RoundId, const FGFGameRound& 
 	return FGuid();
 }
 
-void UGameFuseRounds::BP_FetchUserGameRounds(FGFSuccessCallback Callback)
+void UGameFuseRounds::BP_FetchUserGameRounds(const FBP_GFApiCallback& Callback)
 {
 	FGFGameRoundListCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFGameRound>&) {
-		Callback.ExecuteIfBound(true);
-	});
-	FetchUserGameRounds(TypedCallback);
+	FGuid RequestId = FetchUserGameRounds(TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 FGuid UGameFuseRounds::FetchUserGameRounds(FGFGameRoundListCallback TypedCallback)
@@ -125,13 +132,11 @@ FGuid UGameFuseRounds::FetchUserGameRounds(FGFGameRoundListCallback TypedCallbac
 	return FGuid();
 }
 
-void UGameFuseRounds::BP_DeleteGameRound(const int32 RoundId, FGFSuccessCallback Callback)
+void UGameFuseRounds::BP_DeleteGameRound(const int32 RoundId, const FBP_GFApiCallback& Callback)
 {
 	FGFGameRoundActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	DeleteGameRound(RoundId, TypedCallback);
+	FGuid RequestId = DeleteGameRound(RoundId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 FGuid UGameFuseRounds::DeleteGameRound(const int32 RoundId, FGFGameRoundActionCallback TypedCallback)
@@ -159,6 +164,9 @@ FGuid UGameFuseRounds::DeleteGameRound(const int32 RoundId, FGFGameRoundActionCa
 
 void UGameFuseRounds::HandleGameRoundResponse(FGFAPIResponse Response)
 {
+	// Execute the blueprint callback regardless of success
+	ExecuteBlueprintCallback(Response);
+
 	if (!Response.bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle game round response: %s"), *Response.ResponseStr);
 		if (GameRoundCallbacks.Contains(Response.RequestId)) {
@@ -201,6 +209,9 @@ void UGameFuseRounds::HandleGameRoundResponse(FGFAPIResponse Response)
 
 void UGameFuseRounds::HandleGameRoundListResponse(FGFAPIResponse Response)
 {
+	// Execute the blueprint callback regardless of success
+	ExecuteBlueprintCallback(Response);
+
 	if (!Response.bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle game round list response: %s"), *Response.ResponseStr);
 		if (GameRoundListCallbacks.Contains(Response.RequestId)) {
@@ -229,6 +240,9 @@ void UGameFuseRounds::HandleGameRoundListResponse(FGFAPIResponse Response)
 
 void UGameFuseRounds::HandleDeleteResponse(FGFAPIResponse Response)
 {
+	// Execute the blueprint callback regardless of success
+	ExecuteBlueprintCallback(Response);
+
 	if (GameRoundActionCallbacks.Contains(Response.RequestId)) {
 		GameRoundActionCallbacks[Response.RequestId].ExecuteIfBound(Response.bSuccess);
 		GameRoundActionCallbacks.Remove(Response.RequestId);

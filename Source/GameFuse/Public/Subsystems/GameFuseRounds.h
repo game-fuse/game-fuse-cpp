@@ -24,19 +24,19 @@ public:
 
 	//> Blueprint Callable Functions
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
-	void BP_CreateGameRound(const FGFGameRound& GameRound, FGFSuccessCallback Callback);
+	void BP_CreateGameRound(const FGFGameRound& GameRound, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
-	void BP_FetchGameRound(const int32 RoundId, FGFSuccessCallback Callback);
+	void BP_FetchGameRound(const int32 RoundId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
-	void BP_UpdateGameRound(const int32 RoundId, const FGFGameRound& GameRound, FGFSuccessCallback Callback);
+	void BP_UpdateGameRound(const int32 RoundId, const FGFGameRound& GameRound, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
-	void BP_FetchUserGameRounds(FGFSuccessCallback Callback);
+	void BP_FetchUserGameRounds(const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
-	void BP_DeleteGameRound(const int32 RoundId, FGFSuccessCallback Callback);
+	void BP_DeleteGameRound(const int32 RoundId, const FBP_GFApiCallback& Callback);
 
 	// C++ callable functions with typed callbacks
 	FGuid CreateGameRound(const FGFGameRound& GameRound, FGFGameRoundCallback TypedCallback);
@@ -81,4 +81,20 @@ private:
 	TMap<FGuid, FGFGameRoundCallback> GameRoundCallbacks;
 	TMap<FGuid, FGFGameRoundListCallback> GameRoundListCallbacks;
 	TMap<FGuid, FGFGameRoundActionCallback> GameRoundActionCallbacks;
+	
+	/** Map to store blueprint callbacks by request ID */
+	TMap<FGuid, FBP_GFApiCallback> BlueprintCallbacks;
+
+	/**
+	 * @brief Stores the blueprint callback in the BlueprintCallbacks map
+	 * @param RequestId The request ID to associate with the callback
+	 * @param Callback The blueprint callback to store
+	 */
+	void StoreBlueprintCallback(const FGuid& RequestId, const FBP_GFApiCallback& Callback);
+
+	/**
+	 * @brief Executes the blueprint callback associated with the given request ID
+	 * @param Response The API response to pass to the callback
+	 */
+	void ExecuteBlueprintCallback(const FGFAPIResponse& Response);
 };
