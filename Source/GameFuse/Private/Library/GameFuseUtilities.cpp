@@ -10,7 +10,6 @@
 #include "Interfaces/IHttpResponse.h"
 #include "Library/GameFuseEnumLibrary.h"
 #include "Library/GameFuseLog.h"
-#include "Interfaces/IHttpResponse.h"
 #include "Library/GameFuseStructLibrary.h"
 
 
@@ -68,6 +67,83 @@ bool GameFuseUtilities::ConvertGroupToJson(const FGFGroup& Group, const TSharedP
 	return true;
 }
 
+bool GameFuseUtilities::ConvertMessageToJson(const FGFMessage& Message, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (Message.Text.IsEmpty()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Message text is required"));
+		return false;
+	}
+
+	JsonObject->SetStringField("text", Message.Text);
+
+	if (Message.Id > 0) {
+		JsonObject->SetNumberField("id", Message.Id);
+	}
+
+	if (Message.UserId > 0) {
+		JsonObject->SetNumberField("user_id", Message.UserId);
+	}
+
+	if (Message.CreatedAt != FDateTime()) {
+		JsonObject->SetStringField("created_at", Message.CreatedAt.ToIso8601());
+	}
+
+	if (!Message.ReadBy.IsEmpty()) {
+		TArray<TSharedPtr<FJsonValue>> ReadByArray;
+		for (const int32 UserId : Message.ReadBy) {
+			ReadByArray.Add(MakeShared<FJsonValueNumber>(UserId));
+		}
+		JsonObject->SetArrayField("read_by", ReadByArray);
+	}
+
+	JsonObject->SetBoolField("read", Message.bRead);
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertChatToJson(const FGFChat& Chat, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (Chat.CreatorId <= 0) {
+		UE_LOG(LogGameFuse, Error, TEXT("Creator ID is required"));
+		return false;
+	}
+
+	if (Chat.Id > 0) {
+		JsonObject->SetNumberField("id", Chat.Id);
+	}
+
+	JsonObject->SetNumberField("creator_id", Chat.CreatorId);
+	JsonObject->SetStringField("creator_type", Chat.CreatorType);
+
+	// Convert messages array
+	if (!Chat.Messages.IsEmpty()) {
+		TArray<TSharedPtr<FJsonValue>> MessagesArray;
+		for (const FGFMessage& Message : Chat.Messages) {
+			TSharedPtr<FJsonObject> MessageObject = MakeShared<FJsonObject>();
+			if (ConvertMessageToJson(Message, MessageObject)) {
+				MessagesArray.Add(MakeShared<FJsonValueObject>(MessageObject));
+			}
+		}
+		JsonObject->SetArrayField("messages", MessagesArray);
+	}
+
+	// Convert participants array
+	if (!Chat.Participants.IsEmpty()) {
+		TArray<TSharedPtr<FJsonValue>> ParticipantsArray;
+		for (const FGFUserData& User : Chat.Participants) {
+			TSharedPtr<FJsonObject> UserObject = MakeShared<FJsonObject>();
+			UserObject->SetNumberField("id", User.Id);
+			UserObject->SetStringField("username", User.Username);
+			UserObject->SetNumberField("credits", User.Credits);
+			UserObject->SetNumberField("score", User.Score);
+			ParticipantsArray.Add(MakeShared<FJsonValueObject>(UserObject));
+		}
+		JsonObject->SetArrayField("participants", ParticipantsArray);
+	}
+
+	return true;
+}
+
 #pragma endregion
 
 #pragma region JSON => Struct Conversion
@@ -93,7 +169,6 @@ bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const FSt
 
 bool GameFuseUtilities::ConvertJsonToGameData(FGFGameData& InGameData, const TSharedPtr<FJsonObject>& JsonObject)
 {
-
 	if (!JsonObject.IsValid()) {
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for GameData conversion"));
 		return false;
@@ -346,6 +421,176 @@ bool GameFuseUtilities::ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest,
 	if (!ConvertJsonToUserData(OutRequest.OtherUser, JsonObject)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse OtherUser data from JSON"));
 		return false;
+	}
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToMessage(FGFMessage& InMessage, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	return ConvertJsonToMessage(InMessage, JsonObject);
+}
+
+bool GameFuseUtilities::ConvertJsonToMessage(FGFMessage& InMessage, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (!JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for Message conversion"));
+		return false;
+	}
+
+	JsonObject->TryGetNumberField(TEXT("id"), InMessage.Id);
+	JsonObject->TryGetStringField(TEXT("text"), InMessage.Text);
+	JsonObject->TryGetNumberField(TEXT("user_id"), InMessage.UserId);
+	JsonObject->TryGetBoolField(TEXT("read"), InMessage.bRead);
+
+	FString CreatedAtStr;
+	if (JsonObject->TryGetStringField(TEXT("created_at"), CreatedAtStr)) {
+		InMessage.CreatedAt = StringToDateTime(CreatedAtStr);
+	}
+
+	// Convert read_by array
+	const TArray<TSharedPtr<FJsonValue>>* ReadByArray;
+	if (JsonObject->TryGetArrayField(TEXT("read_by"), ReadByArray)) {
+		InMessage.ReadBy.Empty();
+		for (const auto& JsonValue : *ReadByArray) {
+			if (JsonValue->Type == EJson::Number) {
+				InMessage.ReadBy.Add(static_cast<int32>(JsonValue->AsNumber()));
+			}
+		}
+	}
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToChat(FGFChat& InChat, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	return ConvertJsonToChat(InChat, JsonObject);
+}
+
+bool GameFuseUtilities::ConvertJsonToChat(FGFChat& InChat, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	if (!JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for Chat conversion"));
+		return false;
+	}
+
+	JsonObject->TryGetNumberField(TEXT("id"), InChat.Id);
+	JsonObject->TryGetNumberField(TEXT("creator_id"), InChat.CreatorId);
+	JsonObject->TryGetStringField(TEXT("creator_type"), InChat.CreatorType);
+
+	// Convert messages array
+	const TArray<TSharedPtr<FJsonValue>>* MessagesArray;
+	if (JsonObject->TryGetArrayField(TEXT("messages"), MessagesArray)) {
+		InChat.Messages.Empty();
+		for (const auto& JsonValue : *MessagesArray) {
+			if (JsonValue->Type == EJson::Object) {
+				FGFMessage Message;
+				if (ConvertJsonToMessage(Message, JsonValue->AsObject())) {
+					InChat.Messages.Add(Message);
+				}
+			}
+		}
+	}
+
+	// Convert participants array
+	const TArray<TSharedPtr<FJsonValue>>* ParticipantsArray;
+	if (JsonObject->TryGetArrayField(TEXT("participants"), ParticipantsArray)) {
+		InChat.Participants.Empty();
+		for (const auto& JsonValue : *ParticipantsArray) {
+			if (JsonValue->Type == EJson::Object) {
+				FGFUserData User;
+				if (ConvertJsonToUserData(User, JsonValue->AsObject())) {
+					InChat.Participants.Add(User);
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToChats(TArray<FGFChat>& OutChats, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to deserialize JSON string to JSON object"));
+		return false;
+	}
+
+	// Try to get direct chats
+	const TArray<TSharedPtr<FJsonValue>>* DirectChatsArray;
+	if (JsonObject->TryGetArrayField(TEXT("direct_chats"), DirectChatsArray)) {
+		for (const auto& JsonValue : *DirectChatsArray) {
+			if (JsonValue->Type == EJson::Object) {
+				FGFChat Chat;
+				if (ConvertJsonToChat(Chat, JsonValue->AsObject())) {
+					OutChats.Add(Chat);
+				}
+			}
+		}
+	}
+
+	// Try to get group chats
+	const TArray<TSharedPtr<FJsonValue>>* GroupChatsArray;
+	if (JsonObject->TryGetArrayField(TEXT("group_chats"), GroupChatsArray)) {
+		for (const auto& JsonValue : *GroupChatsArray) {
+			if (JsonValue->Type == EJson::Object) {
+				FGFChat Chat;
+				if (ConvertJsonToChat(Chat, JsonValue->AsObject())) {
+					OutChats.Add(Chat);
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToMessages(TArray<FGFMessage>& OutMessages, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse messages JSON string"));
+		return false;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* JsonMessages;
+	if (!JsonObject->TryGetArrayField(TEXT("messages"), JsonMessages)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to get messages array from JSON"));
+		return false;
+	}
+
+	OutMessages.Empty();
+	for (const TSharedPtr<FJsonValue>& JsonValue : *JsonMessages) {
+		const TSharedPtr<FJsonObject>& MessageObject = JsonValue->AsObject();
+		if (!MessageObject.IsValid()) {
+			UE_LOG(LogGameFuse, Error, TEXT("Invalid message object in JSON array"));
+			continue;
+		}
+
+		FGFMessage Message;
+		if (ConvertJsonToMessage(Message, MessageObject)) {
+			OutMessages.Add(Message);
+		}
 	}
 
 	return true;
@@ -770,8 +1015,6 @@ FString GameFuseUtilities::MakeStrRequestBody(const FString& AuthenticationToken
 
 	return OutputString;
 }
-
-//> Check JSON data to determine what response was received
 
 EGFCoreAPIResponseType GameFuseUtilities::DetermineCoreAPIResponseType(const TSharedPtr<FJsonObject>& JsonObject)
 {

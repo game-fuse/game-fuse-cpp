@@ -1,6 +1,6 @@
-#include "Library/GameFuseLog.h"
 #if WITH_AUTOMATION_TESTS
 
+#include "Library/GameFuseLog.h"
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Engine/GameInstance.h"
