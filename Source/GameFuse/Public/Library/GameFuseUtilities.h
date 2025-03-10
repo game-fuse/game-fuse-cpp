@@ -337,5 +337,21 @@ public:
 
 	static bool ConvertJsonArrayToAttributes(FGFAttributeList& InAttributes, const TArray<TSharedPtr<FJsonValue>>* Array);
 
+	/**
+	 * Parses game variables from a JSON object and adds them to the provided map
+	 * @param OutVariables The map to store the parsed variables
+	 * @param JsonObject The JSON object containing the game variables
+	 * @return True if parsing was successful, false otherwise
+	 */
+	static bool ConvertJsonToGameVariables(TMap<FString, FString>& OutVariables, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Parses game variables from a JSON string and adds them to the provided map
+	 * @param OutVariables The map to store the parsed variables
+	 * @param JsonString The JSON string containing the game variables
+	 * @return True if parsing was successful, false otherwise
+	 */
+	static bool ConvertJsonToGameVariables(TMap<FString, FString>& OutVariables, const FString& JsonString);
+
 #pragma endregion
 };

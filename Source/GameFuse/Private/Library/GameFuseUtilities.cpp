@@ -985,4 +985,64 @@ bool GameFuseUtilities::ConvertJsonArrayToAttributes(FGFAttributeList& InAttribu
 	return true;
 }
 
+bool GameFuseUtilities::ConvertJsonToGameVariables(TMap<FString, FString>& OutVariables, const TSharedPtr<FJsonObject>& JsonObject)
+{
+	OutVariables.Empty();
+
+	if (!JsonObject.IsValid())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for game variables"));
+		return false;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* GameVariablesArray = nullptr;
+	if (!JsonObject->TryGetArrayField(TEXT("game_variables"), GameVariablesArray))
+	{
+		UE_LOG(LogGameFuse, Warning, TEXT("No game_variables field found in JSON"));
+		return false;
+	}
+
+	for (const TSharedPtr<FJsonValue>& JsonValue : *GameVariablesArray)
+	{
+		const TSharedPtr<FJsonObject> VariableObject = JsonValue->AsObject();
+		if (!VariableObject.IsValid())
+		{
+			continue;
+		}
+
+		FString Key = "";
+		FString Value = "";
+
+		if (VariableObject->TryGetStringField(TEXT("key"), Key) && VariableObject->TryGetStringField(TEXT("value"), Value))
+		{
+			OutVariables.Add(Key, Value);
+		}
+	}
+
+	UE_LOG(LogGameFuse, Log, TEXT("Parsed %d game variables"), OutVariables.Num());
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToGameVariables(TMap<FString, FString>& OutVariables, const FString& JsonString)
+{
+	OutVariables.Empty();
+
+	if (JsonString.IsEmpty())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Empty JSON string for game variables"));
+		return false;
+	}
+
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+	TSharedPtr<FJsonObject> JsonObject;
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse JSON string for game variables"));
+		return false;
+	}
+
+	return ConvertJsonToGameVariables(OutVariables, JsonObject);
+}
+
 #pragma endregion

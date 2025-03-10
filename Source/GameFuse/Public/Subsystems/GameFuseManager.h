@@ -184,20 +184,49 @@ private:
 	UPROPERTY()
 	TObjectPtr<UCoreAPIHandler> RequestHandler;
 
+	/** Map to store blueprint callbacks by request ID */
+	TMap<FGuid, FBP_GFApiCallback> BlueprintCallbacks;
 
 	/**
-	 * Central response handling, determines internal setter from ResponseData
-	 * @param ResponseData
+	 * @brief Stores the blueprint callback in the BlueprintCallbacks map
+	 * @param RequestId The request ID to associate with the callback
+	 * @param Callback The blueprint callback to store
 	 */
-	void InternalResponseManager(FGFAPIResponse ResponseData);
-	void SetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject);
-	void SetVariablesInternal(const FString& JsonStr);
-	void SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject);
-	void SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObject);
+	void StoreBlueprintCallback(const FGuid& RequestId, const FBP_GFApiCallback& Callback);
 
 	/**
-	 * @brief Binds BP_APICallback to InternalCallback to use as multicast delegate in CPP
+	 * @brief Executes the blueprint callback associated with the given request ID
+	 * @param Response The API response to pass to the callback
 	 */
-	void WrapBlueprintCallback(const FBP_GFApiCallback& Callback, FGFApiCallback& InternalCallback);
+	void ExecuteBlueprintCallback(const FGFAPIResponse& Response);
 
+	/**
+	 * @brief Handles the response for SetUpGame requests
+	 * @param Response The API response
+	 */
+	void HandleSetUpGameResponse(FGFAPIResponse Response);
+
+	/**
+	 * @brief Handles the response for LeaderboardEntries requests
+	 * @param Response The API response
+	 */
+	void HandleLeaderboardEntriesResponse(FGFAPIResponse Response);
+
+	/**
+	 * @brief Handles the response for StoreItems requests
+	 * @param Response The API response
+	 */
+	void HandleStoreItemsResponse(FGFAPIResponse Response);
+
+	/**
+	 * @brief Handles the response for GameVariables requests
+	 * @param Response The API response
+	 */
+	void HandleGameVariablesResponse(FGFAPIResponse Response);
+
+	/**
+	 * @brief Handles the response for ForgotPassword requests
+	 * @param Response The API response
+	 */
+	void HandleForgotPasswordResponse(FGFAPIResponse Response);
 };
