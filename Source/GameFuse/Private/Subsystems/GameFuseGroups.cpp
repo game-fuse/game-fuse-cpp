@@ -19,6 +19,21 @@ void UGameFuseGroups::Deinitialize()
 	Super::Deinitialize();
 }
 
+void UGameFuseGroups::StoreBlueprintCallback(const FGuid& RequestId, const FBP_GFApiCallback& Callback)
+{
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
+}
+
+void UGameFuseGroups::ExecuteBlueprintCallback(const FGFAPIResponse& Response)
+{
+	if (BlueprintCallbacks.Contains(Response.RequestId)) {
+		BlueprintCallbacks[Response.RequestId].ExecuteIfBound(Response);
+		BlueprintCallbacks.Remove(Response.RequestId);
+	}
+}
+
 FGuid UGameFuseGroups::CreateGroup(const FGFGroup& Group, FGFGroupCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
@@ -169,7 +184,7 @@ FGuid UGameFuseGroups::FetchUserGroups(FGFGroupListCallback TypedCallback)
 
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleGroupListResponse(Response);
+		HandleGroupListResponse(Response, true);
 	});
 
 	FGuid RequestId = RequestHandler->FetchUserGroups(GameFuseUser->GetUserData(), InternalCallback);
@@ -352,32 +367,37 @@ void UGameFuseGroups::HandleGroupResponse(const FGFAPIResponse& Response)
 			GroupCallbacks[Response.RequestId].ExecuteIfBound(FGFGroup());
 			GroupCallbacks.Remove(Response.RequestId);
 		}
+		// Execute the blueprint callback after handling the error
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
 	FGFGroup Group;
 	if (!GameFuseUtilities::ConvertJsonToGroup(Group, Response.ResponseStr)) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group"));
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group from response"));
 		if (GroupCallbacks.Contains(Response.RequestId)) {
 			GroupCallbacks[Response.RequestId].ExecuteIfBound(FGFGroup());
 			GroupCallbacks.Remove(Response.RequestId);
 		}
+		// Execute the blueprint callback after handling the error
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
-	// update cached data
-	AllGroups.AddUnique(Group);
-	if (Group.Members.Contains(GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetUserData())) {
-		UserGroups.AddUnique(Group);
-	}
 
+	// Update cached data
+	UserGroups.AddUnique(Group);
+	AllGroups.AddUnique(Group);
 
 	if (GroupCallbacks.Contains(Response.RequestId)) {
 		GroupCallbacks[Response.RequestId].ExecuteIfBound(Group);
 		GroupCallbacks.Remove(Response.RequestId);
 	}
+
+	// Execute the blueprint callback after all processing is done
+	ExecuteBlueprintCallback(Response);
 }
 
-void UGameFuseGroups::HandleGroupListResponse(const FGFAPIResponse& Response)
+void UGameFuseGroups::HandleGroupListResponse(const FGFAPIResponse& Response, bool bIsUserGroups)
 {
 	if (!Response.bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group list response: %s"), *Response.ResponseStr);
@@ -385,46 +405,61 @@ void UGameFuseGroups::HandleGroupListResponse(const FGFAPIResponse& Response)
 			GroupListCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGroup>());
 			GroupListCallbacks.Remove(Response.RequestId);
 		}
+		// Execute the blueprint callback after handling the error
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
 	TArray<FGFGroup> Groups;
-	if (!GameFuseUtilities::ConvertJsonArrayToGroups(Groups, Response.ResponseStr)) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse groups list"));
+	if (!GameFuseUtilities::ConvertJsonToGroups(Groups, Response.ResponseStr)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse groups from response"));
 		if (GroupListCallbacks.Contains(Response.RequestId)) {
 			GroupListCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGroup>());
 			GroupListCallbacks.Remove(Response.RequestId);
 		}
+		// Execute the blueprint callback after handling the error
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
 	// Update cached data
-	AllGroups = Groups;
+	if (bIsUserGroups) {
+		UserGroups = Groups;
+	} else {
+		AllGroups = Groups;
+	}
 
 	if (GroupListCallbacks.Contains(Response.RequestId)) {
 		GroupListCallbacks[Response.RequestId].ExecuteIfBound(Groups);
 		GroupListCallbacks.Remove(Response.RequestId);
 	}
+
+	// Execute the blueprint callback after all processing is done
+	ExecuteBlueprintCallback(Response);
 }
 
 void UGameFuseGroups::HandleGroupConnectionResponse(const FGFAPIResponse& Response)
 {
 	if (!Response.bSuccess) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group connection: %s"), *Response.ResponseStr);
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group connection response: %s"), *Response.ResponseStr);
 		if (GroupConnectionCallbacks.Contains(Response.RequestId)) {
 			GroupConnectionCallbacks[Response.RequestId].ExecuteIfBound(FGFGroupConnection());
 			GroupConnectionCallbacks.Remove(Response.RequestId);
 		}
+		// Execute the blueprint callback after handling the error
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
 	FGFGroupConnection Connection;
 	if (!GameFuseUtilities::ConvertJsonToGroupConnection(Connection, Response.ResponseStr)) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group connection response"));
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group connection from response"));
 		if (GroupConnectionCallbacks.Contains(Response.RequestId)) {
 			GroupConnectionCallbacks[Response.RequestId].ExecuteIfBound(FGFGroupConnection());
 			GroupConnectionCallbacks.Remove(Response.RequestId);
 		}
+		// Execute the blueprint callback after handling the error
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
@@ -432,70 +467,78 @@ void UGameFuseGroups::HandleGroupConnectionResponse(const FGFAPIResponse& Respon
 		GroupConnectionCallbacks[Response.RequestId].ExecuteIfBound(Connection);
 		GroupConnectionCallbacks.Remove(Response.RequestId);
 	}
+
+	// Execute the blueprint callback after all processing is done
+	ExecuteBlueprintCallback(Response);
 }
 
 void UGameFuseGroups::HandleGroupActionResponse(const FGFAPIResponse& Response)
 {
-	if (!Response.bSuccess) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group action response: %s"), *Response.ResponseStr);
-	}
-
 	if (GroupActionCallbacks.Contains(Response.RequestId)) {
 		GroupActionCallbacks[Response.RequestId].ExecuteIfBound(Response.bSuccess);
 		GroupActionCallbacks.Remove(Response.RequestId);
 	}
+
+	// Execute the blueprint callback after all processing is done
+	ExecuteBlueprintCallback(Response);
 }
 
 void UGameFuseGroups::HandleGroupAttributeResponse(const FGFAPIResponse& Response)
 {
-
 	if (!Response.bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group attribute response: %s"), *Response.ResponseStr);
 		if (GroupAttributeCallbacks.Contains(Response.RequestId)) {
-			TArray<FGFGroupAttribute> EmptyAttributes;
-			GroupAttributeCallbacks[Response.RequestId].ExecuteIfBound(EmptyAttributes);
+			GroupAttributeCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGroupAttribute>());
 			GroupAttributeCallbacks.Remove(Response.RequestId);
 		}
+		// Execute the blueprint callback after handling the error
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
-	// Parse the attributes array from the response
 	TArray<FGFGroupAttribute> Attributes;
-	if (!GameFuseUtilities::ConvertJsonToGroupAttributeResponse(Attributes, Response.ResponseStr)) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group attributes response"));
+	if (!GameFuseUtilities::ConvertJsonToGroupAttributes(Attributes, Response.ResponseStr)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group attributes from response"));
 		if (GroupAttributeCallbacks.Contains(Response.RequestId)) {
-			TArray<FGFGroupAttribute> EmptyAttributes;
-			GroupAttributeCallbacks[Response.RequestId].ExecuteIfBound(EmptyAttributes);
+			GroupAttributeCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGroupAttribute>());
 			GroupAttributeCallbacks.Remove(Response.RequestId);
 		}
+		// Execute the blueprint callback after handling the error
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
-	// Execute the callback with the parsed attributes
 	if (GroupAttributeCallbacks.Contains(Response.RequestId)) {
 		GroupAttributeCallbacks[Response.RequestId].ExecuteIfBound(Attributes);
 		GroupAttributeCallbacks.Remove(Response.RequestId);
 	}
+
+	// Execute the blueprint callback after all processing is done
+	ExecuteBlueprintCallback(Response);
 }
 
 void UGameFuseGroups::HandleFetchAttributesResponse(FGFAPIResponse Response)
 {
 	if (!Response.bSuccess) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to fetch group attributes: %s"), *Response.ResponseStr);
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle fetch attributes response: %s"), *Response.ResponseStr);
 		if (FetchAttributesCallbacks.Contains(Response.RequestId)) {
 			FetchAttributesCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGroupAttribute>());
 			FetchAttributesCallbacks.Remove(Response.RequestId);
 		}
+		// Execute the blueprint callback after handling the error
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
 	TArray<FGFGroupAttribute> Attributes;
-	if (!GameFuseUtilities::ConvertJsonToGroupAttributeResponse(Attributes, Response.ResponseStr)) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group attributes"));
+	if (!GameFuseUtilities::ConvertJsonToGroupAttributes(Attributes, Response.ResponseStr)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse group attributes from response"));
 		if (FetchAttributesCallbacks.Contains(Response.RequestId)) {
 			FetchAttributesCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGroupAttribute>());
 			FetchAttributesCallbacks.Remove(Response.RequestId);
 		}
+		// Execute the blueprint callback after handling the error
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
@@ -503,124 +546,101 @@ void UGameFuseGroups::HandleFetchAttributesResponse(FGFAPIResponse Response)
 		FetchAttributesCallbacks[Response.RequestId].ExecuteIfBound(Attributes);
 		FetchAttributesCallbacks.Remove(Response.RequestId);
 	}
+
+	// Execute the blueprint callback after all processing is done
+	ExecuteBlueprintCallback(Response);
 }
 
 // Blueprint API implementations
-void UGameFuseGroups::BP_CreateGroup(const FGFGroup& Group, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_CreateGroup(const FGFGroup& Group, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const FGFGroup& CreatedGroup) {
-		Callback.ExecuteIfBound(CreatedGroup.Id > 0);
-	});
-	CreateGroup(Group, TypedCallback);
+	FGuid RequestId = CreateGroup(Group, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_FetchGroup(const int32 GroupId, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_FetchGroup(const int32 GroupId, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const FGFGroup& Group) {
-		Callback.ExecuteIfBound(Group.Id > 0);
-	});
-	FetchGroup(GroupId, TypedCallback);
+	FGuid RequestId = FetchGroup(GroupId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_FetchAllGroups(FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_FetchAllGroups(const FBP_GFApiCallback& Callback)
 {
 	FGFGroupListCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFGroup>& Groups) {
-		Callback.ExecuteIfBound(!Groups.IsEmpty());
-	});
-	FetchAllGroups(TypedCallback);
+	FGuid RequestId = FetchAllGroups(TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_RequestToJoinGroup(int32 GroupId, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_RequestToJoinGroup(int32 GroupId, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupConnectionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const FGFGroupConnection& Connection) {
-		Callback.ExecuteIfBound(Connection.Id > 0);
-	});
-	RequestToJoinGroup(GroupId, TypedCallback);
+	FGuid RequestId = RequestToJoinGroup(GroupId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_DeleteGroup(const int32 GroupId, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_DeleteGroup(const int32 GroupId, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	DeleteGroup(GroupId, TypedCallback);
+	FGuid RequestId = DeleteGroup(GroupId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_JoinGroup(const int32 GroupId, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_JoinGroup(const int32 GroupId, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	JoinGroup(GroupId, TypedCallback);
+	FGuid RequestId = JoinGroup(GroupId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_LeaveGroup(const int32 GroupId, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_LeaveGroup(const int32 GroupId, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	LeaveGroup(GroupId, TypedCallback);
+	FGuid RequestId = LeaveGroup(GroupId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_FetchUserGroups(FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_FetchUserGroups(const FBP_GFApiCallback& Callback)
 {
 	FGFGroupListCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFGroup>& Groups) {
-		Callback.ExecuteIfBound(!Groups.IsEmpty());
-	});
-	FetchUserGroups(TypedCallback);
+	FGuid RequestId = FetchUserGroups(TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_SearchGroups(const FString& Query, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_SearchGroups(const FString& Query, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupListCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFGroup>& Groups) {
-		Callback.ExecuteIfBound(!Groups.IsEmpty());
-	});
-	SearchGroups(Query, TypedCallback);
+	FGuid RequestId = SearchGroups(Query, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_AddAdmin(const int32 GroupId, const int32 UserId, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_AddAdmin(const int32 GroupId, const int32 UserId, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	AddAdmin(GroupId, UserId, TypedCallback);
+	FGuid RequestId = AddAdmin(GroupId, UserId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_RemoveAdmin(const int32 GroupId, const int32 UserId, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_RemoveAdmin(const int32 GroupId, const int32 UserId, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	RemoveAdmin(GroupId, UserId, TypedCallback);
+	FGuid RequestId = RemoveAdmin(GroupId, UserId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupAttributeCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFGroupAttribute>& Attributes) {
-		Callback.ExecuteIfBound(!Attributes.IsEmpty());
-	});
-	AddAttribute(GroupId, Attribute, bOnlyCreatorCanEdit, TypedCallback);
+	FGuid RequestId = AddAttribute(GroupId, Attribute, bOnlyCreatorCanEdit, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupActionCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](bool bSuccess) {
-		Callback.ExecuteIfBound(bSuccess);
-	});
-	UpdateGroupAttribute(GroupId, Attribute, TypedCallback);
+	FGuid RequestId = UpdateGroupAttribute(GroupId, Attribute, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 // void UGameFuseGroups::BP_DeleteAttribute(const int32 GroupId, const int32 AttributeId, FBP_GFGroupCallback Callback)
@@ -632,20 +652,30 @@ void UGameFuseGroups::BP_UpdateGroupAttribute(const int32 GroupId, const FGFGrou
 // 	DeleteAttribute(GroupId, AttributeId, TypedCallback);
 // }
 
-void UGameFuseGroups::BP_FetchAttributes(const int32 GroupId, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_FetchAttributes(const int32 GroupId, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupAttributeCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFGroupAttribute>& Attributes) {
-		Callback.ExecuteIfBound(!Attributes.IsEmpty());
-	});
-	FetchGroupAttributes(GroupId, TypedCallback);
+	FGuid RequestId = FetchGroupAttributes(GroupId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_FetchGroupAttributes(const int32 GroupId, FBP_GFGroupCallback Callback)
+void UGameFuseGroups::BP_FetchGroupAttributes(const int32 GroupId, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupAttributeCallback TypedCallback;
-	TypedCallback.BindLambda([Callback](const TArray<FGFGroupAttribute>& Attributes) {
-		Callback.ExecuteIfBound(!Attributes.IsEmpty());
-	});
-	FetchGroupAttributes(GroupId, TypedCallback);
+	FGuid RequestId = FetchGroupAttributes(GroupId, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
+}
+
+void UGameFuseGroups::BP_AcceptGroupJoinRequest(const int32 ConnectionId, const int32 UserId, const FBP_GFApiCallback& Callback)
+{
+	FGFGroupActionCallback TypedCallback;
+	FGuid RequestId = RespondToGroupJoinRequest(ConnectionId, UserId, EGFInviteRequestStatus::Accepted, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
+}
+
+void UGameFuseGroups::BP_DeclineGroupJoinRequest(const int32 ConnectionId, const int32 UserId, const FBP_GFApiCallback& Callback)
+{
+	FGFGroupActionCallback TypedCallback;
+	FGuid RequestId = RespondToGroupJoinRequest(ConnectionId, UserId, EGFInviteRequestStatus::Declined, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }

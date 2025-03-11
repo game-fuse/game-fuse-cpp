@@ -175,10 +175,10 @@ void GameFuseChatSpec::Define()
 
 				// Sign in second user and verify they can see the chat
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-					FGFApiCallback SignInCallback;
-					SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					FGFUserDataCallback SignInCallback;
+					SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 						AddInfo("CreateGroupChat :: Sign In Second User");
-						TestTrue("Second user sign in succeeded", Response.bSuccess);
+						TestTrue("Second user sign in succeeded", bSuccess);
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -204,15 +204,18 @@ void GameFuseChatSpec::Define()
 							TestTrue("Second user can see the group chat", bFoundChat);
 						});
 
+						// Create an empty callback for FetchAllChats
+						FGFChatListCallback EmptyChatListCallback;
+
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																		  GameFuseChat->FetchAllChats(1)));
+																		  GameFuseChat->FetchAllChats(1, EmptyChatListCallback)));
 
 						// Sign in third user and verify they can see the chat
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-							FGFApiCallback SignInCallback;
-							SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
+							FGFUserDataCallback SignInCallback;
+							SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 								AddInfo("CreateGroupChat :: Sign In Third User");
-								TestTrue("Third user sign in succeeded", Response.bSuccess);
+								TestTrue("Third user sign in succeeded", bSuccess);
 							});
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -238,8 +241,11 @@ void GameFuseChatSpec::Define()
 									TestTrue("Third user can see the group chat", bFoundChat);
 								});
 
+								// Create an empty callback for FetchAllChats
+								FGFChatListCallback EmptyChatListCallback;
+
 								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																				  GameFuseChat->FetchAllChats(1)));
+																				  GameFuseChat->FetchAllChats(1, EmptyChatListCallback)));
 								return true;
 							}));
 							return true;
@@ -270,10 +276,10 @@ void GameFuseChatSpec::Define()
 
 				// Sign in second user to send a message
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-					FGFApiCallback SignInCallback;
-					SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					FGFUserDataCallback SignInCallback;
+					SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 						AddInfo("SendMessage :: Sign In Second User");
-						TestTrue("Second user sign in succeeded", Response.bSuccess);
+						TestTrue("Second user sign in succeeded", bSuccess);
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -316,8 +322,11 @@ void GameFuseChatSpec::Define()
 								TestTrue("Found chat with both messages", bFoundChat);
 							});
 
+							// Create an empty callback for FetchAllChats
+							FGFChatListCallback EmptyChatListCallback;
+
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																			  GameFuseChat->FetchAllChats(1)));
+																			  GameFuseChat->FetchAllChats(1, EmptyChatListCallback)));
 							return true;
 						}));
 						return true;
@@ -365,8 +374,11 @@ void GameFuseChatSpec::Define()
 							}
 						});
 
+						// Create an empty callback for FetchAllChats
+						FGFChatListCallback EmptyChatListCallback;
+
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																		  GameFuseChat->FetchAllChats(1)));
+																		  GameFuseChat->FetchAllChats(1, EmptyChatListCallback)));
 
 						// Fetch second page
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
@@ -379,8 +391,11 @@ void GameFuseChatSpec::Define()
 								}
 							});
 
+							// Create an empty callback for FetchAllChats
+							FGFChatListCallback EmptyChatListCallback;
+
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																			  GameFuseChat->FetchAllChats(2)));
+																			  GameFuseChat->FetchAllChats(2, EmptyChatListCallback)));
 							return true;
 						}));
 						return true;
@@ -409,10 +424,10 @@ void GameFuseChatSpec::Define()
 
 				// Sign in second user to send multiple messages
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-					FGFApiCallback SignInCallback;
-					SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					FGFUserDataCallback SignInCallback;
+					SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 						AddInfo("FetchMessages :: Sign In Second User");
-						TestTrue("Second user sign in succeeded", Response.bSuccess);
+						TestTrue("Second user sign in succeeded", bSuccess);
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -456,7 +471,7 @@ void GameFuseChatSpec::Define()
 								});
 
 								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																				  GameFuseChat->FetchMessages(ChatToVerify.Id, FetchCallback1, 1)));
+																				  GameFuseChat->FetchMessages(ChatToVerify.Id, 1, FetchCallback1)));
 
 								// Fetch second page
 								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
@@ -473,7 +488,7 @@ void GameFuseChatSpec::Define()
 									});
 
 									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																					  GameFuseChat->FetchMessages(ChatToVerify.Id, FetchCallback2, 2)));
+																					  GameFuseChat->FetchMessages(ChatToVerify.Id, 2, FetchCallback2)));
 									return true;
 								}));
 								return true;
@@ -513,10 +528,10 @@ void GameFuseChatSpec::Define()
 
 				// Sign in second user to send a message
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-					FGFApiCallback SignInCallback;
-					SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
+					FGFUserDataCallback SignInCallback;
+					SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 						AddInfo("MarkAsRead :: Sign In Second User");
-						TestTrue("Second user sign in succeeded", Response.bSuccess);
+						TestTrue("Second user sign in succeeded", bSuccess);
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
@@ -541,66 +556,67 @@ void GameFuseChatSpec::Define()
 							TestTrue("Found chat with unread message", bFoundChat);
 						});
 
+						// Create an empty callback for FetchAllChats
+						FGFChatListCallback EmptyChatListCallback;
+
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																		  GameFuseChat->FetchAllChats(1)));
+																		  GameFuseChat->FetchAllChats(1, EmptyChatListCallback)));
 
-						// Mark message as read
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
+																		  GameFuseChat->MarkMessageAsRead(ChatToVerify.Messages[0].Id, FGFSuccessCallback())));
+
+						// Send a reply message
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																			  GameFuseChat->MarkMessageAsRead(ChatToVerify.Messages[0].Id, FGFSuccessCallback())));
+							FGFMessageCallback SendCallback;
+							SendCallback.BindLambda([this](const FGFMessage& Message) {
+								AddInfo("MarkAsRead :: Send Reply Message");
+								TestEqual("Message text matches", Message.Text, "Reply from User 2");
+								TestEqual("Message sender id matches", Message.UserId, UserData2->Id);
+								TestTrue("Message is read by sender", Message.bRead);
+							});
 
-							// Send a reply message
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
+																			  GameFuseChat->SendMessage(ChatToVerify.Id, "Reply from User 2", SendCallback)));
+
+							// Sign back in as first user
 							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-								FGFMessageCallback SendCallback;
-								SendCallback.BindLambda([this](const FGFMessage& Message) {
-									AddInfo("MarkAsRead :: Send Reply Message");
-									TestEqual("Message text matches", Message.Text, "Reply from User 2");
-									TestEqual("Message sender id matches", Message.UserId, UserData2->Id);
-									TestTrue("Message is read by sender", Message.bRead);
+								FGFUserDataCallback SignInCallback;
+								SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+									AddInfo("MarkAsRead :: Sign In First User");
+									TestTrue("First user sign in succeeded", bSuccess);
 								});
 
-								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																				  GameFuseChat->SendMessage(ChatToVerify.Id, "Reply from User 2", SendCallback)));
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																				  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
 
-								// Sign back in as first user
+								// Verify second message is unread
 								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-									FGFApiCallback SignInCallback;
-									SignInCallback.AddLambda([this](const FGFAPIResponse& Response) {
-										AddInfo("MarkAsRead :: Sign In First User");
-										TestTrue("First user sign in succeeded", Response.bSuccess);
+									FGFChatListCallback FetchCallback;
+									FetchCallback.BindLambda([this](const TArray<FGFChat>& Chats) {
+										AddInfo("MarkAsRead :: Verify Reply Message Unread");
+										bool bFoundChat = false;
+										for (const FGFChat& Chat : Chats) {
+											if (Chat.Id == ChatToVerify.Id) {
+												bFoundChat = true;
+												TestEqual("Chat has two messages", Chat.Messages.Num(), 2);
+												if (Chat.Messages.Num() == 2) {
+													TestTrue("Initial message is read", Chat.Messages[1].bRead);
+													TestFalse("Reply message should be unread", Chat.Messages[0].bRead);
+
+													ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
+																									  GameFuseChat->MarkMessageAsRead(Chat.Messages[0].Id, FGFSuccessCallback())));
+												}
+												break;
+											}
+										}
+										TestTrue("Found chat with unread reply", bFoundChat);
 									});
 
-									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																					  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
+									// Create an empty callback for FetchAllChats
+									FGFChatListCallback EmptyChatListCallback;
 
-									// Verify second message is unread
-									ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
-										FGFChatListCallback FetchCallback;
-										FetchCallback.BindLambda([this](const TArray<FGFChat>& Chats) {
-											AddInfo("MarkAsRead :: Verify Reply Message Unread");
-											bool bFoundChat = false;
-											for (const FGFChat& Chat : Chats) {
-												if (Chat.Id == ChatToVerify.Id) {
-													bFoundChat = true;
-													TestEqual("Chat has two messages", Chat.Messages.Num(), 2);
-													if (Chat.Messages.Num() == 2) {
-														TestTrue("Initial message is read", Chat.Messages[1].bRead);
-														TestFalse("Reply message should be unread", Chat.Messages[0].bRead);
-
-
-														ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																										  GameFuseChat->MarkMessageAsRead(Chat.Messages[0].Id, FGFSuccessCallback())));
-													}
-													break;
-												}
-											}
-											TestTrue("Found chat with unread reply", bFoundChat);
-										});
-
-										ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
-																						  GameFuseChat->FetchAllChats(1)));
-										return true;
-									}));
+									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseChat->GetRequestHandler(),
+																					  GameFuseChat->FetchAllChats(1, EmptyChatListCallback)));
 									return true;
 								}));
 								return true;

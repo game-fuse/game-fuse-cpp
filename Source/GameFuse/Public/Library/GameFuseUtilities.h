@@ -21,6 +21,7 @@
 class GAMEFUSE_API GameFuseUtilities
 {
 public:
+
 	static void ConvertJsonToMap(TMap<FString, FString>& InMap, const FString& JsonString);
 
 
@@ -217,6 +218,13 @@ public:
 
 #pragma region Friends
 	/**
+	 * @brief Converts a JSON string to a friend request
+	 * @param OutRequest The output friend request
+	 * @param JsonString The JSON string to convert
+	 * @return True if the conversion was successful
+	 */
+	static bool ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest, const FString& JsonString);
+	/**
 	 * Converts a JSON array into a list of friend requests
 	 * @param OutRequests Array to store the converted friend requests
 	 * @param JsonString The JSON string to convert
@@ -285,12 +293,20 @@ public:
 	static bool ConvertJsonToGroup(FGFGroup& InGroup, const FString& JsonString);
 
 	/**
-	 * Converts a JSON array into an array of Groups
-	 * @param InGroups Array to store converted data
+	 * @brief Converts a JSON string to an array of groups
+	 * @param InGroups The output array of groups
 	 * @param JsonString The JSON string to convert
-	 * @return true if successful
+	 * @return True if the conversion was successful
 	 */
-	static bool ConvertJsonArrayToGroups(TArray<FGFGroup>& InGroups, const FString& JsonString);
+	static bool ConvertJsonToGroups(TArray<FGFGroup>& InGroups, const FString& JsonString);
+
+	/**
+	 * @brief Converts a JSON string to a group attributes array
+	 * @param OutAttributes The output array of group attributes
+	 * @param JsonString The JSON string to convert
+	 * @return True if the conversion was successful
+	 */
+	static bool ConvertJsonToGroupAttributes(TArray<FGFGroupAttribute>& OutAttributes, const FString& JsonString);
 
 	/**
 	 * Converts a JSON string into a GroupAttributeResponse
@@ -416,6 +432,7 @@ public:
 	 * @return True if parsing was successful, false otherwise
 	 */
 	static bool ConvertJsonToGameVariables(TMap<FString, FString>& OutVariables, const FString& JsonString);
+
 
 #pragma endregion
 };

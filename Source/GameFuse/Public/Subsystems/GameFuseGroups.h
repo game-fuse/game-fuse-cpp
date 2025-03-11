@@ -14,8 +14,7 @@ DECLARE_DELEGATE_OneParam(FGFGroupConnectionCallback, const FGFGroupConnection&)
 DECLARE_DELEGATE_OneParam(FGFGroupAttributeCallback, const TArray<FGFGroupAttribute>&);
 DECLARE_DELEGATE_OneParam(FGFGroupActionCallback, bool);
 
-// Blueprint callback
-DECLARE_DYNAMIC_DELEGATE_OneParam(FBP_GFGroupCallback, bool, bSuccess);
+// Blueprint callback is now using the standard FBP_GFApiCallback
 
 UCLASS()
 class GAMEFUSE_API UGameFuseGroups : public UGameInstanceSubsystem
@@ -47,72 +46,58 @@ public:
 
 	// Blueprint API
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_CreateGroup(const FGFGroup& Group, FBP_GFGroupCallback Callback);
+	void BP_CreateGroup(const FGFGroup& Group, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_FetchGroup(const int32 GroupId, FBP_GFGroupCallback Callback);
+	void BP_FetchGroup(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_FetchAllGroups(FBP_GFGroupCallback Callback);
+	void BP_FetchAllGroups(const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_RequestToJoinGroup(int32 GroupId, FBP_GFGroupCallback Callback);
+	void BP_RequestToJoinGroup(int32 GroupId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_DeleteGroup(const int32 GroupId, FBP_GFGroupCallback Callback);
+	void BP_DeleteGroup(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_JoinGroup(const int32 GroupId, FBP_GFGroupCallback Callback);
+	void BP_JoinGroup(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_LeaveGroup(const int32 GroupId, FBP_GFGroupCallback Callback);
+	void BP_LeaveGroup(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_FetchUserGroups(FBP_GFGroupCallback Callback);
+	void BP_FetchUserGroups(const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_SearchGroups(const FString& Query, FBP_GFGroupCallback Callback);
+	void BP_SearchGroups(const FString& Query, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_AddAdmin(const int32 GroupId, const int32 UserId, FBP_GFGroupCallback Callback);
+	void BP_AddAdmin(const int32 GroupId, const int32 UserId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_RemoveAdmin(const int32 GroupId, const int32 UserId, FBP_GFGroupCallback Callback);
+	void BP_RemoveAdmin(const int32 GroupId, const int32 UserId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, FBP_GFGroupCallback Callback);
+	void BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, FBP_GFGroupCallback Callback);
+	void BP_UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, const FBP_GFApiCallback& Callback);
 
 	// UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	// void BP_DeleteAttribute(const int32 GroupId, const int32 AttributeId, FBP_GFGroupCallback Callback);
+	// void BP_DeleteAttribute(const int32 GroupId, const int32 AttributeId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_FetchAttributes(const int32 GroupId, FBP_GFGroupCallback Callback);
+	void BP_FetchAttributes(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_FetchGroupAttributes(const int32 GroupId, FBP_GFGroupCallback Callback);
+	void BP_FetchGroupAttributes(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_AcceptGroupJoinRequest(const int32 ConnectionId, const int32 UserId, FBP_GFGroupCallback Callback)
-	{
-		FGFGroupActionCallback TypedCallback;
-		TypedCallback.BindLambda([Callback](bool bSuccess) {
-			Callback.ExecuteIfBound(bSuccess);
-		});
-		RespondToGroupJoinRequest(ConnectionId, UserId, EGFInviteRequestStatus::Accepted, TypedCallback);
-	}
+	void BP_AcceptGroupJoinRequest(const int32 ConnectionId, const int32 UserId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
-	void BP_DeclineGroupJoinRequest(const int32 ConnectionId, const int32 UserId, FBP_GFGroupCallback Callback)
-	{
-		FGFGroupActionCallback TypedCallback;
-		TypedCallback.BindLambda([Callback](bool bSuccess) {
-			Callback.ExecuteIfBound(bSuccess);
-		});
-		RespondToGroupJoinRequest(ConnectionId, UserId, EGFInviteRequestStatus::Declined, TypedCallback);
-	}
+	void BP_DeclineGroupJoinRequest(const int32 ConnectionId, const int32 UserId, const FBP_GFApiCallback& Callback);
 
 	// Getters for cached data
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
@@ -143,7 +128,7 @@ private:
 
 	// Internal response handlers
 	void HandleGroupResponse(const FGFAPIResponse& Response);
-	void HandleGroupListResponse(const FGFAPIResponse& Response);
+	void HandleGroupListResponse(const FGFAPIResponse& Response, bool bIsUserGroups = false);
 	void HandleGroupConnectionResponse(const FGFAPIResponse& Response);
 	void HandleGroupActionResponse(const FGFAPIResponse& Response);
 	void HandleGroupAttributeResponse(const FGFAPIResponse& Response);
@@ -156,4 +141,20 @@ private:
 	TMap<FGuid, FGFGroupActionCallback> GroupActionCallbacks;
 	TMap<FGuid, FGFGroupAttributeCallback> GroupAttributeCallbacks;
 	TMap<FGuid, FGFGroupAttributeCallback> FetchAttributesCallbacks;
+
+	/** Map to store blueprint callbacks by request ID */
+	TMap<FGuid, FBP_GFApiCallback> BlueprintCallbacks;
+
+	/**
+	 * @brief Stores the blueprint callback in the BlueprintCallbacks map
+	 * @param RequestId The request ID to associate with the callback
+	 * @param Callback The blueprint callback to store
+	 */
+	void StoreBlueprintCallback(const FGuid& RequestId, const FBP_GFApiCallback& Callback);
+
+	/**
+	 * @brief Executes the blueprint callback associated with the given request ID
+	 * @param Response The API response to pass to the callback
+	 */
+	void ExecuteBlueprintCallback(const FGFAPIResponse& Response);
 };

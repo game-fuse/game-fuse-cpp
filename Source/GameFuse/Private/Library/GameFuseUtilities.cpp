@@ -390,6 +390,7 @@ bool GameFuseUtilities::ConvertJsonToFriendsList(TArray<FGFUserData>& OutFriends
 
 bool GameFuseUtilities::ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest, const TSharedPtr<FJsonObject>& JsonObject)
 {
+
 	if (!JsonObject.IsValid()) {
 		return false;
 	}
@@ -870,7 +871,7 @@ bool GameFuseUtilities::ConvertJsonToGroup(FGFGroup& InGroup, const FString& Jso
 	return ConvertJsonToGroup(InGroup, JsonObject);
 }
 
-bool GameFuseUtilities::ConvertJsonArrayToGroups(TArray<FGFGroup>& InGroups, const FString& JsonString)
+bool GameFuseUtilities::ConvertJsonToGroups(TArray<FGFGroup>& InGroups, const FString& JsonString)
 {
 	TSharedPtr<FJsonObject> JsonObject;
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
@@ -1232,32 +1233,27 @@ bool GameFuseUtilities::ConvertJsonToGameVariables(TMap<FString, FString>& OutVa
 {
 	OutVariables.Empty();
 
-	if (!JsonObject.IsValid())
-	{
+	if (!JsonObject.IsValid()) {
 		UE_LOG(LogGameFuse, Error, TEXT("Invalid JSON object for game variables"));
 		return false;
 	}
 
 	const TArray<TSharedPtr<FJsonValue>>* GameVariablesArray = nullptr;
-	if (!JsonObject->TryGetArrayField(TEXT("game_variables"), GameVariablesArray))
-	{
+	if (!JsonObject->TryGetArrayField(TEXT("game_variables"), GameVariablesArray)) {
 		UE_LOG(LogGameFuse, Warning, TEXT("No game_variables field found in JSON"));
 		return false;
 	}
 
-	for (const TSharedPtr<FJsonValue>& JsonValue : *GameVariablesArray)
-	{
+	for (const TSharedPtr<FJsonValue>& JsonValue : *GameVariablesArray) {
 		const TSharedPtr<FJsonObject> VariableObject = JsonValue->AsObject();
-		if (!VariableObject.IsValid())
-		{
+		if (!VariableObject.IsValid()) {
 			continue;
 		}
 
 		FString Key = "";
 		FString Value = "";
 
-		if (VariableObject->TryGetStringField(TEXT("key"), Key) && VariableObject->TryGetStringField(TEXT("value"), Value))
-		{
+		if (VariableObject->TryGetStringField(TEXT("key"), Key) && VariableObject->TryGetStringField(TEXT("value"), Value)) {
 			OutVariables.Add(Key, Value);
 		}
 	}
@@ -1270,8 +1266,7 @@ bool GameFuseUtilities::ConvertJsonToGameVariables(TMap<FString, FString>& OutVa
 {
 	OutVariables.Empty();
 
-	if (JsonString.IsEmpty())
-	{
+	if (JsonString.IsEmpty()) {
 		UE_LOG(LogGameFuse, Error, TEXT("Empty JSON string for game variables"));
 		return false;
 	}
@@ -1279,13 +1274,55 @@ bool GameFuseUtilities::ConvertJsonToGameVariables(TMap<FString, FString>& OutVa
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
 	TSharedPtr<FJsonObject> JsonObject;
 
-	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
-	{
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse JSON string for game variables"));
 		return false;
 	}
 
 	return ConvertJsonToGameVariables(OutVariables, JsonObject);
+}
+
+bool GameFuseUtilities::ConvertJsonToGroupAttributes(TArray<FGFGroupAttribute>& OutAttributes, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse JSON for group attributes: %s"), *JsonString);
+		return false;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* AttributesArray;
+	if (!JsonObject->TryGetArrayField(TEXT("attributes"), AttributesArray)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to find 'attributes' array in JSON: %s"), *JsonString);
+		return false;
+	}
+
+	OutAttributes.Empty();
+	for (const TSharedPtr<FJsonValue>& JsonValue : *AttributesArray) {
+		if (JsonValue->Type != EJson::Object) {
+			UE_LOG(LogGameFuse, Warning, TEXT("Skipping non-object attribute in JSON array"));
+			continue;
+		}
+
+		FGFGroupAttribute Attribute;
+		if (ConvertJsonToGroupAttribute(Attribute, JsonValue->AsObject())) {
+			OutAttributes.Add(Attribute);
+		}
+	}
+
+	return true;
+}
+
+bool GameFuseUtilities::ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest, const FString& JsonString)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse JSON for friend request: %s"), *JsonString);
+		return false;
+	}
+
+	return ConvertJsonToFriendRequest(OutRequest, JsonObject);
 }
 
 #pragma endregion
