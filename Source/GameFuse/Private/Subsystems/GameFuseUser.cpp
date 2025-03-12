@@ -333,7 +333,7 @@ int32 UGameFuseUser::GetScore() const
 	return UserData.Score;
 }
 
-const TArray<FGFLeaderboardEntry>& UGameFuseUser::GetLeaderboardEntries() const
+const TArray<FGFLeaderboardEntry>& UGameFuseUser::GetMyLeaderboardEntries() const
 {
 	return LeaderboardEntries;
 }
@@ -576,15 +576,6 @@ void UGameFuseUser::BP_SyncLocalAttributes(FBP_GFApiCallback Callback)
 	}
 }
 
-void UGameFuseUser::BP_GetAttributes(FBP_GFApiCallback Callback)
-{
-	FGFAttributesCallback TypedCallback;
-	FGuid RequestId = FetchAttributes(TypedCallback);
-	if (Callback.IsBound()) {
-		BlueprintCallbacks.Add(RequestId, Callback);
-	}
-}
-
 void UGameFuseUser::BP_SetAttributes(const TMap<FString, FString>& NewAttributes, FBP_GFApiCallback Callback)
 {
 	FGFAttributesCallback TypedCallback;
@@ -761,8 +752,7 @@ void UGameFuseUser::HandleUserActionResponse(FGFAPIResponse Response)
 
 void UGameFuseUser::ExecuteBlueprintCallback(const FGFAPIResponse& Response)
 {
-	if (BlueprintCallbacks.Contains(Response.RequestId))
-	{
+	if (BlueprintCallbacks.Contains(Response.RequestId)) {
 		BlueprintCallbacks[Response.RequestId].ExecuteIfBound(Response);
 		BlueprintCallbacks.Remove(Response.RequestId);
 	}

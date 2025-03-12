@@ -26,7 +26,7 @@
 #include "GameFuseManager.generated.h"
 
 
-//TODO: update class methods.md docs to reflect this list
+// TODO: update class methods.md docs to reflect this list
 UCLASS()
 class GAMEFUSE_API UGameFuseManager : public UGameInstanceSubsystem
 {
@@ -95,7 +95,7 @@ public:
 	 * @param Token The GameFuse API Token of the game.
 	 * @param Callback The blueprint delegate to be called when the request is complete. Only bound to the node's delegate pin.
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName="Set Up Game", Category = "GameFuse | Manager")
+	UFUNCTION(BlueprintCallable, DisplayName = "Set Up Game", Category = "GameFuse | Manager")
 	void BP_SetUpGame(const FString& GameId, const FString& Token, const FBP_GFApiCallback& Callback);
 
 	/**
@@ -112,7 +112,7 @@ public:
 	 * @param Email Address to send the password reset email to.
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName="Send Password Reset Email", Category = "GameFuse | Manager")
+	UFUNCTION(BlueprintCallable, DisplayName = "Send Password Reset Email", Category = "GameFuse | Manager")
 	void BP_SendPasswordResetEmail(const FString& Email, const FBP_GFApiCallback& Callback);
 
 	/**
@@ -127,7 +127,7 @@ public:
 	 * Get GameVariables set in GameFuse Dashboard
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName="Fetch Game Variables", Category = "GameFuse | Manager")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Game Variables", Category = "GameFuse | Manager")
 	void BP_FetchGameVariables(const FBP_GFApiCallback& Callback);
 
 	/**
@@ -145,7 +145,7 @@ public:
 	 * @param LeaderboardName The name of the leaderboard to fetch entries from.
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName="Fetch Leaderboard Entries", Category = "GameFuse | Manager")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Leaderboard Entries", Category = "GameFuse | Manager", meta = (Limit = 100))
 	void BP_FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const FBP_GFApiCallback& Callback);
 
 	/**
@@ -163,7 +163,7 @@ public:
 	 * Get Store items from GameFuse Dashboard
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName="Fetch Store Items", Category = "GameFuse | Manager")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Store Items", Category = "GameFuse | Manager")
 	void BP_FetchStoreItems(const FBP_GFApiCallback& Callback);
 
 	/**

@@ -87,9 +87,11 @@ public:
 	// UFUNCTION(BlueprintCallable, DisplayName = "Delete Attribute", Category = "GameFuse|Groups")
 	// void BP_DeleteAttribute(const int32 GroupId, const int32 AttributeId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Attributes", Category = "GameFuse|Groups")
-	void BP_FetchAttributes(const int32 GroupId, const FBP_GFApiCallback& Callback);
-
+	/**
+	 * Fetches attributes for a group
+	 * @param GroupId ID of group
+	 * @param Callback Callback to execute when the request is complete
+	 */
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Group Attributes", Category = "GameFuse|Groups")
 	void BP_FetchGroupAttributes(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
@@ -111,6 +113,15 @@ public:
 	{
 		return AllGroups;
 	}
+
+	/**
+	 * Retrieves a specific group by its ID from the cached groups
+	 * @param GroupId The ID of the group to find
+	 * @param OutGroup The found group (if successful)
+	 * @return True if the group was found, false otherwise
+	 */
+	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	bool GetGroupById(const int32 GroupId, FGFGroup& OutGroup) const;
 
 	TObjectPtr<UGroupsAPIHandler> GetRequestHandler() const
 	{

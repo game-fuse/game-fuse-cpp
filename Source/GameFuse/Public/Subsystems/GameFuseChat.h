@@ -34,10 +34,10 @@ public:
 	UFUNCTION(BlueprintCallable, DisplayName = "Mark Message As Read", Category = "GameFuse|Chat")
 	void BP_MarkMessageAsRead(int32 MessageId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, DisplayName = "Fetch All Chats", Category = "GameFuse|Chat", meta = (AdvancedDisplay = "Page"))
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch All Chats", Category = "GameFuse|Chat", meta = (Page = 1))
 	void BP_FetchAllChats(int32 Page, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Messages", Category = "GameFuse|Chat", meta = (AdvancedDisplay = "Page"))
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Messages", Category = "GameFuse|Chat", meta = (Page = 1))
 	void BP_FetchMessages(int32 ChatId, int32 Page, const FBP_GFApiCallback& Callback);
 
 	// C++ callable functions with typed callbacks

@@ -252,7 +252,7 @@ void UGameFuseManager::HandleSetUpGameResponse(FGFAPIResponse Response)
 		ExecuteBlueprintCallback(Response);
 		return;
 	}
-	
+
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
 	TSharedPtr<FJsonObject> JsonObject;
 
@@ -269,10 +269,10 @@ void UGameFuseManager::HandleSetUpGameResponse(FGFAPIResponse Response)
 		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse Game Data"));
 	}
 	UE_LOG(LogGameFuse, Log, TEXT("SetUp Game Completed : %d : %s"), GameData.Id, *GameData.Token);
-	
+
 	// Handle game variables using the utility function
 	GameFuseUtilities::ConvertJsonToGameVariables(GameVariables, JsonObject);
-	
+
 	// Execute the blueprint callback after all data is processed
 	ExecuteBlueprintCallback(Response);
 }
@@ -285,7 +285,7 @@ void UGameFuseManager::HandleLeaderboardEntriesResponse(FGFAPIResponse Response)
 		ExecuteBlueprintCallback(Response);
 		return;
 	}
-	
+
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
 	TSharedPtr<FJsonObject> JsonObject;
 
@@ -331,7 +331,7 @@ void UGameFuseManager::HandleLeaderboardEntriesResponse(FGFAPIResponse Response)
 		}
 	}
 	UE_LOG(LogGameFuse, Log, TEXT("Fetched Leaderboards amount of : %d"), CurrLeaderboardEntries.Num());
-	
+
 	// Execute the blueprint callback after all data is processed
 	ExecuteBlueprintCallback(Response);
 }
@@ -344,7 +344,7 @@ void UGameFuseManager::HandleStoreItemsResponse(FGFAPIResponse Response)
 		ExecuteBlueprintCallback(Response);
 		return;
 	}
-	
+
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
 	TSharedPtr<FJsonObject> JsonObject;
 
@@ -372,7 +372,7 @@ void UGameFuseManager::HandleStoreItemsResponse(FGFAPIResponse Response)
 	} else {
 		UE_LOG(LogGameFuse, Error, TEXT("Fetching Store Items Failed to parse JSON"));
 	}
-	
+
 	// Execute the blueprint callback after all data is processed
 	ExecuteBlueprintCallback(Response);
 }
@@ -385,10 +385,10 @@ void UGameFuseManager::HandleGameVariablesResponse(FGFAPIResponse Response)
 		ExecuteBlueprintCallback(Response);
 		return;
 	}
-	
+
 	// Use the utility function to parse game variables
 	GameFuseUtilities::ConvertJsonToGameVariables(GameVariables, Response.ResponseStr);
-	
+
 	// Execute the blueprint callback after all data is processed
 	ExecuteBlueprintCallback(Response);
 }
@@ -401,9 +401,9 @@ void UGameFuseManager::HandleForgotPasswordResponse(FGFAPIResponse Response)
 		ExecuteBlueprintCallback(Response);
 		return;
 	}
-	
+
 	UE_LOG(LogGameFuse, Log, TEXT("Forgot Password Email Sent!"));
-	
+
 	// Execute the blueprint callback after all data is processed
 	ExecuteBlueprintCallback(Response);
 }

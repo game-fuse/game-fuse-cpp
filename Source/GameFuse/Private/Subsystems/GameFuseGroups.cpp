@@ -652,12 +652,6 @@ void UGameFuseGroups::BP_UpdateGroupAttribute(const int32 GroupId, const FGFGrou
 // 	DeleteAttribute(GroupId, AttributeId, TypedCallback);
 // }
 
-void UGameFuseGroups::BP_FetchAttributes(const int32 GroupId, const FBP_GFApiCallback& Callback)
-{
-	FGFGroupAttributeCallback TypedCallback;
-	FGuid RequestId = FetchGroupAttributes(GroupId, TypedCallback);
-	StoreBlueprintCallback(RequestId, Callback);
-}
 
 void UGameFuseGroups::BP_FetchGroupAttributes(const int32 GroupId, const FBP_GFApiCallback& Callback)
 {
@@ -678,4 +672,30 @@ void UGameFuseGroups::BP_DeclineGroupJoinRequest(const int32 ConnectionId, const
 	FGFGroupActionCallback TypedCallback;
 	FGuid RequestId = RespondToGroupJoinRequest(ConnectionId, UserId, EGFInviteRequestStatus::Declined, TypedCallback);
 	StoreBlueprintCallback(RequestId, Callback);
+}
+
+bool UGameFuseGroups::GetGroupById(const int32 GroupId, FGFGroup& OutGroup) const
+{
+	// First check in UserGroups
+	for (const FGFGroup& Group : UserGroups)
+	{
+		if (Group.Id == GroupId)
+		{
+			OutGroup = Group;
+			return true;
+		}
+	}
+
+	// If not found in UserGroups, check in AllGroups
+	for (const FGFGroup& Group : AllGroups)
+	{
+		if (Group.Id == GroupId)
+		{
+			OutGroup = Group;
+			return true;
+		}
+	}
+
+	// Group not found
+	return false;
 }
