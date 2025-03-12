@@ -133,7 +133,6 @@ public:
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Attribute", Category = "GameFuse|User")
 	void BP_SetAttribute(const FString& Key, const FString& Value, FBP_GFApiCallback Callback);
 
-	void BP_GetStoreItems(FBP_GFApiCallback Callback);
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Attributes", Category = "GameFuse|User")
 	void BP_SetAttributes(const TMap<FString, FString>& NewAttributes, FBP_GFApiCallback Callback);
 
