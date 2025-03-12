@@ -26,31 +26,31 @@ public:
 	virtual void Deinitialize() override;
 
 	//> Blueprint Callable Functions
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
+	UFUNCTION(BlueprintCallable, DisplayName = "Send Friend Request", Category = "GameFuse|Friends")
 	void BP_SendFriendRequest(const FString& Username, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
+	UFUNCTION(BlueprintCallable, DisplayName = "Accept Friend Request", Category = "GameFuse|Friends")
 	void BP_AcceptFriendRequest(int32 FriendshipId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
+	UFUNCTION(BlueprintCallable, DisplayName = "Decline Friend Request", Category = "GameFuse|Friends")
 	void BP_DeclineFriendRequest(int32 FriendshipId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
+	UFUNCTION(BlueprintCallable, DisplayName = "Cancel Friend Request", Category = "GameFuse|Friends")
 	void BP_CancelFriendRequest(int32 FriendshipId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
+	UFUNCTION(BlueprintCallable, DisplayName = "Unfriend Player", Category = "GameFuse|Friends")
 	void BP_UnfriendPlayer(int32 UserId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Friendship Data", Category = "GameFuse|Friends")
 	void BP_FetchFriendshipData(const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Friends List", Category = "GameFuse|Friends")
 	void BP_FetchFriendsList(const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Outgoing Friend Requests", Category = "GameFuse|Friends")
 	void BP_FetchOutgoingFriendRequests(const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Friends")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Incoming Friend Requests", Category = "GameFuse|Friends")
 	void BP_FetchIncomingFriendRequests(const FBP_GFApiCallback& Callback);
 
 	// C++ callable functions with typed callbacks

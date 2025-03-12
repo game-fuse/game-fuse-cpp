@@ -23,19 +23,19 @@ public:
 	virtual void Deinitialize() override;
 
 	//> Blueprint Callable Functions
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
+	UFUNCTION(BlueprintCallable, DisplayName = "Create Game Round", Category = "GameFuse|Rounds")
 	void BP_CreateGameRound(const FGFGameRound& GameRound, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Game Round", Category = "GameFuse|Rounds")
 	void BP_FetchGameRound(const int32 RoundId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
+	UFUNCTION(BlueprintCallable, DisplayName = "Update Game Round", Category = "GameFuse|Rounds")
 	void BP_UpdateGameRound(const int32 RoundId, const FGFGameRound& GameRound, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch User Game Rounds", Category = "GameFuse|Rounds")
 	void BP_FetchUserGameRounds(const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Rounds")
+	UFUNCTION(BlueprintCallable, DisplayName = "Delete Game Round", Category = "GameFuse|Rounds")
 	void BP_DeleteGameRound(const int32 RoundId, const FBP_GFApiCallback& Callback);
 
 	// C++ callable functions with typed callbacks

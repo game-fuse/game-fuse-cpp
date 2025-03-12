@@ -45,58 +45,58 @@ public:
 	FGuid RespondToGroupJoinRequest(const int32 ConnectionId, const int32 UserId, EGFInviteRequestStatus Status, FGFGroupActionCallback TypedCallback);
 
 	// Blueprint API
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Create Group", Category = "GameFuse|Groups")
 	void BP_CreateGroup(const FGFGroup& Group, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Group", Category = "GameFuse|Groups")
 	void BP_FetchGroup(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch All Groups", Category = "GameFuse|Groups")
 	void BP_FetchAllGroups(const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Request To Join Group", Category = "GameFuse|Groups")
 	void BP_RequestToJoinGroup(int32 GroupId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Delete Group", Category = "GameFuse|Groups")
 	void BP_DeleteGroup(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Join Group", Category = "GameFuse|Groups")
 	void BP_JoinGroup(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Leave Group", Category = "GameFuse|Groups")
 	void BP_LeaveGroup(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch User Groups", Category = "GameFuse|Groups")
 	void BP_FetchUserGroups(const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Search Groups", Category = "GameFuse|Groups")
 	void BP_SearchGroups(const FString& Query, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Add Admin", Category = "GameFuse|Groups")
 	void BP_AddAdmin(const int32 GroupId, const int32 UserId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Remove Admin", Category = "GameFuse|Groups")
 	void BP_RemoveAdmin(const int32 GroupId, const int32 UserId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Add Attribute", Category = "GameFuse|Groups")
 	void BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Update Group Attribute", Category = "GameFuse|Groups")
 	void BP_UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, const FBP_GFApiCallback& Callback);
 
-	// UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	// UFUNCTION(BlueprintCallable, DisplayName = "Delete Attribute", Category = "GameFuse|Groups")
 	// void BP_DeleteAttribute(const int32 GroupId, const int32 AttributeId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Attributes", Category = "GameFuse|Groups")
 	void BP_FetchAttributes(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Group Attributes", Category = "GameFuse|Groups")
 	void BP_FetchGroupAttributes(const int32 GroupId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Accept Group Join Request", Category = "GameFuse|Groups")
 	void BP_AcceptGroupJoinRequest(const int32 ConnectionId, const int32 UserId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
+	UFUNCTION(BlueprintCallable, DisplayName = "Decline Group Join Request", Category = "GameFuse|Groups")
 	void BP_DeclineGroupJoinRequest(const int32 ConnectionId, const int32 UserId, const FBP_GFApiCallback& Callback);
 
 	// Getters for cached data

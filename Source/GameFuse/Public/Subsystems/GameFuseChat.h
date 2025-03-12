@@ -25,19 +25,19 @@ public:
 	virtual void Deinitialize() override;
 
 	// Blueprint Callable Functions
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Chat")
+	UFUNCTION(BlueprintCallable, DisplayName = "Create Chat", Category = "GameFuse|Chat")
 	void BP_CreateChat(const TArray<FString>& ParticipantIds, const FString& InitialMessage, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Chat")
+	UFUNCTION(BlueprintCallable, DisplayName = "Send Message", Category = "GameFuse|Chat")
 	void BP_SendMessage(int32 ChatId, const FString& Message, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Chat")
+	UFUNCTION(BlueprintCallable, DisplayName = "Mark Message As Read", Category = "GameFuse|Chat")
 	void BP_MarkMessageAsRead(int32 MessageId, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Chat", meta = (AdvancedDisplay = "Page"))
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch All Chats", Category = "GameFuse|Chat", meta = (AdvancedDisplay = "Page"))
 	void BP_FetchAllChats(int32 Page, const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "GameFuse|Chat", meta = (AdvancedDisplay = "Page"))
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Messages", Category = "GameFuse|Chat", meta = (AdvancedDisplay = "Page"))
 	void BP_FetchMessages(int32 ChatId, int32 Page, const FBP_GFApiCallback& Callback);
 
 	// C++ callable functions with typed callbacks
