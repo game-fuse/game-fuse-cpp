@@ -26,7 +26,6 @@
 #include "GameFuseManager.generated.h"
 
 
-//TODO: update class methods.md docs to reflect this list
 UCLASS()
 class GAMEFUSE_API UGameFuseManager : public UGameInstanceSubsystem
 {
@@ -95,7 +94,7 @@ public:
 	 * @param Token The GameFuse API Token of the game.
 	 * @param Callback The blueprint delegate to be called when the request is complete. Only bound to the node's delegate pin.
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName="Set Up Game", Category = "GameFuse | Manager")
+	UFUNCTION(BlueprintCallable, DisplayName = "Set Up Game", Category = "GameFuse | Manager")
 	void BP_SetUpGame(const FString& GameId, const FString& Token, const FBP_GFApiCallback& Callback);
 
 	/**
@@ -112,7 +111,7 @@ public:
 	 * @param Email Address to send the password reset email to.
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName="Send Password Reset Email", Category = "GameFuse | Manager")
+	UFUNCTION(BlueprintCallable, DisplayName = "Send Password Reset Email", Category = "GameFuse | Manager")
 	void BP_SendPasswordResetEmail(const FString& Email, const FBP_GFApiCallback& Callback);
 
 	/**
@@ -127,7 +126,7 @@ public:
 	 * Get GameVariables set in GameFuse Dashboard
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName="Fetch Game Variables", Category = "GameFuse | Manager")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Game Variables", Category = "GameFuse | Manager")
 	void BP_FetchGameVariables(const FBP_GFApiCallback& Callback);
 
 	/**
@@ -145,7 +144,7 @@ public:
 	 * @param LeaderboardName The name of the leaderboard to fetch entries from.
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName="Fetch Leaderboard Entries", Category = "GameFuse | Manager")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Leaderboard Entries", Category = "GameFuse | Manager", meta = (Limit = 100))
 	void BP_FetchLeaderboardEntries(const int Limit, bool bOnePerUser, const FString& LeaderboardName, const FBP_GFApiCallback& Callback);
 
 	/**
@@ -163,7 +162,7 @@ public:
 	 * Get Store items from GameFuse Dashboard
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName="Fetch Store Items", Category = "GameFuse | Manager")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Store Items", Category = "GameFuse | Manager")
 	void BP_FetchStoreItems(const FBP_GFApiCallback& Callback);
 
 	/**
@@ -184,20 +183,49 @@ private:
 	UPROPERTY()
 	TObjectPtr<UCoreAPIHandler> RequestHandler;
 
+	/** Map to store blueprint callbacks by request ID */
+	TMap<FGuid, FBP_GFApiCallback> BlueprintCallbacks;
 
 	/**
-	 * Central response handling, determines internal setter from ResponseData
-	 * @param ResponseData
+	 * @brief Stores the blueprint callback in the BlueprintCallbacks map
+	 * @param RequestId The request ID to associate with the callback
+	 * @param Callback The blueprint callback to store
 	 */
-	void InternalResponseManager(FGFAPIResponse ResponseData);
-	void SetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject);
-	void SetVariablesInternal(const FString& JsonStr);
-	void SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject);
-	void SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObject);
+	void StoreBlueprintCallback(const FGuid& RequestId, const FBP_GFApiCallback& Callback);
 
 	/**
-	 * @brief Binds BP_APICallback to InternalCallback to use as multicast delegate in CPP
+	 * @brief Executes the blueprint callback associated with the given request ID
+	 * @param Response The API response to pass to the callback
 	 */
-	void WrapBlueprintCallback(const FBP_GFApiCallback& Callback, FGFApiCallback& InternalCallback);
+	void ExecuteBlueprintCallback(const FGFAPIResponse& Response);
 
+	/**
+	 * @brief Handles the response for SetUpGame requests
+	 * @param Response The API response
+	 */
+	void HandleSetUpGameResponse(FGFAPIResponse Response);
+
+	/**
+	 * @brief Handles the response for LeaderboardEntries requests
+	 * @param Response The API response
+	 */
+	void HandleLeaderboardEntriesResponse(FGFAPIResponse Response);
+
+	/**
+	 * @brief Handles the response for StoreItems requests
+	 * @param Response The API response
+	 */
+	void HandleStoreItemsResponse(FGFAPIResponse Response);
+
+	/**
+	 * @brief Handles the response for GameVariables requests
+	 * @param Response The API response
+	 */
+	void HandleGameVariablesResponse(FGFAPIResponse Response);
+
+	/**
+	 * @brief Handles the response for ForgotPassword requests
+	 * @param Response The API response
+	 */
+	void HandleForgotPasswordResponse(FGFAPIResponse Response);
 };

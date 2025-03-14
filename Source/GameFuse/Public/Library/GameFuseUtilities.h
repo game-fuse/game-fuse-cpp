@@ -9,22 +9,54 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Library/GameFuseEnumLibrary.h"
 #include "Library/GameFuseStructLibrary.h"
-#include "Serialization/JsonReader.h"
-#include "Serialization/JsonSerializer.h"
-#include "Serialization/JsonWriter.h"
-
 
 class GAMEFUSE_API GameFuseUtilities
 {
 public:
 
-#pragma region Struct => JSON Conversion
+	static void ConvertJsonToMap(TMap<FString, FString>& InMap, const FString& JsonString);
 
+
+#pragma region Struct => JSON Conversion
+	/**
+	 * Converts a GameRound into a JSON object
+	 * @param GameRound The GameRound to convert
+	 * @param JsonObject The JSON object to store the data
+	 * @return true if successful
+	 */
+	static bool ConvertGameRoundToJson(const FGFGameRound& GameRound, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a Group into a JSON object
+	 * @param Group The Group to convert
+	 * @param JsonObject The JSON object to store the data
+	 * @return true if successful
+	 */
+	static bool ConvertGroupToJson(const FGFGroup& Group, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a Message into a JSON object
+	 * @param Message The Message to convert
+	 * @param JsonObject The JSON object to store the data
+	 * @return true if successful
+	 */
+	static bool ConvertMessageToJson(const FGFMessage& Message, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a Chat into a JSON object
+	 * @param Chat The Chat to convert
+	 * @param JsonObject The JSON object to store the data
+	 * @return true if successful
+	 */
+	static bool ConvertChatToJson(const FGFChat& Chat, const TSharedPtr<FJsonObject>& JsonObject);
 
 #pragma endregion
 #pragma region JSON => Struct Conversion
@@ -86,6 +118,203 @@ public:
 	 * @return true if successful
 	 */
 	static bool ConvertLeaderboardItemToJson(const FGFLeaderboardEntry& LeaderboardItem, TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON object into a single friend request
+	 * @param OutRequest FriendRequest struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON string into a Message
+	 * @param InMessage Message struct to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToMessage(FGFMessage& InMessage, const FString& JsonString);
+
+	/**
+	 * Converts a JSON object into a Message
+	 * @param InMessage Message struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToMessage(FGFMessage& InMessage, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON string into a Chat
+	 * @param InChat Chat struct to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToChat(FGFChat& InChat, const FString& JsonString);
+
+	/**
+	 * Converts a JSON object into a Chat
+	 * @param InChat Chat struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToChat(FGFChat& InChat, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON string into an array of Chats
+	 * @param OutChats Array to store the converted chats
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToChats(TArray<FGFChat>& OutChats, const FString& JsonString);
+
+	/**
+	 * Converts a JSON string into an array of Messages
+	 * @param OutMessages Array to store the converted messages
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToMessages(TArray<FGFMessage>& OutMessages, const FString& JsonString);
+
+#pragma endregion
+
+#pragma region Game Rounds
+
+	/**
+	 * Converts a JSON string into a GameRound
+	 * @param InGameRound GameRound struct to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGameRound(FGFGameRound& InGameRound, const FString& JsonString);
+
+	/**
+	 * Converts a JSON object into a GameRound
+	 * @param InGameRound GameRound struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGameRound(FGFGameRound& InGameRound, const TSharedPtr<FJsonObject>& JsonObject);
+
+
+	/**
+	 * Converts a JSON array into an array of GameRounds
+	 * @param GameRounds Array to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGameRounds(TArray<FGFGameRound>& GameRounds, const FString& JsonString);
+
+
+	/**
+	 * Converts a JSON array into an array of GameRoundRankings
+	 * @param JsonRankings The JSON array to convert
+	 * @param OutRankings Array to store converted data
+	 * @return true if successful
+	 */
+	static bool ConvertJsonArrayToGameRoundRankings(const TArray<TSharedPtr<FJsonValue>>* JsonRankings, TArray<FGFGameRoundRanking>& OutRankings);
+
+
+#pragma endregion
+
+#pragma region Friends
+	/**
+	 * @brief Converts a JSON string to a friend request
+	 * @param OutRequest The output friend request
+	 * @param JsonString The JSON string to convert
+	 * @return True if the conversion was successful
+	 */
+	static bool ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest, const FString& JsonString);
+	/**
+	 * Converts a JSON array into a list of friend requests
+	 * @param OutRequests Array to store the converted friend requests
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToFriendRequests(TArray<FGFFriendRequest>& OutRequests, const FString& JsonString);
+
+	/**
+	 * Converts a JSON array into a list of friends
+	 * @param OutFriends Array to store the converted friends list
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToFriendsList(TArray<FGFUserData>& OutFriends, const FString& JsonString);
+
+#pragma endregion
+
+#pragma region Groups
+
+	/**
+	 * Converts a JSON object into a GroupAttribute
+	 * @param InAttribute GroupAttribute struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroupAttribute(FGFGroupAttribute& InAttribute, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON object into a GroupConnection
+	 * @param InConnection GroupConnection struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroupConnection(FGFGroupConnection& InConnection, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON string into a GroupConnection
+	 * @param InConnection GroupConnection struct to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroupConnection(FGFGroupConnection& InConnection, const FString& JsonString);
+
+	/**
+	 * Converts a JSON array into an array of GroupAttributes
+	 * @param InAttributes Array to store converted data
+	 * @param JsonArray The JSON array to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonArrayToGroupAttributes(TArray<FGFGroupAttribute>& InAttributes, const TArray<TSharedPtr<FJsonValue>>* JsonArray);
+
+	/**
+	 * Converts a JSON object into a Group
+	 * @param InGroup Group struct to store converted data
+	 * @param JsonObject The JSON object to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroup(FGFGroup& InGroup, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Converts a JSON string into a Group
+	 * @param InGroup Group struct to store converted data
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroup(FGFGroup& InGroup, const FString& JsonString);
+
+	/**
+	 * @brief Converts a JSON string to an array of groups
+	 * @param InGroups The output array of groups
+	 * @param JsonString The JSON string to convert
+	 * @return True if the conversion was successful
+	 */
+	static bool ConvertJsonToGroups(TArray<FGFGroup>& InGroups, const FString& JsonString);
+
+	/**
+	 * @brief Converts a JSON string to a group attributes array
+	 * @param OutAttributes The output array of group attributes
+	 * @param JsonString The JSON string to convert
+	 * @return True if the conversion was successful
+	 */
+	static bool ConvertJsonToGroupAttributes(TArray<FGFGroupAttribute>& OutAttributes, const FString& JsonString);
+
+	/**
+	 * Converts a JSON string into a GroupAttributeResponse
+	 * @param OutAttributes Array to store the converted group attributes
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToGroupAttributeResponse(TArray<FGFGroupAttribute>& OutAttributes, const FString& JsonString);
 
 #pragma endregion
 
@@ -187,6 +416,23 @@ public:
 	static bool ConvertJsonToAttributes(FGFAttributeList& InAttributes, const FString& JsonString);
 
 	static bool ConvertJsonArrayToAttributes(FGFAttributeList& InAttributes, const TArray<TSharedPtr<FJsonValue>>* Array);
+
+	/**
+	 * Parses game variables from a JSON object and adds them to the provided map
+	 * @param OutVariables The map to store the parsed variables
+	 * @param JsonObject The JSON object containing the game variables
+	 * @return True if parsing was successful, false otherwise
+	 */
+	static bool ConvertJsonToGameVariables(TMap<FString, FString>& OutVariables, const TSharedPtr<FJsonObject>& JsonObject);
+
+	/**
+	 * Parses game variables from a JSON string and adds them to the provided map
+	 * @param OutVariables The map to store the parsed variables
+	 * @param JsonString The JSON string containing the game variables
+	 * @return True if parsing was successful, false otherwise
+	 */
+	static bool ConvertJsonToGameVariables(TMap<FString, FString>& OutVariables, const FString& JsonString);
+
 
 #pragma endregion
 };

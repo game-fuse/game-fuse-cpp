@@ -1,5 +1,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameFuse.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogGameFuse, Log, All);
+GAMEFUSE_API DECLARE_LOG_CATEGORY_EXTERN(LogGameFuse, Log, All);

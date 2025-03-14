@@ -104,7 +104,7 @@ public:
 
 	//> Leaderboards
 	UFUNCTION(BlueprintPure, Category = "GameFuse|User")
-	const TArray<FGFLeaderboardEntry>& GetLeaderboardEntries() const;
+	const TArray<FGFLeaderboardEntry>& GetMyLeaderboardEntries() const;
 
 	FGuid AddLeaderboardEntry(const FString& LeaderboardName, const int32 Score, const TMap<FString, FString>& Metadata, FGFInternalSuccessCallback TypedCallback);
 	FGuid AddLeaderboardEntry(const FString& LeaderboardName, const int32 Score, FGFInternalSuccessCallback TypedCallback);
@@ -133,7 +133,6 @@ public:
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Attribute", Category = "GameFuse|User")
 	void BP_SetAttribute(const FString& Key, const FString& Value, FBP_GFApiCallback Callback);
 
-	void BP_GetStoreItems(FBP_GFApiCallback Callback);
 	UFUNCTION(BlueprintCallable, DisplayName = "Set Attributes", Category = "GameFuse|User")
 	void BP_SetAttributes(const TMap<FString, FString>& NewAttributes, FBP_GFApiCallback Callback);
 
@@ -158,7 +157,7 @@ public:
 	UFUNCTION(BlueprintCallable, DisplayName = "Clear Leaderboard Entry", Category = "GameFuse|User")
 	void BP_ClearLeaderboardEntry(const FString& LeaderboardName, FBP_GFApiCallback Callback);
 
-	UFUNCTION(BlueprintCallable, DisplayName = "Fetch My Leaderboard Entries", Category = "GameFuse|User")
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch My Leaderboard Entries", Category = "GameFuse|User", meta = (Limit = 100))
 	void BP_FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Purchase Store Item", Category = "GameFuse|User")
@@ -169,9 +168,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Purchased Store Items", Category = "GameFuse|User")
 	void BP_FetchPurchasedStoreItems(FBP_GFApiCallback Callback);
-
-	UFUNCTION(BlueprintCallable, DisplayName = "Get Attributes", Category = "GameFuse|User")
-	void BP_GetAttributes(FBP_GFApiCallback Callback);
 
 	//> Internal
 	TObjectPtr<UUserAPIHandler> GetRequestHandler() const

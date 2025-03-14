@@ -1,5 +1,5 @@
 ﻿/**
-*  Copyright (c) 2024-09-30 GameFuse
+ *  Copyright (c) 2024-09-30 GameFuse
  *  All rights reserved.
  *
  *  https://GameFuse.co/
@@ -27,7 +27,7 @@ static FORCEINLINE FString GetEnumerationToString(const Enumeration InValue)
 	return StaticEnum<Enumeration>()->GetNameStringByValue(static_cast<int64>(InValue));
 }
 
-UENUM(meta = (ScriptName = "GF_UserAPIResponseType"))
+UENUM(meta = (ScriptName = "GF_UserAPIResponseType"), category = "GameFuse")
 enum class EGFUserAPIResponseType : uint8
 {
 	None,
@@ -47,4 +47,13 @@ enum class EGFCoreAPIResponseType : uint8
 	ListLeaderboardEntries,
 	ListStoreItems,
 	ForgotPassword,
+};
+
+UENUM(meta = (ScriptName = "GF_InviteRequestStatus"))
+enum class EGFInviteRequestStatus : uint8
+{
+	None,
+	Accepted,
+	Declined,
+	Pending
 };

@@ -86,48 +86,60 @@ const TArray<FGFLeaderboardEntry>& UGameFuseManager::GetLeaderboardEntries(const
 
 #pragma region Blueprint Delegate Wrappers
 
-void UGameFuseManager::WrapBlueprintCallback(const FBP_GFApiCallback& Callback, FGFApiCallback& InternalCallback)
+void UGameFuseManager::StoreBlueprintCallback(const FGuid& RequestId, const FBP_GFApiCallback& Callback)
 {
-	InternalCallback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
-	InternalCallback.AddLambda([Callback](const FGFAPIResponse& ResponseData) {
-		Callback.ExecuteIfBound(ResponseData);
-	});
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
+}
+
+void UGameFuseManager::ExecuteBlueprintCallback(const FGFAPIResponse& Response)
+{
+	if (BlueprintCallbacks.Contains(Response.RequestId)) {
+		BlueprintCallbacks[Response.RequestId].ExecuteIfBound(Response);
+		BlueprintCallbacks.Remove(Response.RequestId);
+	}
 }
 
 void UGameFuseManager::BP_SetUpGame(const FString& GameId, const FString& Token, const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
 	FGFApiCallback InternalCallback;
-	WrapBlueprintCallback(Callback, InternalCallback);
-	SetUpGame(FCString::Atoi(*GameId), Token, InternalCallback);
+
+	FGuid RequestId = SetUpGame(FCString::Atoi(*GameId), Token, InternalCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 void UGameFuseManager::BP_SendPasswordResetEmail(const FString& Email, const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
 	FGFApiCallback InternalCallback;
-	WrapBlueprintCallback(Callback, InternalCallback);
-	SendPasswordResetEmail(Email, InternalCallback);
+
+	FGuid RequestId = SendPasswordResetEmail(Email, InternalCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 void UGameFuseManager::BP_FetchGameVariables(const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
 	FGFApiCallback InternalCallback;
-	WrapBlueprintCallback(Callback, InternalCallback);
-	FetchGameVariables(InternalCallback);
+
+	FGuid RequestId = FetchGameVariables(InternalCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 
 void UGameFuseManager::BP_FetchStoreItems(const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
 	FGFApiCallback InternalCallback;
-	WrapBlueprintCallback(Callback, InternalCallback);
-	FetchStoreItems(InternalCallback);
+
+	FGuid RequestId = FetchStoreItems(InternalCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 void UGameFuseManager::BP_FetchLeaderboardEntries(const int Limit = 20, bool bOnePerUser = false, const FString& LeaderboardName = "", const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
 	FGFApiCallback InternalCallback;
-	WrapBlueprintCallback(Callback, InternalCallback);
-	FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, InternalCallback);
+
+	FGuid RequestId = FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, InternalCallback);
+	StoreBlueprintCallback(RequestId, Callback);
 }
 
 #pragma endregion
@@ -154,7 +166,7 @@ FGuid UGameFuseManager::SetUpGame(int GameId, const FString& Token, FGFApiCallba
 		return FGuid();
 	}
 
-	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseManager::HandleSetUpGameResponse);
 	return RequestHandler->SetUpGame(GameId, Token, Callback);
 }
 
@@ -164,7 +176,7 @@ FGuid UGameFuseManager::SendPasswordResetEmail(const FString& Email, FGFApiCallb
 		return FGuid();
 	}
 
-	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
+	Callback.AddUObject(this, &UGameFuseManager::HandleForgotPasswordResponse);
 	return RequestHandler->SendPasswordResetEmail(Email, GameData.Id, GameData.Token, Callback);
 }
 
@@ -175,8 +187,7 @@ FGuid UGameFuseManager::FetchGameVariables(FGFApiCallback Callback)
 		return FGuid();
 	}
 
-	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
-
+	Callback.AddUObject(this, &UGameFuseManager::HandleGameVariablesResponse);
 	return RequestHandler->FetchGameVariables(GameData.Id, GameData.Token, Callback);
 }
 
@@ -187,8 +198,7 @@ FGuid UGameFuseManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUse
 	}
 	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetUserData();
 
-	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
-
+	Callback.AddUObject(this, &UGameFuseManager::HandleLeaderboardEntriesResponse);
 	return RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, UserData.AuthenticationToken, Callback);
 }
 
@@ -198,8 +208,7 @@ FGuid UGameFuseManager::FetchStoreItems(FGFApiCallback Callback)
 		return FGuid();
 	}
 
-	Callback.AddUObject(this, &UGameFuseManager::InternalResponseManager);
-
+	Callback.AddUObject(this, &UGameFuseManager::HandleStoreItemsResponse);
 	return RequestHandler->FetchStoreItems(GameData.Id, GameData.Token, Callback);
 }
 
@@ -233,94 +242,77 @@ void UGameFuseManager::ClearGameData()
 
 #pragma endregion
 
-#pragma region Internal Setters
+#pragma region Response Handlers
 
-void UGameFuseManager::InternalResponseManager(FGFAPIResponse ResponseData)
+void UGameFuseManager::HandleSetUpGameResponse(FGFAPIResponse Response)
 {
-	if (!ResponseData.bSuccess) {
-		UE_LOG(LogGameFuse, Warning, TEXT("THERE SHOULD BE ANOTHER ERROR BEFORE THIS. Core API Request Failed. ID : %s"), *ResponseData.RequestId.ToString());
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Warning, TEXT("SetUpGame Request Failed. ID : %s"), *Response.RequestId.ToString());
+		// Execute the blueprint callback even on failure
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseData.ResponseStr);
+
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
 	TSharedPtr<FJsonObject> JsonObject;
 
 	if (!FJsonSerializer::Deserialize(Reader, JsonObject)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse JSON Response"));
+		// Execute the blueprint callback even on parsing failure
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
-	switch (GameFuseUtilities::DetermineCoreAPIResponseType(JsonObject)) {
-		case EGFCoreAPIResponseType::SetUpGame:
-			SetUpGameInternal(JsonObject);
-			SetVariablesInternal(ResponseData.ResponseStr);
-			break;
-		case EGFCoreAPIResponseType::ListLeaderboardEntries:
-			SetLeaderboardsInternal(JsonObject);
-			break;
-		case EGFCoreAPIResponseType::ListStoreItems:
-			SetStoreItemsInternal(JsonObject);
-			break;
-		case EGFCoreAPIResponseType::ForgotPassword:
-			UE_LOG(LogGameFuse, Log, TEXT("Forgot Password Email Sent!"));
-			break;
-		default:
-			UE_LOG(LogGameFuse, Warning, TEXT("Unknown Core Response Data"));
-	}
-}
-
-void UGameFuseManager::SetUpGameInternal(const TSharedPtr<FJsonObject>& JsonObject)
-{
+	// Handle game data
 	const bool bSuccess = GameFuseUtilities::ConvertJsonToGameData(GameData, JsonObject);
 	if (!bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse Game Data"));
 	}
 	UE_LOG(LogGameFuse, Log, TEXT("SetUp Game Completed : %d : %s"), GameData.Id, *GameData.Token);
+
+	// Handle game variables using the utility function
+	GameFuseUtilities::ConvertJsonToGameVariables(GameVariables, JsonObject);
+
+	// Execute the blueprint callback after all data is processed
+	ExecuteBlueprintCallback(Response);
 }
 
-void UGameFuseManager::SetVariablesInternal(const FString& JsonStr)
+void UGameFuseManager::HandleLeaderboardEntriesResponse(FGFAPIResponse Response)
 {
-	GameVariables.Empty();
-
-	const TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
-
-	if (TSharedPtr<FJsonObject> JsonObject; FJsonSerializer::Deserialize(JsonReader, JsonObject)) {
-		if (const TArray<TSharedPtr<FJsonValue>>* GameVariablesArray = nullptr; JsonObject->TryGetArrayField(TEXT("game_variables"), GameVariablesArray)) {
-			for (const TSharedPtr<FJsonValue>& JsonValue : *GameVariablesArray) {
-				const TSharedPtr<FJsonObject> VariableObject = JsonValue->AsObject();
-
-				FString Key = "";
-				FString Value = "";
-
-				if (VariableObject->TryGetStringField(TEXT("key"), Key) && VariableObject->TryGetStringField(TEXT("value"), Value)) {
-					GameVariables.Add(Key, Value);
-				}
-			}
-			UE_LOG(LogGameFuse, Log, TEXT("Fetched Variables amount of : %d"), GameVariables.Num());
-		}
-	} else {
-		// Handle JSON parsing error
-		UE_LOG(LogGameFuse, Error, TEXT("Fetching Game Variables Failed to parse JSON"));
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Warning, TEXT("FetchLeaderboardEntries Request Failed. ID : %s"), *Response.RequestId.ToString());
+		// Execute the blueprint callback even on failure
+		ExecuteBlueprintCallback(Response);
+		return;
 	}
-}
 
-void UGameFuseManager::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& JsonObject)
-{
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
+	TSharedPtr<FJsonObject> JsonObject;
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse JSON Response"));
+		// Execute the blueprint callback even on parsing failure
+		ExecuteBlueprintCallback(Response);
+		return;
+	}
 
 	if (!JsonObject->HasField(TEXT("leaderboard_entries"))) {
 		UE_LOG(LogGameFuse, Error, TEXT("Fetching Leaderboard Failed to parse JSON"));
+		// Execute the blueprint callback even on missing field
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
 	const TArray<TSharedPtr<FJsonValue>>& AttributeArray = JsonObject->GetArrayField(TEXT("leaderboard_entries"));
 	if (AttributeArray.Num() == 0) {
 		UE_LOG(LogGameFuse, Log, TEXT("Leaderboard Entries Empty"));
+		// Execute the blueprint callback even on empty array
+		ExecuteBlueprintCallback(Response);
 		return;
 	}
 
 	// grab leaderboard_name from the first entry
 	const FString LeaderboardKey = AttributeArray[0]->AsObject()->GetStringField(TEXT("leaderboard_name"));
-
-	// Entries.Reserve(AttributeArray.Num());
 
 	if (!Leaderboards.Contains(LeaderboardKey)) {
 		Leaderboards.Add(LeaderboardKey, FGFLeaderboard(LeaderboardKey));
@@ -331,7 +323,6 @@ void UGameFuseManager::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& Js
 	TArray<FGFLeaderboardEntry>& CurrLeaderboardEntries = Leaderboards[LeaderboardKey].Entries;
 	CurrLeaderboardEntries.Reserve(AttributeArray.Num());
 
-
 	for (const TSharedPtr<FJsonValue>& AttributeValue : AttributeArray) {
 		const size_t newIndex = CurrLeaderboardEntries.AddDefaulted();
 		const bool bSuccess = GameFuseUtilities::ConvertJsonToLeaderboardEntry(CurrLeaderboardEntries[newIndex], AttributeValue);
@@ -340,11 +331,30 @@ void UGameFuseManager::SetLeaderboardsInternal(const TSharedPtr<FJsonObject>& Js
 		}
 	}
 	UE_LOG(LogGameFuse, Log, TEXT("Fetched Leaderboards amount of : %d"), CurrLeaderboardEntries.Num());
+
+	// Execute the blueprint callback after all data is processed
+	ExecuteBlueprintCallback(Response);
 }
 
-
-void UGameFuseManager::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& JsonObject)
+void UGameFuseManager::HandleStoreItemsResponse(FGFAPIResponse Response)
 {
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Warning, TEXT("FetchStoreItems Request Failed. ID : %s"), *Response.RequestId.ToString());
+		// Execute the blueprint callback even on failure
+		ExecuteBlueprintCallback(Response);
+		return;
+	}
+
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response.ResponseStr);
+	TSharedPtr<FJsonObject> JsonObject;
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject)) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed To Parse JSON Response"));
+		// Execute the blueprint callback even on parsing failure
+		ExecuteBlueprintCallback(Response);
+		return;
+	}
+
 	StoreItems.Empty();
 
 	if (const TArray<TSharedPtr<FJsonValue>>* AttributeArray; JsonObject->TryGetArrayField(TEXT("store_items"), AttributeArray)) {
@@ -362,6 +372,40 @@ void UGameFuseManager::SetStoreItemsInternal(const TSharedPtr<FJsonObject>& Json
 	} else {
 		UE_LOG(LogGameFuse, Error, TEXT("Fetching Store Items Failed to parse JSON"));
 	}
+
+	// Execute the blueprint callback after all data is processed
+	ExecuteBlueprintCallback(Response);
+}
+
+void UGameFuseManager::HandleGameVariablesResponse(FGFAPIResponse Response)
+{
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Warning, TEXT("FetchGameVariables Request Failed. ID : %s"), *Response.RequestId.ToString());
+		// Execute the blueprint callback even on failure
+		ExecuteBlueprintCallback(Response);
+		return;
+	}
+
+	// Use the utility function to parse game variables
+	GameFuseUtilities::ConvertJsonToGameVariables(GameVariables, Response.ResponseStr);
+
+	// Execute the blueprint callback after all data is processed
+	ExecuteBlueprintCallback(Response);
+}
+
+void UGameFuseManager::HandleForgotPasswordResponse(FGFAPIResponse Response)
+{
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Warning, TEXT("SendPasswordResetEmail Request Failed. ID : %s"), *Response.RequestId.ToString());
+		// Execute the blueprint callback even on failure
+		ExecuteBlueprintCallback(Response);
+		return;
+	}
+
+	UE_LOG(LogGameFuse, Log, TEXT("Forgot Password Email Sent!"));
+
+	// Execute the blueprint callback after all data is processed
+	ExecuteBlueprintCallback(Response);
 }
 
 #pragma endregion
