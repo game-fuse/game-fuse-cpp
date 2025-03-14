@@ -18,7 +18,6 @@ public class GameFuseTests : ModuleRules {
 			new[] {
 				"CoreUObject",
 				"Engine",
-				"UnrealEd",
 				"Slate",
 				"SlateCore",
 				"FunctionalTesting"
