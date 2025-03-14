@@ -39,7 +39,7 @@ public:
 	FGuid AddAdmin(const int32 GroupId, const int32 UserId, FGFGroupActionCallback TypedCallback);
 	FGuid RemoveAdmin(const int32 GroupId, const int32 UserId, FGFGroupActionCallback TypedCallback);
 	FGuid AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, FGFGroupAttributeCallback TypedCallback);
-	FGuid UpdateGroupAttribute(int32 GroupId, const FGFGroupAttribute& Attribute, FGFGroupActionCallback UntypedCallback);
+	FGuid UpdateGroupAttribute(int32 GroupId, const FGFGroupAttribute& Attribute, FGFGroupActionCallback TypedCallback);
 	// FGuid DeleteAttribute(const int32 GroupId, const int32 AttributeId, FGFGroupActionCallback TypedCallback);
 	FGuid FetchGroupAttributes(const int32 GroupId, FGFGroupAttributeCallback TypedCallback);
 	FGuid RespondToGroupJoinRequest(const int32 ConnectionId, const int32 UserId, EGFInviteRequestStatus Status, FGFGroupActionCallback TypedCallback);

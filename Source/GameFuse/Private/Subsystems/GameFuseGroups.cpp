@@ -274,7 +274,7 @@ FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FGFGroupAttribute
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, FGFGroupActionCallback UntypedCallback)
+FGuid UGameFuseGroups::UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, FGFGroupActionCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
@@ -288,8 +288,8 @@ FGuid UGameFuseGroups::UpdateGroupAttribute(const int32 GroupId, const FGFGroupA
 	});
 
 	FGuid RequestId = RequestHandler->UpdateGroupAttribute(GroupId, Attribute, GameFuseUser->GetUserData(), InternalCallback);
-	if (UntypedCallback.IsBound()) {
-		GroupActionCallbacks.Add(RequestId, UntypedCallback);
+	if (TypedCallback.IsBound()) {
+		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
 }
@@ -677,20 +677,16 @@ void UGameFuseGroups::BP_DeclineGroupJoinRequest(const int32 ConnectionId, const
 bool UGameFuseGroups::GetGroupById(const int32 GroupId, FGFGroup& OutGroup) const
 {
 	// First check in UserGroups
-	for (const FGFGroup& Group : UserGroups)
-	{
-		if (Group.Id == GroupId)
-		{
+	for (const FGFGroup& Group : UserGroups) {
+		if (Group.Id == GroupId) {
 			OutGroup = Group;
 			return true;
 		}
 	}
 
 	// If not found in UserGroups, check in AllGroups
-	for (const FGFGroup& Group : AllGroups)
-	{
-		if (Group.Id == GroupId)
-		{
+	for (const FGFGroup& Group : AllGroups) {
+		if (Group.Id == GroupId) {
 			OutGroup = Group;
 			return true;
 		}

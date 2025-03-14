@@ -59,7 +59,10 @@ public:
 	FGuid DeclineFriendRequest(const int32 FriendshipId, FGFFriendActionCallback TypedCallback);
 	FGuid CancelFriendRequest(const int32 FriendshipId, FGFFriendActionCallback TypedCallback);
 	FGuid UnfriendPlayer(const int32 UserId, FGFFriendActionCallback TypedCallback);
+
+	/** Retrieve the list of friends, outgoing, and incoming friendship requests for the current user. */
 	FGuid FetchFriendshipData(FGFFriendsCallback TypedCallback);
+	/** Fetch a list of all friends */
 	FGuid FetchFriendsList(FGFFriendsCallback TypedCallback);
 	FGuid FetchOutgoingFriendRequests(FGFFriendRequestsCallback TypedCallback);
 	FGuid FetchIncomingFriendRequests(FGFFriendRequestsCallback TypedCallback);
@@ -111,7 +114,7 @@ private:
 	TMap<FGuid, FGFFriendRequestsCallback> FriendRequestsCallbacks;
 	TMap<FGuid, FGFFriendsCallback> FriendsCallbacks;
 	TMap<FGuid, FGFFriendActionCallback> FriendActionCallbacks;
-	
+
 	/** Map to store blueprint callbacks by request ID */
 	TMap<FGuid, FBP_GFApiCallback> BlueprintCallbacks;
 

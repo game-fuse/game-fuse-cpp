@@ -15,6 +15,7 @@ class GAMEFUSE_API UFriendsAPIHandler : public UAPIRequestHandler
 	GENERATED_BODY()
 
 public:
+
 	// Send a friend request
 	FGuid SendFriendRequest(const FString& Username, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
@@ -27,7 +28,7 @@ public:
 	// Unfriend a player
 	FGuid UnfriendPlayer(int32 UserId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	// Get all friendship data
+	/** Retrieve the list of friends, outgoing, and incoming friendship requests for the current user. */
 	FGuid GetFriendshipData(const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Get friends list
@@ -38,4 +39,4 @@ public:
 
 	// Get incoming friend requests
 	FGuid GetIncomingFriendRequests(const FGFUserData& UserData, const FGFApiCallback& Callback);
-}; 
+};
