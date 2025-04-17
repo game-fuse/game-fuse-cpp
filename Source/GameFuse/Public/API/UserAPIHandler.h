@@ -38,7 +38,7 @@ public:
 	FGuid ClearLeaderboardEntry(const FString& LeaderboardName, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	//> Action Requests
-	FGuid FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid FetchLeaderboardEntries(const int32 Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid FetchAttributes(const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid FetchPurchasedStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback);
 

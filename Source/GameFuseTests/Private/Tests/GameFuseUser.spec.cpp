@@ -254,7 +254,7 @@ void GameFuseUserSpec::Define()
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																		  GameFuseUser->FetchPurchasedStoreItems(FetchCallback)));
+																		  GameFuseUser->FetchMyPurchasedStoreItems(FetchCallback)));
 						ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 						return true;
 					}));
@@ -381,7 +381,7 @@ void GameFuseUserSpec::Define()
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																		  GameFuseUser->FetchAttributes(FetchCallback)));
+																		  GameFuseUser->FetchMyAttributes(FetchCallback)));
 						ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 						return true;
 					}));
@@ -452,7 +452,7 @@ void GameFuseUserSpec::Define()
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																	  GameFuseUser->FetchAttributes(FetchCallback)));
+																	  GameFuseUser->FetchMyAttributes(FetchCallback)));
 					ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 					return true;
 				}));
@@ -512,7 +512,7 @@ void GameFuseUserSpec::Define()
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																		  GameFuseUser->FetchAttributes(FetchCallback)));
+																		  GameFuseUser->FetchMyAttributes(FetchCallback)));
 						ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 						return true;
 					}));
@@ -569,7 +569,7 @@ void GameFuseUserSpec::Define()
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																	  GameFuseUser->FetchAttributes(FetchCallback)));
+																	  GameFuseUser->FetchMyAttributes(FetchCallback)));
 					ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
 					return true;
 				}));

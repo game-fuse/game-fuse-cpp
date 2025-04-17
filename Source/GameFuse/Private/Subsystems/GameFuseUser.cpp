@@ -190,19 +190,28 @@ FGuid UGameFuseUser::RemoveStoreItem(const int32 StoreItemId, FGFStoreItemsCallb
 	return RequestId;
 }
 
-FGuid UGameFuseUser::FetchPurchasedStoreItems(FGFStoreItemsCallback TypedCallback)
+FGuid UGameFuseUser::FetchMyPurchasedStoreItems(FGFStoreItemsCallback TypedCallback)
+{
+	return FetchUserPurchasedStoreItems(UserData.Id, TypedCallback);
+}
+
+FGuid UGameFuseUser::FetchUserPurchasedStoreItems(const int32 UserId, FGFStoreItemsCallback TypedCallback)
 {
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleStoreItemsResponse(Response);
 	});
+	FGFUserData TempUser;
+	TempUser.Id = UserId;
+	TempUser.AuthenticationToken = UserData.AuthenticationToken;
 
-	FGuid RequestId = RequestHandler->FetchPurchasedStoreItems(UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->FetchPurchasedStoreItems(TempUser, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		StoreItemsCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
 }
+
 
 #pragma endregion
 
@@ -277,14 +286,23 @@ FGuid UGameFuseUser::RemoveAttribute(const FString& SetKey, FGFAttributesCallbac
 	return RequestId;
 }
 
-FGuid UGameFuseUser::FetchAttributes(FGFAttributesCallback TypedCallback)
+FGuid UGameFuseUser::FetchMyAttributes(FGFAttributesCallback TypedCallback)
+{
+	return FetchUserAttributes(UserData.Id, TypedCallback);
+}
+
+FGuid UGameFuseUser::FetchUserAttributes(const int32 UserId, FGFAttributesCallback TypedCallback)
 {
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleAttributesResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchAttributes(UserData, InternalCallback);
+	FGFUserData TempUser;
+	TempUser.Id = UserId;
+	TempUser.AuthenticationToken = UserData.AuthenticationToken;
+
+	FGuid RequestId = RequestHandler->FetchAttributes(TempUser, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		AttributesCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -401,12 +419,25 @@ FGuid UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGFIn
 
 FGuid UGameFuseUser::FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, FGFLeaderboardEntriesCallback TypedCallback)
 {
+	return FetchUserLeaderboardEntries(UserData.Id, Limit, bOnePerUser, TypedCallback);
+}
+
+FGuid UGameFuseUser::FetchUserLeaderboardEntries(const int32 UserId, const int32 Limit, bool bOnePerUser, FGFLeaderboardEntriesCallback TypedCallback)
+{
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleLeaderboardEntriesResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchMyLeaderboardEntries(Limit, bOnePerUser, UserData, InternalCallback);
+	FGFUserData TempUser;
+	TempUser.Id = UserId;
+
+	TempUser.AuthenticationToken = UserData.AuthenticationToken;
+
+	// might be better to change the RequestHandler to take in exactly what it needs (userdId, and authToken)
+	// this temp user data is technically data from two different users, current users' auth token and the userId of the user we want to fetch
+
+	FGuid RequestId = RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, TempUser, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		LeaderboardEntriesCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -495,10 +526,19 @@ void UGameFuseUser::BP_RemoveAttribute(const FString& Key, FBP_GFApiCallback Cal
 	}
 }
 
-void UGameFuseUser::BP_FetchPurchasedStoreItems(FBP_GFApiCallback Callback)
+void UGameFuseUser::BP_FetchMyPurchasedStoreItems(FBP_GFApiCallback Callback)
 {
 	FGFStoreItemsCallback TypedCallback;
-	FGuid RequestId = FetchPurchasedStoreItems(TypedCallback);
+	FGuid RequestId = FetchMyPurchasedStoreItems(TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
+}
+
+void UGameFuseUser::BP_FetchUserPurchasedStoreItems(const int32 UserId, FBP_GFApiCallback Callback)
+{
+	FGFStoreItemsCallback TypedCallback;
+	FGuid RequestId = FetchUserPurchasedStoreItems(UserId, TypedCallback);
 	if (Callback.IsBound()) {
 		BlueprintCallbacks.Add(RequestId, Callback);
 	}
@@ -549,10 +589,19 @@ void UGameFuseUser::BP_ClearLeaderboardEntry(const FString& LeaderboardName, FBP
 	}
 }
 
-void UGameFuseUser::BP_FetchAttributes(FBP_GFApiCallback Callback)
+void UGameFuseUser::BP_FetchMyAttributes(FBP_GFApiCallback Callback)
 {
 	FGFAttributesCallback TypedCallback;
-	FGuid RequestId = FetchAttributes(TypedCallback);
+	FGuid RequestId = FetchMyAttributes(TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
+}
+
+void UGameFuseUser::BP_FetchUserAttributes(int32 UserId, FBP_GFApiCallback Callback)
+{
+	FGFAttributesCallback TypedCallback;
+	FGuid RequestId = FetchUserAttributes(UserId, TypedCallback);
 	if (Callback.IsBound()) {
 		BlueprintCallbacks.Add(RequestId, Callback);
 	}
@@ -562,6 +611,15 @@ void UGameFuseUser::BP_FetchMyLeaderboardEntries(const int32 Limit, bool bOnePer
 {
 	FGFLeaderboardEntriesCallback TypedCallback;
 	FGuid RequestId = FetchMyLeaderboardEntries(Limit, bOnePerUser, TypedCallback);
+	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
+}
+
+void UGameFuseUser::BP_FetchUserLeaderboardEntries(const int32 UserId, const int32 Limit, bool bOnePerUser, FBP_GFApiCallback Callback)
+{
+	FGFLeaderboardEntriesCallback TypedCallback;
+	FGuid RequestId = FetchUserLeaderboardEntries(UserId, Limit, bOnePerUser, TypedCallback);
 	if (Callback.IsBound()) {
 		BlueprintCallbacks.Add(RequestId, Callback);
 	}

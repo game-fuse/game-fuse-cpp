@@ -228,7 +228,7 @@ FGuid UUserAPIHandler::ClearLeaderboardEntry(const FString& LeaderboardName, con
 	return SendRequest(ApiEndpoint, "POST", Callback);
 }
 
-FGuid UUserAPIHandler::FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UUserAPIHandler::FetchLeaderboardEntries(const int32 Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	if (!VerifyUserData(UserData)) {
 		return FGuid();
