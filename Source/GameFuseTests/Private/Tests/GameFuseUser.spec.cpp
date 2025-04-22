@@ -13,6 +13,7 @@ UGameInstance* GameInstance;
 UTestAPIHandler* TestAPIHandler;
 TSharedPtr<FGFGameData> GameData;
 TSharedPtr<FGFUserData> UserData;
+TSharedPtr<FGFUserData> UserData2;
 bool bCleanupSuccess;
 END_DEFINE_SPEC(GameFuseUserSpec);
 
@@ -31,6 +32,7 @@ void GameFuseUserSpec::Define()
 	// init testing data
 	GameData = MakeShared<FGFGameData>();
 	UserData = MakeShared<FGFUserData>();
+	UserData2 = MakeShared<FGFUserData>();
 	bCleanupSuccess = false;
 
 	Describe("GameFuseUser Authentication", [this]() {
@@ -571,6 +573,341 @@ void GameFuseUserSpec::Define()
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
 																	  GameFuseUser->FetchMyAttributes(FetchCallback)));
 					ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+					return true;
+				}));
+				return true;
+			}));
+		});
+	});
+
+	Describe("GameFuseUser Multi-User Features", [this]() {
+		BeforeEach([this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				if (GameFuseManager->IsSetUp()) {
+					UE_LOG(LogGameFuse, Warning, TEXT("Game was already Setup"));
+					GameFuseManager->ClearGameData();
+					return false; // Keep waiting
+				}
+				UE_LOG(LogGameFuse, Log, TEXT("GameFuseManager cleanup complete"));
+				return true;
+			}));
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				if (GameFuseUser->IsSignedIn()) {
+					UE_LOG(LogGameFuse, Warning, TEXT("User was already Signed in"));
+					GameFuseUser->LogOut();
+					return false; // Keep waiting
+				}
+				UE_LOG(LogGameFuse, Log, TEXT("GameFuseUser cleanup complete"));
+				return true;
+			}));
+
+			// Create and setup game
+			ADD_LATENT_AUTOMATION_COMMAND(FSetupGame(TestAPIHandler, GameData, GameFuseManager, this, FGuid()));
+
+			// Wait for GameFuseManager to be fully set up
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				if (!GameFuseManager->IsSetUp()) {
+					UE_LOG(LogGameFuse, Warning, TEXT("Waiting for GameFuseManager setup..."));
+					return false; // Keep waiting
+				}
+				UE_LOG(LogGameFuse, Log, TEXT("GameFuseManager setup complete"));
+				return true;
+			}));
+
+			// Create and sign in first user
+			ADD_LATENT_AUTOMATION_COMMAND(FSetupUser(TestAPIHandler, GameData, UserData, GameFuseUser, this));
+
+			// Wait for user to be fully signed in
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				if (!GameFuseUser->IsSignedIn()) {
+					UE_LOG(LogGameFuse, Warning, TEXT("Waiting for user signin..."));
+					return false; // Keep waiting
+				}
+				UE_LOG(LogGameFuse, Log, TEXT("User signed in successfully"));
+				return true;
+			}));
+
+			// Create second user
+			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, UserData2, this, FGuid()));
+		});
+
+		It("fetches other users attributes", [this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				// Set attributes on primary user
+				TMap<FString, FString> TestAttributes;
+				TestAttributes.Add("test_key1", "test_value1");
+				TestAttributes.Add("test_key2", "test_value2");
+
+				FGFAttributesCallback SetAttributesCallback;
+				SetAttributesCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
+					AddInfo("FetchUserAttributes 1 :: Set Attributes");
+					if (!bSuccess) {
+						AddError("Set attributes request failed");
+						return;
+					}
+					TestTrue("Set attributes request succeeded", bSuccess);
+					TestTrue("Attributes should be valid", Attributes.Attributes.Num() > 0);
+					if (Attributes.Attributes.Num() > 0) {
+						TestEqual("Should have two attributes", Attributes.Attributes.Num(), 2);
+						const FString* Value1 = Attributes.Attributes.Find("test_key1");
+						const FString* Value2 = Attributes.Attributes.Find("test_key2");
+						TestNotNull("First attribute should exist", Value1);
+						TestNotNull("Second attribute should exist", Value2);
+						if (Value1 && Value2) {
+							TestEqual("First attribute value should match", *Value1, "test_value1");
+							TestEqual("Second attribute value should match", *Value2, "test_value2");
+						}
+					}
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																  GameFuseUser->SetAttributes(TestAttributes, SetAttributesCallback)));
+
+				// Verify attributes were set before signing in as second user
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					FGFAttributesCallback VerifyCallback;
+					VerifyCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
+						AddInfo("FetchUserAttributes 2 :: Verify Attributes");
+						TestTrue("Verify attributes request succeeded", bSuccess);
+						if (bSuccess) {
+							TestEqual("Should have two attributes", Attributes.Attributes.Num(), 2);
+						}
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->FetchMyAttributes(VerifyCallback)));
+
+					// Sign in as second user and fetch attributes from first user
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+						FGFUserDataCallback SignInCallback;
+						SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+							AddInfo("FetchUserAttributes 3 :: Sign In Second User");
+							TestTrue("Second user sign in succeeded", bSuccess);
+							if (!bSuccess) {
+								AddError(TEXT("Second user sign in failed"));
+								return;
+							}
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																		  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+						// Fetch first users attributes
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+							FGFAttributesCallback FetchCallback;
+							FetchCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
+								AddInfo("FetchUserAttributes 4 :: Fetch First User Attributes");
+								if (!bSuccess) {
+									AddError("Fetch user attributes request failed");
+									return;
+								}
+								TestTrue("Fetch user attributes request succeeded", bSuccess);
+								TestTrue("Attributes should be valid", Attributes.Attributes.Num() > 0);
+								if (Attributes.Attributes.Num() > 0) {
+									TestEqual("Should have two attributes", Attributes.Attributes.Num(), 2);
+									const FString* Value1 = Attributes.Attributes.Find("test_key1");
+									const FString* Value2 = Attributes.Attributes.Find("test_key2");
+									TestNotNull("First attribute should exist", Value1);
+									TestNotNull("Second attribute should exist", Value2);
+									if (Value1 && Value2) {
+										TestEqual("First attribute value should match", *Value1, "test_value1");
+										TestEqual("Second attribute value should match", *Value2, "test_value2");
+									}
+								}
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->FetchUserAttributes(UserData->Id, FetchCallback)));
+							ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("fetches other users leaderboard entries", [this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				// Add leaderboard entry for first user
+				FGFInternalSuccessCallback AddEntryCallback;
+				AddEntryCallback.AddLambda([this](bool bSuccess) {
+					AddInfo("FetchUserLeaderboard 1 :: Add Leaderboard Entry");
+					TestTrue("Add leaderboard entry request succeeded", bSuccess);
+					if (!bSuccess) {
+						AddError(TEXT("Failed to add leaderboard entry"));
+						return;
+					}
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																  GameFuseUser->AddLeaderboardEntry("test_leaderboard", 1000, AddEntryCallback)));
+
+				// Verify leaderboard entry was added before signing in as second user
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					FGFLeaderboardEntriesCallback VerifyCallback;
+					VerifyCallback.BindLambda([this](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+						AddInfo("FetchUserLeaderboard 2 :: Verify Leaderboard Entry");
+						TestTrue("Verify leaderboard entries request succeeded", bSuccess);
+						if (bSuccess) {
+							TestEqual("Should have one leaderboard entry", Entries.Num(), 1);
+						}
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->FetchMyLeaderboardEntries(100, true, VerifyCallback)));
+
+					// Sign in as second user
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+						FGFUserDataCallback SignInCallback;
+						SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+							AddInfo("FetchUserLeaderboard 3 :: Sign In Second User");
+							TestTrue("Second user sign in succeeded", bSuccess);
+							if (!bSuccess) {
+								AddError(TEXT("Second user sign in failed"));
+								return;
+							}
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																		  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+						// Fetch first users leaderboard entries
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+							FGFLeaderboardEntriesCallback FetchCallback;
+							FetchCallback.BindLambda([this](bool bSuccess, const TArray<FGFLeaderboardEntry>& Entries) {
+								AddInfo("FetchUserLeaderboard 4 :: Fetch First User Leaderboard Entries");
+								if (!bSuccess) {
+									AddError("Fetch user leaderboard entries request failed");
+									return;
+								}
+								TestTrue("Fetch user leaderboard entries request succeeded", bSuccess);
+								TestEqual("Should have one leaderboard entry", Entries.Num(), 1);
+								if (Entries.Num() > 0) {
+									const FGFLeaderboardEntry& Entry = Entries[0];
+									TestEqual("Leaderboard name matches", Entry.LeaderboardName, "test_leaderboard");
+									TestEqual("Score matches", Entry.Score, 1000);
+									TestEqual("User ID matches first user", Entry.GameUserId, UserData->Id);
+								}
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->FetchUserLeaderboardEntries(UserData->Id, 100, true, FetchCallback)));
+							ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("fetches other users store items", [this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				// Create store item
+				TSharedPtr<FGFStoreItem> TestStoreItem = MakeShared<FGFStoreItem>();
+				TestStoreItem->Name = TEXT("Test Item");
+				TestStoreItem->Description = TEXT("A test store item");
+				TestStoreItem->Cost = 100;
+				TestStoreItem->Category = TEXT("test");
+
+				ADD_LATENT_AUTOMATION_COMMAND(FCreateStoreItem(TestAPIHandler, GameData, TestStoreItem, this, FGuid()));
+
+				// Add credits and purchase item for first user
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, TestStoreItem]() -> bool {
+					FGFUserDataCallback AddCreditsCallback;
+					AddCreditsCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+						AddInfo("FetchUserStoreItems 1 :: Add Credits");
+						TestTrue("Add credits request succeeded", bSuccess);
+						if (!bSuccess) {
+							AddError(TEXT("Failed to add credits"));
+							return;
+						}
+						TestEqual("Credits were added", UserData.Credits, 200);
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->AddCredits(200, AddCreditsCallback)));
+
+					// Purchase store item
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, TestStoreItem]() -> bool {
+						FGFStoreItemsCallback PurchaseCallback;
+						PurchaseCallback.BindLambda([this](bool bSuccess, const TArray<FGFStoreItem>& StoreItems) {
+							AddInfo("FetchUserStoreItems 2 :: Purchase Store Item");
+							TestTrue("Purchase store item request succeeded", bSuccess);
+							if (!bSuccess) {
+								AddError(TEXT("Failed to purchase store item"));
+								return;
+							}
+							TestEqual("Should have one purchased item", StoreItems.Num(), 1);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																		  GameFuseUser->PurchaseStoreItem(TestStoreItem->Id, PurchaseCallback)));
+
+						// Verify purchase before signing in as second user
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+							FGFStoreItemsCallback VerifyCallback;
+							VerifyCallback.BindLambda([this](bool bSuccess, const TArray<FGFStoreItem>& StoreItems) {
+								AddInfo("FetchUserStoreItems 3 :: Verify Purchase");
+								TestTrue("Verify purchased items request succeeded", bSuccess);
+								if (bSuccess) {
+									TestEqual("Should have one purchased item", StoreItems.Num(), 1);
+								}
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->FetchMyPurchasedStoreItems(VerifyCallback)));
+
+							// Sign in as second user
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+								FGFUserDataCallback SignInCallback;
+								SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+									AddInfo("FetchUserStoreItems 4 :: Sign In Second User");
+									TestTrue("Second user sign in succeeded", bSuccess);
+									if (!bSuccess) {
+										AddError(TEXT("Second user sign in failed"));
+										return;
+									}
+								});
+
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																				  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+								// Fetch first users store items
+								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+									FGFStoreItemsCallback FetchCallback;
+									FetchCallback.BindLambda([this](bool bSuccess, const TArray<FGFStoreItem>& StoreItems) {
+										AddInfo("FetchUserStoreItems 5 :: Fetch First User Store Items");
+										if (!bSuccess) {
+											AddError("Fetch user store items request failed");
+											return;
+										}
+										TestTrue("Fetch user store items request succeeded", bSuccess);
+										TestEqual("Should have one purchased item", StoreItems.Num(), 1);
+										if (StoreItems.Num() > 0) {
+											const FGFStoreItem& Item = StoreItems[0];
+											TestEqual("Store item cost matches", Item.Cost, 100);
+											TestEqual("Store item name matches", Item.Name, TEXT("Test Item"));
+										}
+									});
+
+									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																					  GameFuseUser->FetchUserPurchasedStoreItems(UserData->Id, FetchCallback)));
+									ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+									return true;
+								}));
+								return true;
+							}));
+							return true;
+						}));
+						return true;
+					}));
 					return true;
 				}));
 				return true;
