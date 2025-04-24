@@ -77,7 +77,7 @@ FGuid UAPIRequestHandler::SendRequest(const FString& Endpoint, const FString& Ht
 	// Add Default Headers
 	AddCommonHeaders(HttpRequest);
 
-	//Capture request in the lambda to prevent collection before handle response is called.
+	// Capture request in the lambda to prevent collection before handle response is called.
 	HttpRequest->OnProcessRequestComplete().BindLambda([this, RequestId](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
 		HandleResponse(Request, Response, bWasSuccessful, RequestId);
 	});
@@ -108,7 +108,7 @@ void UAPIRequestHandler::SetAuthHeader(const FString& AuthToken)
 
 void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, const bool bWasSuccessful, const FGuid& RequestId)
 {
-	//error checking
+	// error checking
 	if (!ActiveRequests.Contains(RequestId)) {
 		UE_LOG(LogGameFuse, Log, TEXT("Got response without an active request"));
 	}
@@ -118,10 +118,8 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 		return;
 	}
 
-	if (!Response.IsValid())
-	{
-		if (ResponseDelegates.Contains(RequestId))
-		{
+	if (!Response.IsValid()) {
+		if (ResponseDelegates.Contains(RequestId)) {
 			const FGFApiCallback& Delegate = ResponseDelegates[RequestId];
 			FString ResponseContent = TEXT("Bad Response, Request is not valid");
 			Delegate.Broadcast(FGFAPIResponse(false, ResponseContent, RequestId, 404));
@@ -151,13 +149,13 @@ void UAPIRequestHandler::HandleResponse(FHttpRequestPtr Request, FHttpResponsePt
 			UE_LOG(LogTemp, Log, TEXT("Request %s succeeded"), *RequestId.ToString());
 			GameFuseUtilities::LogResponse(Response);
 		} else {
-			UE_LOG(LogTemp, Error, TEXT("Request %s failed"), *RequestId.ToString());
+			UE_LOG(LogTemp, Warning, TEXT("Request %s failed"), *RequestId.ToString());
 			GameFuseUtilities::LogRequest(Request);
 			GameFuseUtilities::LogResponse(Response);
 		}
 	} else {
 		// Handle failure case here
-		UE_LOG(LogTemp, Error, TEXT("Request %s failed"), *RequestId.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Request %s failed"), *RequestId.ToString());
 		GameFuseUtilities::LogRequest(Request);
 	}
 

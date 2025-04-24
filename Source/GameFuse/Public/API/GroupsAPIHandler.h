@@ -47,11 +47,11 @@ public:
 	 * Add an attribute to a group
 	 * @param GroupId - The ID of the group to add the attribute to
 	 * @param Attribute - The attribute to add, GroupId and bCanEdit are read only and ignored for this request
-	 * @param bOnlyCreatorCanEdit - Whether only the creator can edit this attribute
+	 * @param bOthersCanEdit - Whether only the creator can edit this attribute
 	 * @param UserData - The user data of the requester
 	 * @param Callback - The callback to handle the response
 	 */
-	FGuid AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOthersCanEdit, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	/**
 	 * Fetch all attributes for a group

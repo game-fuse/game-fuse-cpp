@@ -38,7 +38,7 @@ public:
 	FGuid SearchGroups(const FString& Query, FGFGroupListCallback TypedCallback);
 	FGuid AddAdmin(const int32 GroupId, const int32 UserId, FGFGroupActionCallback TypedCallback);
 	FGuid RemoveAdmin(const int32 GroupId, const int32 UserId, FGFGroupActionCallback TypedCallback);
-	FGuid AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, FGFGroupAttributeCallback TypedCallback);
+	FGuid AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOthersCanEdit, FGFGroupAttributeCallback TypedCallback);
 	FGuid UpdateGroupAttribute(int32 GroupId, const FGFGroupAttribute& Attribute, FGFGroupActionCallback TypedCallback);
 	// FGuid DeleteAttribute(const int32 GroupId, const int32 AttributeId, FGFGroupActionCallback TypedCallback);
 	FGuid FetchGroupAttributes(const int32 GroupId, FGFGroupAttributeCallback TypedCallback);
@@ -79,7 +79,7 @@ public:
 	void BP_RemoveAdmin(const int32 GroupId, const int32 UserId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Add Attribute", Category = "GameFuse|Groups")
-	void BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FBP_GFApiCallback& Callback);
+	void BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOthersCanEdit, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Update Group Attribute", Category = "GameFuse|Groups")
 	void BP_UpdateGroupAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, const FBP_GFApiCallback& Callback);

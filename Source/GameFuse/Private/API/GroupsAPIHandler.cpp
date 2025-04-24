@@ -139,7 +139,7 @@ FGuid UGroupsAPIHandler::RemoveAdmin(const int32 GroupId, const int32 UserId, co
 	return SendRequest(ApiEndpoint, "DELETE", Callback);
 }
 
-FGuid UGroupsAPIHandler::AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UGroupsAPIHandler::AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOthersCanEdit, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	if (!VerifyUserData(UserData)) {
 		return FGuid();
@@ -153,7 +153,7 @@ FGuid UGroupsAPIHandler::AddAttribute(const int32 GroupId, const FGFGroupAttribu
 	TSharedPtr<FJsonObject> AttributeObject = MakeShared<FJsonObject>();
 	AttributeObject->SetStringField(TEXT("key"), Attribute.Key);
 	AttributeObject->SetStringField(TEXT("value"), Attribute.Value);
-	AttributeObject->SetBoolField(TEXT("only_can_edit_by_creator"), bOnlyCreatorCanEdit);
+	AttributeObject->SetBoolField(TEXT("others_can_edit"), bOthersCanEdit);
 
 	// Add it to the array
 	AttributesArray.Add(MakeShared<FJsonValueObject>(AttributeObject));

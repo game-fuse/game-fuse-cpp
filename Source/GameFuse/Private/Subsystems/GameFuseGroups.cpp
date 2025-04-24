@@ -254,7 +254,7 @@ FGuid UGameFuseGroups::RemoveAdmin(const int32 GroupId, const int32 UserId, FGFG
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, FGFGroupAttributeCallback TypedCallback)
+FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOthersCanEdit, FGFGroupAttributeCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
@@ -267,7 +267,7 @@ FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FGFGroupAttribute
 		HandleGroupAttributeResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->AddAttribute(GroupId, Attribute, bOnlyCreatorCanEdit, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->AddAttribute(GroupId, Attribute, bOthersCanEdit, GameFuseUser->GetUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupAttributeCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -629,10 +629,10 @@ void UGameFuseGroups::BP_RemoveAdmin(const int32 GroupId, const int32 UserId, co
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FBP_GFApiCallback& Callback)
+void UGameFuseGroups::BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOthersCanEdit, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupAttributeCallback TypedCallback;
-	FGuid RequestId = AddAttribute(GroupId, Attribute, bOnlyCreatorCanEdit, TypedCallback);
+	FGuid RequestId = AddAttribute(GroupId, Attribute, bOthersCanEdit, TypedCallback);
 	StoreBlueprintCallback(RequestId, Callback);
 }
 

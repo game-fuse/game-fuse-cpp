@@ -270,7 +270,7 @@ void FGameFuseGroupsSpec::Define()
 						AddErrorIfFalse(Connection.Id != 0, "Failed to join group");
 						TestTrue("Connection has valid id", Connection.Id != 0);
 						TestEqual("Connection has correct user id", Connection.User.Id, UserData2->Id);
-						TestNotEqual("Connection has status", Connection.Status, EGFInviteRequestStatus::None);
+						TestEqual("Connection has status", Connection.Status, EGFInviteRequestStatus::Accepted);
 
 						// Verify the connection was successful
 						TestTrue("Connection status indicates success",
@@ -517,7 +517,6 @@ void FGameFuseGroupsSpec::Define()
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
 																	  GameFuseGroups->AddAttribute(GroupData->Id, *ClanLevelAttribute, true, AddLevelCallback)));
 
-					// After adding level, add motto
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
 						FGFGroupAttribute ClanMottoAttribute;
 						ClanMottoAttribute.Key = TEXT("clan_motto");
@@ -673,6 +672,293 @@ void FGameFuseGroupsSpec::Define()
 				}));
 				return true;
 			}));
+		});
+
+		It("enforces creator-only edit permissions for attributes", [this]() {
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = TEXT("Attribute Permissions Test Group");
+			GroupData->GroupType = TEXT("Test");
+			GroupData->MaxGroupSize = 10;
+			GroupData->bCanAutoJoin = true; // Make it auto-join
+			GroupData->bSearchable = true;
+
+			// Declare shared pointers for attributes once at test scope
+			TSharedPtr<FGFGroupAttribute> CreatorOnlyAttr = MakeShared<FGFGroupAttribute>();
+			TSharedPtr<FGFGroupAttribute> MemberEditableAttr = MakeShared<FGFGroupAttribute>();
+
+			// Create the group and attributes
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+				FGFGroupCallback CreateGroupCallback;
+				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+					AddInfo("AttributePermissions 1 :: Create Group");
+					TestTrue("Group created successfully", CreatedGroup.Id > 0);
+					GroupData->Id = CreatedGroup.Id;
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
+
+				// Create creator-only attribute
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+					FGFGroupAttribute CreatorOnlyAttribute;
+					CreatorOnlyAttribute.Key = TEXT("secret_code");
+					CreatorOnlyAttribute.Value = TEXT("1234");
+					CreatorOnlyAttribute.CreatorId = GroupData->Id;
+
+					FGFGroupAttributeCallback AddCreatorOnlyAttributeCallback;
+					AddCreatorOnlyAttributeCallback.BindLambda([this, CreatorOnlyAttr](const TArray<FGFGroupAttribute>& Attributes) {
+						AddInfo("AttributePermissions 2 :: Add Creator-Only Attribute");
+						TestTrue("Attribute added successfully", Attributes.Num() > 0);
+						if (Attributes.Num() > 0) {
+							*CreatorOnlyAttr = Attributes[0];
+							TestEqual("Attribute has correct key", CreatorOnlyAttr->Key, TEXT("secret_code"));
+							TestEqual("Attribute has correct value", CreatorOnlyAttr->Value, TEXT("1234"));
+							TestEqual("Attribute has correct creator ID", CreatorOnlyAttr->CreatorId, UserData1->Id);
+							TestTrue("Attribute creator can edit", CreatorOnlyAttr->bCanEdit);
+						}
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																	  GameFuseGroups->AddAttribute(GroupData->Id, CreatorOnlyAttribute, false, AddCreatorOnlyAttributeCallback)));
+					// Create member-editable attribute
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+						FGFGroupAttribute MemberEditableAttribute;
+						MemberEditableAttribute.Key = TEXT("public_data");
+						MemberEditableAttribute.Value = TEXT("original_value");
+						MemberEditableAttribute.CreatorId = GroupData->Id;
+
+						FGFGroupAttributeCallback AddMemberAttributeCallback;
+						AddMemberAttributeCallback.BindLambda([this, MemberEditableAttr](const TArray<FGFGroupAttribute>& Attributes) {
+							AddInfo("AttributePermissions 3 :: Add Member-Editable Attribute");
+							TestTrue("Attribute added successfully", Attributes.Num() > 0);
+							if (Attributes.Num() > 0) {
+								*MemberEditableAttr = Attributes[0];
+								TestEqual("Attribute has correct key", MemberEditableAttr->Key, TEXT("public_data"));
+								TestEqual("Attribute has correct value", MemberEditableAttr->Value, TEXT("original_value"));
+								TestEqual("Attribute has correct creator ID", MemberEditableAttr->CreatorId, UserData1->Id);
+								TestTrue("Attribute creator can edit", MemberEditableAttr->bCanEdit);
+							}
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->AddAttribute(GroupData->Id, MemberEditableAttribute, true, AddMemberAttributeCallback)));
+						// Sign in as second user to test attribute permissions
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+							FGFUserDataCallback SignInCallback;
+							SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+								AddInfo("AttributePermissions 4 :: Sign In Second User");
+								TestTrue("Second user sign in succeeded", bSuccess);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+							// Join the group
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+								// Store the connection data for later use
+								TSharedPtr<FGFGroupConnection> ConnectionData = MakeShared<FGFGroupConnection>();
+
+								FGFGroupConnectionCallback JoinCallback;
+								JoinCallback.BindLambda([this, ConnectionData](const FGFGroupConnection& Connection) {
+									AddInfo("AttributePermissions 5 :: Join Group as Second User");
+									TestTrue("Connection has valid id", Connection.Id != 0);
+									TestEqual("Connection has correct user id", Connection.User.Id, UserData2->Id);
+									TestEqual("Connection status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+
+									// Store the connection data for later use
+									*ConnectionData = Connection;
+								});
+
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																				  GameFuseGroups->RequestToJoinGroup(GroupData->Id, JoinCallback)));
+
+								// Switch back to user 1 to accept the join request
+								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr, ConnectionData]() -> bool {
+									FGFUserDataCallback SignInCallback;
+									SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+										AddInfo("AttributePermissions 6 :: Switch Back to Creator");
+										TestTrue("Creator sign in succeeded", bSuccess);
+									});
+
+									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																					  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
+
+									// Accept the join request with the stored connection data
+									ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr, ConnectionData]() -> bool {
+										if (ConnectionData->Id == 0) {
+											AddError("Connection data is not valid");
+											return true;
+										}
+
+										UE_LOG(LogGameFuse, Log, TEXT("Accepting connection - ID: %d, User ID: %d"), ConnectionData->Id, ConnectionData->User.Id);
+
+										FGFGroupActionCallback AcceptCallback;
+										AcceptCallback.BindLambda([this](bool bSuccess) {
+											AddInfo("AttributePermissions 7 :: Accept Join Request");
+											TestTrue("Accept join request succeeded", bSuccess);
+										});
+
+										ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																						  GameFuseGroups->RespondToGroupJoinRequest(ConnectionData->Id, ConnectionData->User.Id, EGFInviteRequestStatus::Accepted, AcceptCallback)));
+
+										// Now switch back to user 2 to test editing attributes
+										ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+											FGFUserDataCallback SignInCallback;
+											SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+												AddInfo("AttributePermissions 8 :: Switch Back to Second User");
+												TestTrue("Second user sign in succeeded", bSuccess);
+											});
+
+											ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																							  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+											// Fetch attributes as second user
+											ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+												FGFGroupAttributeCallback FetchCallback;
+												FetchCallback.BindLambda([this, CreatorOnlyAttr, MemberEditableAttr](const TArray<FGFGroupAttribute>& Attributes) {
+													AddInfo("AttributePermissions 9 :: Fetch Attributes as Second User");
+													TestEqual("Both attributes fetched successfully", Attributes.Num(), 2);
+
+													for (const FGFGroupAttribute& Attribute : Attributes) {
+														if (Attribute.Key == TEXT("secret_code")) {
+															*CreatorOnlyAttr = Attribute;
+															TestEqual("Secret code has correct value", Attribute.Value, TEXT("1234"));
+															TestFalse("Second user cannot edit creator-only attribute", Attribute.bCanEdit);
+														} else if (Attribute.Key == TEXT("public_data")) {
+															*MemberEditableAttr = Attribute;
+															TestEqual("Public data has correct value", Attribute.Value, TEXT("original_value"));
+															TestTrue("Second user can edit member-editable attribute", Attribute.bCanEdit);
+														}
+													}
+												});
+
+												ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																								  GameFuseGroups->FetchGroupAttributes(GroupData->Id, FetchCallback)));
+
+												// Try to update creator-only attribute (should fail)
+												ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+													CreatorOnlyAttr->Value = TEXT("5678");
+
+													FGFGroupActionCallback UpdateCreatorOnlyCallback;
+													UpdateCreatorOnlyCallback.BindLambda([this](bool bSuccess) {
+														AddInfo("AttributePermissions 10 :: Try Update Creator-Only as Second User");
+														TestFalse("Update should fail for non-creator", bSuccess);
+													});
+
+													ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																									  GameFuseGroups->UpdateGroupAttribute(GroupData->Id, *CreatorOnlyAttr, UpdateCreatorOnlyCallback)));
+
+													// Try to update member-editable attribute (should succeed)
+													ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+														MemberEditableAttr->Value = TEXT("updated_by_member");
+
+														FGFGroupActionCallback UpdateMemberEditableCallback;
+														UpdateMemberEditableCallback.BindLambda([this](bool bSuccess) {
+															AddInfo("AttributePermissions 11 :: Try Update Member-Editable as Second User");
+															TestTrue("Update should succeed for member-editable attribute", bSuccess);
+														});
+
+														ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																										  GameFuseGroups->UpdateGroupAttribute(GroupData->Id, *MemberEditableAttr, UpdateMemberEditableCallback)));
+
+														// Switch back to creator to verify changes
+														ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+															FGFUserDataCallback SignInCallback;
+															SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+																AddInfo("AttributePermissions 12 :: Sign Back In as Creator");
+																TestTrue("Creator sign in succeeded", bSuccess);
+															});
+
+															ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																											  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
+
+															// Verify attribute states
+															ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+																FGFGroupAttributeCallback FetchCallback;
+																FetchCallback.BindLambda([this, CreatorOnlyAttr, MemberEditableAttr](const TArray<FGFGroupAttribute>& Attributes) {
+																	AddInfo("AttributePermissions 13 :: Verify Attributes as Creator");
+																	TestEqual("Both attributes still exist", Attributes.Num(), 2);
+
+																	for (const FGFGroupAttribute& Attribute : Attributes) {
+																		if (Attribute.Key == TEXT("secret_code")) {
+																			*CreatorOnlyAttr = Attribute;
+																			TestEqual("Creator-only attribute still has original value", Attribute.Value, TEXT("1234"));
+																			TestTrue("Creator can edit attribute", Attribute.bCanEdit);
+																		} else if (Attribute.Key == TEXT("public_data")) {
+																			*MemberEditableAttr = Attribute;
+																			TestEqual("Member-editable attribute has updated value", Attribute.Value, TEXT("updated_by_member"));
+																			TestTrue("Creator can edit attribute", Attribute.bCanEdit);
+																		}
+																	}
+																});
+
+																ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																												  GameFuseGroups->FetchGroupAttributes(GroupData->Id, FetchCallback)));
+
+																// Update creator-only attribute as creator
+																ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr]() -> bool {
+																	CreatorOnlyAttr->Value = TEXT("9999");
+
+																	FGFGroupActionCallback UpdateCallback;
+																	UpdateCallback.BindLambda([this](bool bSuccess) {
+																		AddInfo("AttributePermissions 14 :: Update Creator-Only as Creator");
+																		TestTrue("Update should succeed for creator", bSuccess);
+																	});
+
+																	ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																													  GameFuseGroups->UpdateGroupAttribute(GroupData->Id, *CreatorOnlyAttr, UpdateCallback)));
+
+																	// Final verification
+																	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+																		FGFGroupAttributeCallback VerifyCallback;
+																		VerifyCallback.BindLambda([this](const TArray<FGFGroupAttribute>& FinalAttributes) {
+																			AddInfo("AttributePermissions 15 :: Final Verification");
+																			TestEqual("Both attributes still exist", FinalAttributes.Num(), 2);
+
+																			for (const FGFGroupAttribute& Attribute : FinalAttributes) {
+																				if (Attribute.Key == TEXT("secret_code")) {
+																					TestEqual("Creator-only attribute has updated value", Attribute.Value, TEXT("9999"));
+																					TestTrue("Creator can still edit attribute", Attribute.bCanEdit);
+																				} else if (Attribute.Key == TEXT("public_data")) {
+																					TestEqual("Member-editable attribute still has member-updated value", Attribute.Value, TEXT("updated_by_member"));
+																					TestTrue("Creator can still edit attribute", Attribute.bCanEdit);
+																				}
+																			}
+																		});
+
+																		ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																														  GameFuseGroups->FetchGroupAttributes(GroupData->Id, VerifyCallback)));
+																		return true;
+																	}));
+																	return true;
+																}));
+																return true;
+															}));
+															return true;
+														}));
+														return true;
+													}));
+													return true;
+												}));
+												return true;
+											}));
+											return true;
+										}));
+										return true;
+									}));
+									return true;
+								}));
+								return true;
+							}));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+			return true;
 		});
 	});
 }
