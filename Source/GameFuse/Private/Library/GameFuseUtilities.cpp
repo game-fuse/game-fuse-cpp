@@ -1120,15 +1120,16 @@ bool GameFuseUtilities::ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObjec
 
 
 	// if field is null, return success and skip
-	if (JsonObject->HasTypedField(FStringView(FieldKey), EJson::Null)) {
+	if (!JsonObject->HasField(FieldKey)) {
 		UE_LOG(LogGameFuse, Log, TEXT("ConvertJsonObjectToStringMap: %s field is null, skipping"), *FieldKey);
+
 		return true;
 	}
 
 	// if FieldKey is not empty, assume the object is a field in the map
 	// aka the json object looks like {"field_key": {"key1": "value1", "key2": "value2"}}
 	const TSharedPtr<FJsonObject>* SrcJsonObject = nullptr;
-	if (JsonObject->TryGetObjectField(FStringView(FieldKey), SrcJsonObject)) {
+	if (JsonObject->TryGetObjectField(FieldKey, SrcJsonObject)) {
 		if (!SrcJsonObject->IsValid()) {
 			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonObjectToStringMap: Invalid object value for field: %s"), *FieldKey);
 			return false;
