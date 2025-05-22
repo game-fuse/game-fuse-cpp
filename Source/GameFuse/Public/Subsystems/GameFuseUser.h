@@ -79,6 +79,8 @@ public:
 	FGuid SignIn(const FString& Email, const FString& Password, FGFUserDataCallback TypedCallback);
 	FGuid SignIn(const FGFGameData& GameData, const FString& Email, const FString& Password, FGFUserDataCallback TypedCallback);
 
+	FGuid FetchUser(const int32 UserId, FGFUserDataCallback TypedCallback);
+
 	UFUNCTION(BlueprintCallable, DisplayName = "Log Out", Category = "GameFuse|User")
 	void LogOut(const FString& SaveSlotName = TEXT("GameFuseSaveSlot"));
 
@@ -123,6 +125,7 @@ public:
 	FString GetAttributeValue(const FString Key) const;
 
 	FGuid FetchMyAttributes(FGFAttributesCallback TypedCallback);
+
 	FGuid FetchUserAttributes(const int32 UserId, FGFAttributesCallback TypedCallback);
 	FGuid SyncLocalAttributes(FGFAttributesCallback TypedCallback);
 	FGuid SetAttribute(const FString& Key, const FString& Value, FGFAttributesCallback TypedCallback);

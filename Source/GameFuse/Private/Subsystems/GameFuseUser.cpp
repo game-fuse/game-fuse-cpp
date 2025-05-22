@@ -107,6 +107,20 @@ FGuid UGameFuseUser::SignIn(const FGFGameData& GameData, const FString& Email, c
 	return RequestId;
 }
 
+FGuid UGameFuseUser::FetchUser(const int32 UserId, FGFUserDataCallback TypedCallback)
+{
+	FGFApiCallback InternalCallback;
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleUserDataResponse(Response, true);
+	});
+
+	FGuid RequestId = RequestHandler->FetchUser(UserId, InternalCallback);
+	if (TypedCallback.IsBound()) {
+		UserDataCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
+}
+
 void UGameFuseUser::LogOut(const FString& SaveSlotName)
 {
 	UE_LOG(LogGameFuse, Log, TEXT("User %i Logging Out"), UserData.Id);

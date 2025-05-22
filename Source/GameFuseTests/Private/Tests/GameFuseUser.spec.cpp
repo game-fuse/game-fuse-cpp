@@ -913,6 +913,84 @@ void GameFuseUserSpec::Define()
 				return true;
 			}));
 		});
+
+		It("fetches other user's data", [this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				// First user adds score
+				FGFUserDataCallback AddScoreCallback;
+				AddScoreCallback.BindLambda([this](bool bSuccess, const FGFUserData& User) {
+					AddInfo("FetchUserData 1 :: Add Score for First User");
+					TestTrue("Add score request succeeded for first user", bSuccess);
+					if (!bSuccess) {
+						AddError(TEXT("Failed to add score for first user"));
+						return;
+					}
+					TestEqual("Score was added correctly for first user", User.Score, 1000);
+					TestEqual("User ID matches first user", User.Id, UserData->Id);
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																  GameFuseUser->AddScore(1000, AddScoreCallback)));
+
+				// Verify score was added before signing in as second user
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					FGFUserDataCallback VerifyCallback;
+					VerifyCallback.BindLambda([this](bool bSuccess, const FGFUserData& User) {
+						AddInfo("FetchUserData 2 :: Verify Score for First User");
+						TestTrue("Verify score request succeeded for first user", bSuccess);
+						if (bSuccess) {
+							TestEqual("Score should be 1000 for first user", User.Score, 1000);
+						}
+					});
+					// Temporarily fetch current user to check score.
+					// Note: This will be UserData (first user) as they are still signed in.
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->FetchUser(UserData->Id, VerifyCallback)));
+
+
+					// Sign in as second user
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+						FGFUserDataCallback SignInCallback;
+						SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& SignedInUser) {
+							AddInfo("FetchUserData 3 :: Sign In Second User");
+							TestTrue("Second user sign in succeeded", bSuccess);
+							if (!bSuccess) {
+								AddError(TEXT("Second user sign in failed"));
+								return;
+							}
+							TestEqual("Signed in user ID matches second user", SignedInUser.Id, UserData2->Id);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																		  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+						// Fetch first user's data
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+							FGFUserDataCallback FetchCallback;
+							FetchCallback.BindLambda([this](bool bSuccess, const FGFUserData& FetchedUser) {
+								AddInfo("FetchUserData 4 :: Fetch First User Data");
+								if (!bSuccess) {
+									AddError("Fetch user data request failed");
+									return;
+								}
+								TestTrue("Fetch user data request succeeded", bSuccess);
+								TestEqual("Fetched User ID matches first user", FetchedUser.Id, UserData->Id);
+								TestEqual("Fetched Username matches first user", FetchedUser.Username, UserData->Username);
+								TestEqual("Fetched Score matches first user's score", FetchedUser.Score, 1000);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->FetchUser(UserData->Id, FetchCallback)));
+							ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
 	});
 }
 

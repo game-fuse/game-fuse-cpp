@@ -18,6 +18,7 @@ public:
 
 	FGuid SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, const int InGameId, const FString& InToken, const FGFApiCallback& Callback);
 	FGuid SignIn(const FString& Email, const FString& Password, const int InGameId, const FString& InToken, const FGFApiCallback& Callback);
+	FGuid FetchUser(int32 UserId, const FGFApiCallback& InternalCallback);
 
 	//> User Requests
 	FGuid AddCredits(const int32 Credits, const FGFUserData& UserData, const FGFApiCallback& Callback);
