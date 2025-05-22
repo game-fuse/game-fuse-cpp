@@ -356,6 +356,20 @@ FGuid UGameFuseUser::SyncLocalAttributes(FGFAttributesCallback TypedCallback)
 	return RequestId;
 }
 
+FGuid UGameFuseUser::RemoveAttributes(const TArray<FString>& AttributeKeys, FGFAttributesCallback TypedCallback)
+{
+	FGFApiCallback InternalCallback;
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleAttributesResponse(Response);
+	});
+
+	FGuid RequestId = RequestHandler->RemoveAttributes(AttributeKeys, UserData, InternalCallback);
+	if (TypedCallback.IsBound()) {
+		AttributesCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
+}
+
 #pragma endregion
 
 #pragma region Leaderboard & Score
@@ -653,6 +667,16 @@ void UGameFuseUser::BP_SetAttributes(const TMap<FString, FString>& NewAttributes
 	FGFAttributesCallback TypedCallback;
 	FGuid RequestId = SetAttributes(NewAttributes, TypedCallback);
 	if (Callback.IsBound()) {
+		BlueprintCallbacks.Add(RequestId, Callback);
+	}
+}
+
+void UGameFuseUser::BP_RemoveAttributes(const TArray<FString>& AttributeKeys, FBP_GFApiCallback Callback)
+{
+	FGFAttributesCallback TypedCallback;
+	FGuid RequestId = RemoveAttributes(AttributeKeys, TypedCallback);
+	if (Callback.IsBound())
+	{
 		BlueprintCallbacks.Add(RequestId, Callback);
 	}
 }

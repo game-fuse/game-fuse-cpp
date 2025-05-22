@@ -154,10 +154,33 @@ FGuid UUserAPIHandler::RemoveAttribute(const FString& Key, const FGFUserData& Us
 	}
 
 	SetAuthHeader(UserData.AuthenticationToken);
-	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/remove_game_user_attributes?game_user_attribute_key=%s"), UserData.Id, *Key);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/remove_game_user_attribute?game_user_attribute_key=%s"), UserData.Id, *Key);
 
 	// UE_LOG(LogGameFuse, Verbose, TEXT("Removing Attribute: %s"), *Key);
-	return SendRequest(ApiEndpoint, "GET", Callback);
+	return SendRequest(ApiEndpoint, "DELETE", Callback);
+}
+
+FGuid UUserAPIHandler::RemoveAttributes(const TArray<FString>& AttributeKeys, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	if (!VerifyUserData(UserData)) {
+		return FGuid();
+	}
+
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/users/%d/remove_game_user_attributes"), UserData.Id);
+
+	// Create JSON object for batch attributes
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	TArray<TSharedPtr<FJsonValue>> KeysArray;
+	for (const FString& Key : AttributeKeys) {
+		KeysArray.Add(MakeShareable(new FJsonValueString(Key)));
+	}
+
+	JsonObject->SetArrayField("game_user_attribute_keys", KeysArray);
+
+	// UE_LOG(LogGameFuse, Verbose, TEXT("Setting %d attributes in batch"), Attributes.Num());
+	return SendRequest(ApiEndpoint, "DELETE", Callback, JsonObject);
 }
 
 FGuid UUserAPIHandler::PurchaseStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback)

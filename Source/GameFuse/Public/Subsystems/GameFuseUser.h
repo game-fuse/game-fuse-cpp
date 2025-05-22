@@ -132,6 +132,7 @@ public:
 	FGuid SetAttributes(const TMap<FString, FString>& NewAttributes, FGFAttributesCallback TypedCallback);
 	void SetAttributeLocal(const FString& SetKey, const FString& SetValue);
 	FGuid RemoveAttribute(const FString& SetKey, FGFAttributesCallback TypedCallback);
+	FGuid RemoveAttributes(const TArray<FString>& AttributeKeys, FGFAttributesCallback TypedCallback);
 
 #pragma endregion
 #pragma region Leaderboards
@@ -175,6 +176,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Remove Attribute", Category = "GameFuse|User")
 	void BP_RemoveAttribute(const FString& Key, FBP_GFApiCallback Callback);
+
+	UFUNCTION(BlueprintCallable, DisplayName = "Remove Attributes", Category = "GameFuse|User")
+	void BP_RemoveAttributes(const TArray<FString>& AttributeKeys, FBP_GFApiCallback Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch My Attributes", Category = "GameFuse|User")
 	void BP_FetchMyAttributes(FBP_GFApiCallback Callback);

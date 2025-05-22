@@ -524,6 +524,74 @@ void GameFuseUserSpec::Define()
 			}));
 		});
 
+		It("removes attributes in bulk", [this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				// First set some attributes
+				TMap<FString, FString> TestAttributes;
+				TestAttributes.Add("test_key1", "test_value1");
+				TestAttributes.Add("test_key2", "test_value2");
+				TestAttributes.Add("test_key3", "test_value3");
+
+				FGFAttributesCallback SetAttributesCallback;
+				SetAttributesCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
+					AddInfo("RemoveAttributesBulk 1 :: Set Initial Attributes");
+					if (!bSuccess) {
+						TestFalse("Set attributes request failed", true);
+						return;
+					}
+					TestEqual("Should have three attributes", Attributes.Attributes.Num(), 3);
+					TestEqual("First attribute should match", Attributes.Attributes["test_key1"], "test_value1");
+					TestEqual("Second attribute should match", Attributes.Attributes["test_key2"], "test_value2");
+					TestEqual("Third attribute should match", Attributes.Attributes["test_key3"], "test_value3");
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+															  GameFuseUser->SetAttributes(TestAttributes, SetAttributesCallback)));
+
+				// Remove two attributes
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					TArray<FString> KeysToRemove;
+					KeysToRemove.Add("test_key1");
+					KeysToRemove.Add("test_key3");
+
+					FGFAttributesCallback RemoveCallback;
+					RemoveCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
+						AddInfo("RemoveAttributesBulk 2 :: Remove Attributes");
+						if (!bSuccess) {
+							AddErrorIfFalse(bSuccess, "Remove attributes request failed");
+							return;
+						}
+						TestEqual("Should have one attribute remaining", Attributes.Attributes.Num(), 1);
+						TestEqual("Remaining attribute should match", Attributes.Attributes["test_key2"], "test_value2");
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+															  GameFuseUser->RemoveAttributes(KeysToRemove, RemoveCallback)));
+
+					// Verify remaining attributes
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+						FGFAttributesCallback FetchCallback;
+						FetchCallback.BindLambda([this](bool bSuccess, const FGFAttributeList& Attributes) {
+							AddInfo("RemoveAttributesBulk 3 :: Verify Attributes");
+							if (!bSuccess) {
+								AddErrorIfFalse(bSuccess, "Fetch attributes request failed");
+								return;
+							}
+							TestEqual("Should have one attribute", Attributes.Attributes.Num(), 1);
+							TestEqual("Remaining attribute should match", Attributes.Attributes["test_key2"], "test_value2");
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+															  GameFuseUser->FetchMyAttributes(FetchCallback)));
+						ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
 		It("syncs local attributes", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 				// First set some local attributes
@@ -914,7 +982,7 @@ void GameFuseUserSpec::Define()
 			}));
 		});
 
-		It("fetches other user's data", [this]() {
+		It("fetches other users data", [this]() {
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
 				// First user adds score
 				FGFUserDataCallback AddScoreCallback;

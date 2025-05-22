@@ -28,6 +28,7 @@ public:
 	FGuid SetAttribute(const FString& Key, const FString& Value, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid SetAttributes(const TMap<FString, FString>& Attributes, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid RemoveAttribute(const FString& Key, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid RemoveAttributes(const TArray<FString>& AttributeKeys, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid PurchaseStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid RemoveStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid AddLeaderboardEntry(const FString& LeaderboardName, const int32 Score, const TMap<FString, FString>& Metadata, const FGFUserData& UserData, const FGFApiCallback& Callback);
