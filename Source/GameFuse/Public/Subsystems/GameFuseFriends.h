@@ -44,8 +44,11 @@ public:
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Friendship Data", Category = "GameFuse|Friends")
 	void BP_FetchFriendshipData(const FBP_GFApiCallback& Callback);
 
-	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Friends List", Category = "GameFuse|Friends")
-	void BP_FetchFriendsList(const FBP_GFApiCallback& Callback);
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch My Friends List", Category = "GameFuse|Friends")
+	void BP_FetchMyFriendsList(const FBP_GFApiCallback& Callback);
+
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch User Friends List", Category = "GameFuse|Friends")
+	void BP_FetchUserFriendsList(int32 UserId, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Outgoing Friend Requests", Category = "GameFuse|Friends")
 	void BP_FetchOutgoingFriendRequests(const FBP_GFApiCallback& Callback);
@@ -62,8 +65,10 @@ public:
 
 	/** Retrieve the list of friends, outgoing, and incoming friendship requests for the current user. */
 	FGuid FetchFriendshipData(FGFFriendsCallback TypedCallback);
-	/** Fetch a list of all friends */
-	FGuid FetchFriendsList(FGFFriendsCallback TypedCallback);
+	/** Fetch a list of all your friends */
+	FGuid FetchMyFriendsList(FGFFriendsCallback TypedCallback);
+	/** Fetch a list of all friends for a specific user */
+	FGuid FetchUserFriendsList(int32 UserId, FGFFriendsCallback TypedCallback);
 	FGuid FetchOutgoingFriendRequests(FGFFriendRequestsCallback TypedCallback);
 	FGuid FetchIncomingFriendRequests(FGFFriendRequestsCallback TypedCallback);
 
@@ -104,6 +109,7 @@ private:
 	// Internal response handlers
 	void HandleFriendshipDataResponse(FGFAPIResponse Response);
 	void HandleFriendsListResponse(FGFAPIResponse Response);
+	void HandleUserFriendsListResponse(FGFAPIResponse Response);
 	void HandleOutgoingRequestsResponse(FGFAPIResponse Response);
 	void HandleIncomingRequestsResponse(FGFAPIResponse Response);
 	void HandleFriendRequestResponse(FGFAPIResponse Response);

@@ -215,7 +215,7 @@ void GameFuseFriendsSpec::Define()
 									});
 
 									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																					  GameFuseFriends->FetchFriendsList(FriendsCallback)));
+																					  GameFuseFriends->FetchMyFriendsList(FriendsCallback)));
 									return true;
 								}));
 								return true;
@@ -570,10 +570,108 @@ void GameFuseFriendsSpec::Define()
 									});
 
 									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
-																					  GameFuseFriends->FetchFriendsList(VerifyCallback)));
+																					  GameFuseFriends->FetchMyFriendsList(VerifyCallback)));
 								});
 
 
+								return true;
+							}));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("fetches another users friend list", [this]()
+		{
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool
+			{
+				// Step 1: User1 sends a friend request to User2.
+				FGFFriendRequestCallback SendCallback;
+				SendCallback.BindLambda([this](const FGFFriendRequest& Request)
+				{
+					AddInfo("FetchUserFriendsList 1 :: Send Request");
+					TestTrue("FriendshipId should be valid", Request.FriendshipId > 0);
+				});
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																  GameFuseFriends->SendFriendRequest(
+																	  UserData2->Username, SendCallback)));
+
+				// Step 2: User2 signs in.
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool
+				{
+					FGFUserDataCallback SignInCallback;
+					SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData)
+					{
+						AddInfo("FetchUserFriendsList 2 :: Sign In Second User");
+						TestTrue("Second user sign in succeeded", bSuccess);
+					});
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->SignIn(
+																		  UserData2->Username + "@gamefuse.com", "password",
+																		  SignInCallback)));
+
+					// Step 3: User2 fetches incoming requests and accepts.
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool
+					{
+						FGFFriendRequestsCallback FetchCallback;
+						FetchCallback.BindLambda([this](const TArray<FGFFriendRequest>& IncomingRequests)
+						{
+							AddInfo("FetchUserFriendsList 3 :: Fetch and Accept Request");
+							TestEqual("Should have one incoming request", IncomingRequests.Num(), 1);
+							if (IncomingRequests.Num() == 1)
+							{
+								FGFFriendActionCallback AcceptCallback;
+								AcceptCallback.BindLambda([this](bool bSuccess)
+								{
+									TestTrue("Accept friend request succeeded", bSuccess);
+								});
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																				  GameFuseFriends->AcceptFriendRequest(
+																					  IncomingRequests[0].FriendshipId,
+																					  AcceptCallback)));
+							}
+						});
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																		  GameFuseFriends->FetchIncomingFriendRequests(
+																			  FetchCallback)));
+
+						// Step 4: User1 signs back in.
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool
+						{
+							FGFUserDataCallback SignInCallback;
+							SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData)
+							{
+								AddInfo("FetchUserFriendsList 4 :: Sign In First User");
+								TestTrue("First user sign in succeeded", bSuccess);
+							});
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->SignIn(
+																				  UserData1->Username + "@gamefuse.com", "password",
+																				  SignInCallback)));
+
+							// Step 5: User1 fetches User2's friend list.
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool
+							{
+								FGFFriendsCallback FriendsCallback;
+								FriendsCallback.BindLambda([this](const TArray<FGFUserData>& Friends)
+								{
+									AddInfo("FetchUserFriendsList 5 :: Verify Friends List");
+									TestEqual("User2 should have exactly one friend", Friends.Num(), 1);
+									if (Friends.Num() == 1)
+									{
+										TestEqual("Friend Id should be User1's Id", Friends[0].Id, UserData1->Id);
+										TestEqual("Friend Username should be User1's Username", Friends[0].Username,
+												  UserData1->Username);
+									}
+								});
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseFriends->GetRequestHandler(),
+																				  GameFuseFriends->FetchUserFriendsList(
+																					  UserData2->Id, FriendsCallback)));
 								return true;
 							}));
 							return true;

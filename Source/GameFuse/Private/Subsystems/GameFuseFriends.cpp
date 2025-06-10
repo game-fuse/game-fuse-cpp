@@ -152,7 +152,7 @@ FGuid UGameFuseFriends::FetchFriendshipData(FGFFriendsCallback TypedCallback)
 	return RequestId;
 }
 
-FGuid UGameFuseFriends::FetchFriendsList(FGFFriendsCallback TypedCallback)
+FGuid UGameFuseFriends::FetchMyFriendsList(FGFFriendsCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
@@ -165,8 +165,31 @@ FGuid UGameFuseFriends::FetchFriendsList(FGFFriendsCallback TypedCallback)
 		HandleFriendsListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->GetFriendsList(GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->GetMyFriendsList(GameFuseUser->GetUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
+		FriendsCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
+}
+
+FGuid UGameFuseFriends::FetchUserFriendsList(const int32 UserId, FGFFriendsCallback TypedCallback)
+{
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn())
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to fetch another user's friends list"));
+		return FGuid();
+	}
+
+	FGFApiCallback InternalCallback;
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response)
+	{
+		HandleUserFriendsListResponse(Response);
+	});
+
+	FGuid RequestId = RequestHandler->GetUserFriendsList(UserId, GameFuseUser->GetUserData(), InternalCallback);
+	if (TypedCallback.IsBound())
+	{
 		FriendsCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
@@ -404,6 +427,42 @@ void UGameFuseFriends::HandleFriendActionResponse(FGFAPIResponse Response)
 	ExecuteBlueprintCallback(Response);
 }
 
+void UGameFuseFriends::HandleUserFriendsListResponse(FGFAPIResponse Response)
+{
+	TArray<FGFUserData> UserFriendsList;
+	if (!Response.bSuccess)
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle user friends list response: %s"), *Response.ResponseStr);
+		if (FriendsCallbacks.Contains(Response.RequestId))
+		{
+			FriendsCallbacks[Response.RequestId].ExecuteIfBound(UserFriendsList);
+			FriendsCallbacks.Remove(Response.RequestId);
+		}
+		ExecuteBlueprintCallback(Response);
+		return;
+	}
+
+	if (!GameFuseUtilities::ConvertJsonToFriendsList(UserFriendsList, Response.ResponseStr))
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse user friends list"));
+		if (FriendsCallbacks.Contains(Response.RequestId))
+		{
+			FriendsCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFUserData>());
+			FriendsCallbacks.Remove(Response.RequestId);
+		}
+		ExecuteBlueprintCallback(Response);
+		return;
+	}
+
+	if (FriendsCallbacks.Contains(Response.RequestId))
+	{
+		FriendsCallbacks[Response.RequestId].ExecuteIfBound(UserFriendsList);
+		FriendsCallbacks.Remove(Response.RequestId);
+	}
+
+	ExecuteBlueprintCallback(Response);
+}
+
 void UGameFuseFriends::BP_SendFriendRequest(const FString& Username, const FBP_GFApiCallback& Callback)
 {
 	FGFFriendRequestCallback TypedCallback;
@@ -446,10 +505,17 @@ void UGameFuseFriends::BP_FetchFriendshipData(const FBP_GFApiCallback& Callback)
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseFriends::BP_FetchFriendsList(const FBP_GFApiCallback& Callback)
+void UGameFuseFriends::BP_FetchMyFriendsList(const FBP_GFApiCallback& Callback)
 {
 	FGFFriendsCallback TypedCallback;
-	FGuid RequestId = FetchFriendsList(TypedCallback);
+	FGuid RequestId = FetchMyFriendsList(TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
+}
+
+void UGameFuseFriends::BP_FetchUserFriendsList(const int32 UserId, const FBP_GFApiCallback& Callback)
+{
+	FGFFriendsCallback TypedCallback;
+	FGuid RequestId = FetchUserFriendsList(UserId, TypedCallback);
 	StoreBlueprintCallback(RequestId, Callback);
 }
 

@@ -31,8 +31,11 @@ public:
 	/** Retrieve the list of friends, outgoing, and incoming friendship requests for the current user. */
 	FGuid GetFriendshipData(const FGFUserData& UserData, const FGFApiCallback& Callback);
 
-	// Get friends list
-	FGuid GetFriendsList(const FGFUserData& UserData, const FGFApiCallback& Callback);
+	// Get your friends list
+	FGuid GetMyFriendsList(const FGFUserData& UserData, const FGFApiCallback& Callback);
+
+	// Get another user's friends list
+	FGuid GetUserFriendsList(int32 UserId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Get outgoing friend requests
 	FGuid GetOutgoingFriendRequests(const FGFUserData& UserData, const FGFApiCallback& Callback);
