@@ -29,6 +29,9 @@ struct FGFGameData
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Description = "";
 
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
+	FString ServerTime = "";
+
 	bool operator==(const FGFGameData& Other) const
 	{
 		return Id == Other.Id && Token == Other.Token && Name == Other.Name && Description == Other.Description;

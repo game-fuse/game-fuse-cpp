@@ -296,7 +296,7 @@ void FGameFuseGroupsSpec::Define()
 			GroupData->GroupType = "Test";
 			GroupData->MaxGroupSize = 10;
 			GroupData->bCanAutoJoin = false;
-			GroupData->bIsInviteOnly = true;
+			GroupData->bIsInviteOnly = false;
 			GroupData->bSearchable = true;
 
 			FGFGroupCallback CreateCallback;
@@ -305,7 +305,7 @@ void FGameFuseGroupsSpec::Define()
 				TestTrue("Created group has valid id", CreatedGroup.Id != 0);
 				TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for Join Request Accept");
 				TestFalse("Created group cannot auto join", CreatedGroup.bCanAutoJoin);
-				TestTrue("Created group is invite only", CreatedGroup.bIsInviteOnly);
+				TestFalse("Created group is not invite only", CreatedGroup.bIsInviteOnly);
 
 				GroupData->Id = CreatedGroup.Id;
 			});
@@ -388,7 +388,7 @@ void FGameFuseGroupsSpec::Define()
 			GroupData->GroupType = "Test";
 			GroupData->MaxGroupSize = 10;
 			GroupData->bCanAutoJoin = false;
-			GroupData->bIsInviteOnly = true;
+			GroupData->bIsInviteOnly = false;
 			GroupData->bSearchable = true;
 
 			FGFGroupCallback CreateCallback;
@@ -397,7 +397,7 @@ void FGameFuseGroupsSpec::Define()
 				TestTrue("Created group has valid id", CreatedGroup.Id != 0);
 				TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for Join Request Decline");
 				TestFalse("Created group cannot auto join", CreatedGroup.bCanAutoJoin);
-				TestTrue("Created group is invite only", CreatedGroup.bIsInviteOnly);
+				TestFalse("Created group is not invite only", CreatedGroup.bIsInviteOnly);
 
 				GroupData->Id = CreatedGroup.Id;
 			});
@@ -763,7 +763,7 @@ void FGameFuseGroupsSpec::Define()
 									AddInfo("AttributePermissions 5 :: Join Group as Second User");
 									TestTrue("Connection has valid id", Connection.Id != 0);
 									TestEqual("Connection has correct user id", Connection.User.Id, UserData2->Id);
-									TestEqual("Connection status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+									TestEqual("Connection status is accepted", Connection.Status, EGFInviteRequestStatus::Accepted);
 
 									// Store the connection data for later use
 									*ConnectionData = Connection;

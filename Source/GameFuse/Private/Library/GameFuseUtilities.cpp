@@ -1326,4 +1326,30 @@ bool GameFuseUtilities::ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest,
 	return ConvertJsonToFriendRequest(OutRequest, JsonObject);
 }
 
+bool GameFuseUtilities::ConvertJsonToServerTime(FString& OutServerTime, const FString& JsonString)
+{
+	OutServerTime.Empty();
+
+	if (JsonString.IsEmpty()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Empty JSON string for server time"));
+		return false;
+	}
+
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+	TSharedPtr<FJsonObject> JsonObject;
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse JSON string for server time"));
+		return false;
+	}
+
+	if (!JsonObject->TryGetStringField(TEXT("server_time"), OutServerTime)) {
+		UE_LOG(LogGameFuse, Warning, TEXT("No server_time field found in JSON"));
+		return false;
+	}
+
+	UE_LOG(LogGameFuse, Log, TEXT("Parsed server time: %s"), *OutServerTime);
+	return true;
+}
+
 #pragma endregion

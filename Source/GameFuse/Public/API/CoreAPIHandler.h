@@ -40,6 +40,8 @@ public:
 
 	FGuid FetchStoreItems(int GameID, const FString& Token, const FGFApiCallback& Callback);
 
+	FGuid GetServerTime(const FGFApiCallback& Callback);
+
 	// UFUNCTION()
 	// void OnHTTPResponseManager(bool bSuccess, FString ResponseContent, FString RequestId);
 

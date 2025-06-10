@@ -48,15 +48,55 @@ void GameFuseManagerSpec::Define()
 				});
 
 				// Set up the game and capture its request ID
-
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseManager->GetRequestHandler(), GameFuseManager->SetUpGame(GameData->Id, GameData->Token, SetUpCallback)));
 				return true;
 			}));
 			return true;
 		}));
+	});
 
+	It("Gets server time", [this]() {
+		// Create game with callback
+		FGuid CreateGameRequestId;
+		ADD_LATENT_AUTOMATION_COMMAND(FCreateGame(TestAPIHandler, GameData, this, CreateGameRequestId));
 
-		// Wait for setup to complete
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+			TestTrue("Game ID should be valid", GameData->Id != 0);
+			AddErrorIfFalse(GameData->Id != 0, TEXT("Game was not initialized"));
+			AddErrorIfFalse(GameData->Token.Len() > 0, TEXT("Game Authentication Token was not initialized"));
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				FGFApiCallback SetUpCallback;
+				SetUpCallback.AddLambda(
+				[this](const FGFAPIResponse& Response) {
+					AddInfo(TEXT("Setup Game Responded"));
+					TestTrue("setup game should be successful", Response.bSuccess);
+					TestTrue("GameFuseManager should be set up", GameFuseManager->IsSetUp());
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseManager->GetRequestHandler(), GameFuseManager->SetUpGame(GameData->Id, GameData->Token, SetUpCallback)));
+
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					FGFApiCallback GetServerTimeCallback;
+					GetServerTimeCallback.AddLambda(
+					[this](const FGFAPIResponse& Response) {
+						AddInfo(TEXT("GetServerTime Responded"));
+						TestTrue("GetServerTime should be successful", Response.bSuccess);
+						
+						if (Response.bSuccess) {
+							const FGFGameData& GameData = GameFuseManager->GetGameData();
+							TestFalse("Server time should not be empty", GameData.ServerTime.IsEmpty());
+							AddInfo(FString::Printf(TEXT("Server time received: %s"), *GameData.ServerTime));
+						}
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseManager->GetRequestHandler(), GameFuseManager->GetServerTime(GetServerTimeCallback)));
+					return true;
+				}));
+				return true;
+			}));
+			return true;
+		}));
 	});
 }
 

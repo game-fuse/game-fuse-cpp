@@ -64,3 +64,11 @@ FGuid UCoreAPIHandler::FetchStoreItems(const int GameID, const FString& Token, c
 	return SendRequest(ApiEndpoint, TEXT("GET"), Callback);
 
 }
+
+FGuid UCoreAPIHandler::GetServerTime(const FGFApiCallback& Callback)
+{
+	const FString ApiEndpoint = TEXT("/util/get_server_time");
+
+	UE_LOG(LogGameFuse, Verbose, TEXT("Sending Static Request - Getting Server Time"));
+	return SendRequest(ApiEndpoint, TEXT("GET"), Callback);
+}

@@ -433,6 +433,13 @@ public:
 	 */
 	static bool ConvertJsonToGameVariables(TMap<FString, FString>& OutVariables, const FString& JsonString);
 
+	/**
+	 * Converts a JSON string into ServerTime
+	 * @param OutServerTime String to store the converted server time
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToServerTime(FString& OutServerTime, const FString& JsonString);
 
 #pragma endregion
 };
