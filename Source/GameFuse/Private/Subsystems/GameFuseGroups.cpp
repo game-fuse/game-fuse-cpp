@@ -174,7 +174,7 @@ FGuid UGameFuseGroups::LeaveGroup(const int32 GroupId, FGFGroupActionCallback Ty
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::FetchUserGroups(FGFGroupListCallback TypedCallback)
+FGuid UGameFuseGroups::FetchMyGroups(FGFGroupListCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
@@ -385,8 +385,8 @@ void UGameFuseGroups::HandleGroupResponse(const FGFAPIResponse& Response)
 	}
 
 	// Update cached data
-	UserGroups.AddUnique(Group);
-	AllGroups.AddUnique(Group);
+	MyGroups.AddUnique(Group);
+	FetchedGroups.AddUnique(Group);
 
 	if (GroupCallbacks.Contains(Response.RequestId)) {
 		GroupCallbacks[Response.RequestId].ExecuteIfBound(Group);
@@ -424,9 +424,9 @@ void UGameFuseGroups::HandleGroupListResponse(const FGFAPIResponse& Response, bo
 
 	// Update cached data
 	if (bIsUserGroups) {
-		UserGroups = Groups;
+		MyGroups = Groups;
 	} else {
-		AllGroups = Groups;
+		FetchedGroups = Groups;
 	}
 
 	if (GroupListCallbacks.Contains(Response.RequestId)) {
@@ -601,10 +601,10 @@ void UGameFuseGroups::BP_LeaveGroup(const int32 GroupId, const FBP_GFApiCallback
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_FetchUserGroups(const FBP_GFApiCallback& Callback)
+void UGameFuseGroups::BP_FetchMyGroups(const FBP_GFApiCallback& Callback)
 {
 	FGFGroupListCallback TypedCallback;
-	FGuid RequestId = FetchUserGroups(TypedCallback);
+	FGuid RequestId = FetchMyGroups(TypedCallback);
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
@@ -677,7 +677,7 @@ void UGameFuseGroups::BP_DeclineGroupJoinRequest(const int32 ConnectionId, const
 bool UGameFuseGroups::GetGroupById(const int32 GroupId, FGFGroup& OutGroup) const
 {
 	// First check in UserGroups
-	for (const FGFGroup& Group : UserGroups) {
+	for (const FGFGroup& Group : MyGroups) {
 		if (Group.Id == GroupId) {
 			OutGroup = Group;
 			return true;
@@ -685,7 +685,7 @@ bool UGameFuseGroups::GetGroupById(const int32 GroupId, FGFGroup& OutGroup) cons
 	}
 
 	// If not found in UserGroups, check in AllGroups
-	for (const FGFGroup& Group : AllGroups) {
+	for (const FGFGroup& Group : FetchedGroups) {
 		if (Group.Id == GroupId) {
 			OutGroup = Group;
 			return true;

@@ -130,7 +130,7 @@ void FGameFuseGroupsSpec::Define()
 				TestTrue("Group is searchable", CreatedGroup.bSearchable);
 
 				// Verify internal state matches callback data
-				const TArray<FGFGroup>& AllGroups = GameFuseGroups->GetAllGroups();
+				const TArray<FGFGroup>& AllGroups = GameFuseGroups->GetFetchedGroups();
 				TestTrue("Group is stored internally", AllGroups.Contains(CreatedGroup));
 			});
 
@@ -187,7 +187,7 @@ void FGameFuseGroupsSpec::Define()
 					FetchCallback.BindLambda([this](const TArray<FGFGroup>& Groups) {
 						AddInfo("FetchAllGroups 3 :: Verify Groups List");
 						TestTrue("Has at least two groups", Groups.Num() >= 2);
-						TestEqual("Internal storage matches callback data", Groups, GameFuseGroups->GetAllGroups());
+						TestEqual("Internal storage matches callback data", Groups, GameFuseGroups->GetFetchedGroups());
 
 						// Find our created groups in the list
 						bool bFoundGroup1 = false;

@@ -21,8 +21,18 @@ void UGameFuseUser::Initialize(FSubsystemCollectionBase& Collection)
 
 	RequestHandler = NewObject<UUserAPIHandler>();
 	if (const UGameFuseSaveData* LoadedSaveGame = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0))) {
-		LastFetchedUserData = LoadedSaveGame->UserData;
-		UE_LOG(LogGameFuse, Log, TEXT("Game Fuse Subsystem Loaded"));
+		CurrentUserData = LoadedSaveGame->UserData;
+		
+		// Validate that we have a valid authentication token for the loaded user data
+		if (CurrentUserData.AuthenticationToken.IsEmpty()) {
+			UE_LOG(LogGameFuse, Warning, TEXT("Loaded user data has no authentication token - user will need to sign in again"));
+			CurrentUserData.bSignedIn = false;
+		} else {
+			UE_LOG(LogGameFuse, Log, TEXT("Game Fuse Subsystem Loaded with valid authentication token"));
+			CurrentUserData.bSignedIn = true;
+		}
+	} else {
+		UE_LOG(LogGameFuse, Log, TEXT("No saved user data found - user will need to sign in"));
 	}
 
 	GameFuseManager = GetGameInstance()->GetSubsystem<UGameFuseManager>();
