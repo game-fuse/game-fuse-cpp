@@ -108,22 +108,46 @@ FGuid UGameFuseRounds::UpdateGameRound(const int32 RoundId, const FGFGameRound& 
 	return FGuid();
 }
 
-void UGameFuseRounds::BP_FetchUserGameRounds(const FBP_GFApiCallback& Callback)
+void UGameFuseRounds::BP_FetchMyGameRounds(const FString& GameType, int32 Page, int32 PerPage, const FBP_GFApiCallback& Callback)
 {
 	FGFGameRoundListCallback TypedCallback;
-	FGuid RequestId = FetchUserGameRounds(TypedCallback);
+	FGuid RequestId = FetchMyGameRounds(TypedCallback, GameType, Page, PerPage);
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
-FGuid UGameFuseRounds::FetchUserGameRounds(FGFGameRoundListCallback TypedCallback)
+void UGameFuseRounds::BP_FetchUserGameRounds(int32 UserId, const FString& GameType, int32 Page, int32 PerPage, const FBP_GFApiCallback& Callback)
+{
+	FGFGameRoundListCallback TypedCallback;
+	FGuid RequestId = FetchUserGameRounds(UserId, TypedCallback, GameType, Page, PerPage);
+	StoreBlueprintCallback(RequestId, Callback);
+}
+
+FGuid UGameFuseRounds::FetchMyGameRounds(FGFGameRoundListCallback TypedCallback, const FString& GameType, int32 Page, int32 PerPage)
 {
 	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
 		FGFApiCallback InternalCallback;
 		InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-			HandleGameRoundListResponse(Response);
+			HandleMyGameRoundListResponse(Response);
 		});
 
-		FGuid RequestId = RequestHandler->FetchUserGameRounds(User->GetUserData(), InternalCallback);
+		FGuid RequestId = RequestHandler->FetchUserGameRounds(User->GetUserData().Id, User->GetUserData(), GameType, Page, PerPage, InternalCallback);
+		if (TypedCallback.IsBound()) {
+			GameRoundListCallbacks.Add(RequestId, TypedCallback);
+		}
+		return RequestId;
+	}
+	return FGuid();
+}
+
+FGuid UGameFuseRounds::FetchUserGameRounds(int32 UserId, FGFGameRoundListCallback TypedCallback, const FString& GameType, int32 Page, int32 PerPage)
+{
+	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
+		FGFApiCallback InternalCallback;
+		InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+			HandleUserGameRoundListResponse(Response);
+		});
+
+		FGuid RequestId = RequestHandler->FetchUserGameRounds(UserId, User->GetUserData(), GameType, Page, PerPage, InternalCallback);
 		if (TypedCallback.IsBound()) {
 			GameRoundListCallbacks.Add(RequestId, TypedCallback);
 		}
@@ -207,7 +231,7 @@ void UGameFuseRounds::HandleGameRoundResponse(FGFAPIResponse Response)
 	}
 }
 
-void UGameFuseRounds::HandleGameRoundListResponse(FGFAPIResponse Response)
+void UGameFuseRounds::HandleMyGameRoundListResponse(FGFAPIResponse Response)
 {
 	// Execute the blueprint callback regardless of success
 	ExecuteBlueprintCallback(Response);
@@ -234,6 +258,40 @@ void UGameFuseRounds::HandleGameRoundListResponse(FGFAPIResponse Response)
 
 	if (GameRoundListCallbacks.Contains(Response.RequestId)) {
 		GameRoundListCallbacks[Response.RequestId].ExecuteIfBound(UserGameRounds);
+		GameRoundListCallbacks.Remove(Response.RequestId);
+	}
+}
+
+void UGameFuseRounds::HandleUserGameRoundListResponse(FGFAPIResponse Response)
+{
+	ExecuteBlueprintCallback(Response);
+
+	if (!Response.bSuccess)
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle game round list response: %s"), *Response.ResponseStr);
+		if (GameRoundListCallbacks.Contains(Response.RequestId))
+		{
+			GameRoundListCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGameRound>());
+			GameRoundListCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	TArray<FGFGameRound> GameRounds;
+	if (!GameFuseUtilities::ConvertJsonToGameRounds(GameRounds, Response.ResponseStr))
+	{
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse game rounds from response"));
+		if (GameRoundListCallbacks.Contains(Response.RequestId))
+		{
+			GameRoundListCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFGameRound>());
+			GameRoundListCallbacks.Remove(Response.RequestId);
+		}
+		return;
+	}
+
+	if (GameRoundListCallbacks.Contains(Response.RequestId))
+	{
+		GameRoundListCallbacks[Response.RequestId].ExecuteIfBound(GameRounds);
 		GameRoundListCallbacks.Remove(Response.RequestId);
 	}
 }

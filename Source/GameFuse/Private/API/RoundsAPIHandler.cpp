@@ -50,16 +50,34 @@ FGuid URoundsAPIHandler::UpdateGameRound(const int32 RoundId, const FGFUserData&
 	return SendRequest(ApiEndpoint, "PUT", Callback, JsonObject);
 }
 
-FGuid URoundsAPIHandler::FetchUserGameRounds(const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid URoundsAPIHandler::FetchUserGameRounds(const int32 UserId, const FGFUserData& UserData, const FString& GameType,
+                                             const int32 Page, const int32 PerPage, const FGFApiCallback& Callback)
 {
-	if (!VerifyUserData(UserData)) {
+	if (!VerifyUserData(UserData))
+	{
 		return FGuid();
 	}
 	SetAuthHeader(UserData.AuthenticationToken);
 
-	FString Endpoint = FString::Printf(TEXT("/game_rounds?user_id=%d"), UserData.Id);
+	TArray<FString> QueryParams;
+	QueryParams.Add(FString::Printf(TEXT("user_id=%d"), UserId));
 
-	UE_LOG(LogGameFuse, Verbose, TEXT("Fetching game rounds for user ID: %d"), UserData.Id);
+	if (!GameType.IsEmpty())
+	{
+		QueryParams.Add(FString::Printf(TEXT("game_type=%s"), *GameType));
+	}
+	if (Page > 0)
+	{
+		QueryParams.Add(FString::Printf(TEXT("page=%d"), Page));
+	}
+	if (PerPage > 0)
+	{
+		QueryParams.Add(FString::Printf(TEXT("per_page=%d"), PerPage));
+	}
+
+	FString Endpoint = FString::Printf(TEXT("/game_rounds?%s"), *FString::Join(QueryParams, TEXT("&")));
+
+	UE_LOG(LogGameFuse, Verbose, TEXT("Fetching game rounds with endpoint: %s"), *Endpoint);
 	return SendRequest(Endpoint, "GET", Callback);
 }
 

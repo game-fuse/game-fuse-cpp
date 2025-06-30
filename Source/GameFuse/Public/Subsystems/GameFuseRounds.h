@@ -32,8 +32,11 @@ public:
 	UFUNCTION(BlueprintCallable, DisplayName = "Update Game Round", Category = "GameFuse|Rounds")
 	void BP_UpdateGameRound(const int32 RoundId, const FGFGameRound& GameRound, const FBP_GFApiCallback& Callback);
 
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch My Game Rounds", Category = "GameFuse|Rounds")
+	void BP_FetchMyGameRounds(const FString& GameType, int32 Page, int32 PerPage, const FBP_GFApiCallback& Callback);
+
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch User Game Rounds", Category = "GameFuse|Rounds")
-	void BP_FetchUserGameRounds(const FBP_GFApiCallback& Callback);
+	void BP_FetchUserGameRounds(int32 UserId, const FString& GameType, int32 Page, int32 PerPage, const FBP_GFApiCallback& Callback);
 
 	UFUNCTION(BlueprintCallable, DisplayName = "Delete Game Round", Category = "GameFuse|Rounds")
 	void BP_DeleteGameRound(const int32 RoundId, const FBP_GFApiCallback& Callback);
@@ -43,7 +46,8 @@ public:
 	FGuid CreateGameRound(const FGFGameRound& GameRound, const FGFUserData& UserData, FGFGameRoundCallback TypedCallback);
 	FGuid FetchGameRound(const int32 RoundId, FGFGameRoundCallback TypedCallback);
 	FGuid UpdateGameRound(const int32 RoundId, const FGFGameRound& GameRound, FGFGameRoundCallback TypedCallback);
-	FGuid FetchUserGameRounds(FGFGameRoundListCallback TypedCallback);
+	FGuid FetchMyGameRounds(FGFGameRoundListCallback TypedCallback, const FString& GameType = "", int32 Page = 0, int32 PerPage = 0);
+	FGuid FetchUserGameRounds(int32 UserId, FGFGameRoundListCallback TypedCallback, const FString& GameType = "", int32 Page = 0, int32 PerPage = 0);
 	FGuid DeleteGameRound(const int32 RoundId, FGFGameRoundActionCallback TypedCallback);
 
 	// Getters for cached data
@@ -74,7 +78,8 @@ private:
 
 	// Internal response handlers
 	void HandleGameRoundResponse(FGFAPIResponse Response);
-	void HandleGameRoundListResponse(FGFAPIResponse Response);
+	void HandleMyGameRoundListResponse(FGFAPIResponse Response);
+	void HandleUserGameRoundListResponse(FGFAPIResponse Response);
 	void HandleDeleteResponse(FGFAPIResponse Response);
 
 	// User callbacks storage
