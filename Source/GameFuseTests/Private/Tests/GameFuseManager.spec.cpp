@@ -90,7 +90,7 @@ void GameFuseManagerSpec::Define()
 						}
 					});
 
-					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseManager->GetRequestHandler(), GameFuseManager->GetServerTime(GetServerTimeCallback)));
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseManager->GetRequestHandler(), GameFuseManager->FetchServerTime(GetServerTimeCallback)));
 					return true;
 				}));
 				return true;

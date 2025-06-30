@@ -41,7 +41,7 @@ void UGameFuseRounds::BP_CreateGameRound(const FGFGameRound& GameRound, const FB
 FGuid UGameFuseRounds::CreateGameRound(const FGFGameRound& GameRound, FGFGameRoundCallback TypedCallback)
 {
 	if (const UGameFuseUser* User = GetGameInstance()->GetSubsystem<UGameFuseUser>()) {
-		return CreateGameRound(GameRound, User->GetUserData(), TypedCallback);
+		return CreateGameRound(GameRound, User->GetLastFetchedUserData(), TypedCallback);
 	}
 	return FGuid();
 }
@@ -75,7 +75,7 @@ FGuid UGameFuseRounds::FetchGameRound(const int32 RoundId, FGFGameRoundCallback 
 			HandleGameRoundResponse(Response);
 		});
 
-		FGuid RequestId = RequestHandler->FetchGameRound(RoundId, User->GetUserData(), InternalCallback);
+		FGuid RequestId = RequestHandler->FetchGameRound(RoundId, User->GetLastFetchedUserData(), InternalCallback);
 		if (TypedCallback.IsBound()) {
 			GameRoundCallbacks.Add(RequestId, TypedCallback);
 		}
@@ -99,7 +99,7 @@ FGuid UGameFuseRounds::UpdateGameRound(const int32 RoundId, const FGFGameRound& 
 			HandleGameRoundResponse(Response);
 		});
 
-		FGuid RequestId = RequestHandler->UpdateGameRound(RoundId, User->GetUserData(), GameRound, InternalCallback);
+		FGuid RequestId = RequestHandler->UpdateGameRound(RoundId, User->GetLastFetchedUserData(), GameRound, InternalCallback);
 		if (TypedCallback.IsBound()) {
 			GameRoundCallbacks.Add(RequestId, TypedCallback);
 		}
@@ -130,7 +130,7 @@ FGuid UGameFuseRounds::FetchMyGameRounds(FGFGameRoundListCallback TypedCallback,
 			HandleMyGameRoundListResponse(Response);
 		});
 
-		FGuid RequestId = RequestHandler->FetchUserGameRounds(User->GetUserData().Id, User->GetUserData(), GameType, Page, PerPage, InternalCallback);
+		FGuid RequestId = RequestHandler->FetchUserGameRounds(User->GetLastFetchedUserData().Id, User->GetLastFetchedUserData(), GameType, Page, PerPage, InternalCallback);
 		if (TypedCallback.IsBound()) {
 			GameRoundListCallbacks.Add(RequestId, TypedCallback);
 		}
@@ -147,7 +147,7 @@ FGuid UGameFuseRounds::FetchUserGameRounds(int32 UserId, FGFGameRoundListCallbac
 			HandleUserGameRoundListResponse(Response);
 		});
 
-		FGuid RequestId = RequestHandler->FetchUserGameRounds(UserId, User->GetUserData(), GameType, Page, PerPage, InternalCallback);
+		FGuid RequestId = RequestHandler->FetchUserGameRounds(UserId, User->GetLastFetchedUserData(), GameType, Page, PerPage, InternalCallback);
 		if (TypedCallback.IsBound()) {
 			GameRoundListCallbacks.Add(RequestId, TypedCallback);
 		}
@@ -171,7 +171,7 @@ FGuid UGameFuseRounds::DeleteGameRound(const int32 RoundId, FGFGameRoundActionCa
 			HandleDeleteResponse(Response);
 		});
 
-		FGuid RequestId = RequestHandler->DeleteGameRound(RoundId, User->GetUserData(), InternalCallback);
+		FGuid RequestId = RequestHandler->DeleteGameRound(RoundId, User->GetLastFetchedUserData(), InternalCallback);
 		if (TypedCallback.IsBound()) {
 			GameRoundActionCallbacks.Add(RequestId, TypedCallback);
 		}

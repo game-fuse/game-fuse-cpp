@@ -142,11 +142,11 @@ void UGameFuseManager::BP_FetchLeaderboardEntries(const int Limit = 20, bool bOn
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseManager::BP_GetServerTime(const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
+void UGameFuseManager::BP_FetchServerTime(const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
 {
 	FGFApiCallback InternalCallback;
 
-	FGuid RequestId = GetServerTime(InternalCallback);
+	FGuid RequestId = FetchServerTime(InternalCallback);
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
@@ -204,7 +204,7 @@ FGuid UGameFuseManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUse
 	if (!SetupCheck()) {
 		return FGuid();
 	}
-	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetUserData();
+	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetLastFetchedUserData();
 
 	Callback.AddUObject(this, &UGameFuseManager::HandleLeaderboardEntriesResponse);
 	return RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, UserData.AuthenticationToken, Callback);
@@ -220,7 +220,7 @@ FGuid UGameFuseManager::FetchStoreItems(FGFApiCallback Callback)
 	return RequestHandler->FetchStoreItems(GameData.Id, GameData.Token, Callback);
 }
 
-FGuid UGameFuseManager::GetServerTime(FGFApiCallback Callback)
+FGuid UGameFuseManager::FetchServerTime(FGFApiCallback Callback)
 {
 	// Note: GetServerTime doesn't require setup check as it's a utility endpoint
 	Callback.AddUObject(this, &UGameFuseManager::HandleGetServerTimeResponse);

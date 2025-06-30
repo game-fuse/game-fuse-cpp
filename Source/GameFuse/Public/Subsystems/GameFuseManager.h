@@ -25,7 +25,9 @@
 
 #include "GameFuseManager.generated.h"
 
-
+/**
+ * Core subsystem for connecting to the GameFuse server
+ */
 UCLASS()
 class GAMEFUSE_API UGameFuseManager : public UGameInstanceSubsystem
 {
@@ -176,14 +178,16 @@ public:
 	 * Get the current server time from GameFuse in UTC
 	 * @param Callback Blueprint Dynamic Delegate
 	 */
-	UFUNCTION(BlueprintCallable, DisplayName = "Get Server Time", Category = "GameFuse | Manager")
-	void BP_GetServerTime(const FBP_GFApiCallback& Callback);
+	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Server Time", Category = "GameFuse | Manager")
+	void BP_FetchServerTime(const FBP_GFApiCallback& Callback);
 
 	/**
-	 * Get the current server time from GameFuse in UTC
+	 * Get the current server time from GameFuse in UTC.
+	 *
+	 * Data is stored in GameData
 	 * @param Callback CPP Multicast Delegate
 	 */
-	FGuid GetServerTime(FGFApiCallback Callback);
+	FGuid FetchServerTime(FGFApiCallback Callback);
 
 private:
 

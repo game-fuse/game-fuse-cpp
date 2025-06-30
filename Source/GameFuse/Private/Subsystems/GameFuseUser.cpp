@@ -21,7 +21,7 @@ void UGameFuseUser::Initialize(FSubsystemCollectionBase& Collection)
 
 	RequestHandler = NewObject<UUserAPIHandler>();
 	if (const UGameFuseSaveData* LoadedSaveGame = Cast<UGameFuseSaveData>(UGameplayStatics::LoadGameFromSlot("GameFuseSaveSlot", 0))) {
-		UserData = LoadedSaveGame->UserData;
+		LastFetchedUserData = LoadedSaveGame->UserData;
 		UE_LOG(LogGameFuse, Log, TEXT("Game Fuse Subsystem Loaded"));
 	}
 
@@ -37,34 +37,39 @@ void UGameFuseUser::Deinitialize()
 
 #pragma region Core User Data & Authentication
 
-const FGFUserData& UGameFuseUser::GetUserData() const
+const FGFUserData& UGameFuseUser::GetCurrentUserData() const
 {
-	return UserData;
+	return CurrentUserData;
+}
+
+const FGFUserData& UGameFuseUser::GetLastFetchedUserData() const
+{
+	return LastFetchedUserData;
 }
 
 bool UGameFuseUser::IsSignedIn() const
 {
-	return UserData.bSignedIn;
+	return CurrentUserData.bSignedIn;
 }
 
 int32 UGameFuseUser::GetNumberOfLogins() const
 {
-	return UserData.NumberOfLogins;
+	return CurrentUserData.NumberOfLogins;
 }
 
 FString UGameFuseUser::GetLastLogin() const
 {
-	return UserData.LastLogin;
+	return CurrentUserData.LastLogin;
 }
 
 FString UGameFuseUser::GetUsername() const
 {
-	return UserData.Username;
+	return CurrentUserData.Username;
 }
 
 FString UGameFuseUser::GetAuthenticationToken() const
 {
-	return UserData.AuthenticationToken;
+	return CurrentUserData.AuthenticationToken;
 }
 
 FGuid UGameFuseUser::SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, FGFUserDataCallback TypedCallback)
@@ -111,7 +116,7 @@ FGuid UGameFuseUser::FetchUser(const int32 UserId, FGFUserDataCallback TypedCall
 {
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleUserDataResponse(Response, true);
+		HandleUserDataResponse(Response, false);
 	});
 
 	FGuid RequestId = RequestHandler->FetchUser(UserId, InternalCallback);
@@ -123,8 +128,15 @@ FGuid UGameFuseUser::FetchUser(const int32 UserId, FGFUserDataCallback TypedCall
 
 void UGameFuseUser::LogOut(const FString& SaveSlotName)
 {
-	UE_LOG(LogGameFuse, Log, TEXT("User %i Logging Out"), UserData.Id);
-	UserData = FGFUserData();
+	UE_LOG(LogGameFuse, Log, TEXT("User %i Logging Out"), CurrentUserData.Id);
+	
+	// Clear all user data
+	CurrentUserData = FGFUserData();
+	LastFetchedUserData = FGFUserData();
+	Attributes.Empty();
+	LocalAttributes.Empty();
+	PurchasedStoreItems.Empty();
+	LeaderboardEntries.Empty();
 
 	if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0)) {
 		UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
@@ -140,7 +152,7 @@ void UGameFuseUser::LogOut(const FString& SaveSlotName)
 
 int32 UGameFuseUser::GetCredits() const
 {
-	return UserData.Credits;
+	return CurrentUserData.Credits;
 }
 
 const TArray<FGFStoreItem>& UGameFuseUser::GetPurchasedStoreItems() const
@@ -152,10 +164,10 @@ FGuid UGameFuseUser::AddCredits(const int32 AddCredits, FGFUserDataCallback Type
 {
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleUserDataResponse(Response);
+		HandleUserDataResponse(Response, true);
 	});
 
-	FGuid RequestId = RequestHandler->AddCredits(AddCredits, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->AddCredits(AddCredits, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		UserDataCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -166,10 +178,10 @@ FGuid UGameFuseUser::SetCredits(const int32 SetCredits, FGFUserDataCallback Type
 {
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleUserDataResponse(Response);
+		HandleUserDataResponse(Response, true);
 	});
 
-	FGuid RequestId = RequestHandler->SetCredits(SetCredits, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->SetCredits(SetCredits, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		UserDataCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -183,7 +195,7 @@ FGuid UGameFuseUser::PurchaseStoreItem(const int32 StoreItemId, FGFStoreItemsCal
 		HandleStoreItemsResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->PurchaseStoreItem(StoreItemId, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->PurchaseStoreItem(StoreItemId, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		StoreItemsCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -197,7 +209,7 @@ FGuid UGameFuseUser::RemoveStoreItem(const int32 StoreItemId, FGFStoreItemsCallb
 		HandleUserActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RemoveStoreItem(StoreItemId, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->RemoveStoreItem(StoreItemId, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		StoreItemsCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -206,7 +218,7 @@ FGuid UGameFuseUser::RemoveStoreItem(const int32 StoreItemId, FGFStoreItemsCallb
 
 FGuid UGameFuseUser::FetchMyPurchasedStoreItems(FGFStoreItemsCallback TypedCallback)
 {
-	return FetchUserPurchasedStoreItems(UserData.Id, TypedCallback);
+	return FetchUserPurchasedStoreItems(CurrentUserData.Id, TypedCallback);
 }
 
 FGuid UGameFuseUser::FetchUserPurchasedStoreItems(const int32 UserId, FGFStoreItemsCallback TypedCallback)
@@ -217,7 +229,7 @@ FGuid UGameFuseUser::FetchUserPurchasedStoreItems(const int32 UserId, FGFStoreIt
 	});
 	FGFUserData TempUser;
 	TempUser.Id = UserId;
-	TempUser.AuthenticationToken = UserData.AuthenticationToken;
+	TempUser.AuthenticationToken = CurrentUserData.AuthenticationToken;
 
 	FGuid RequestId = RequestHandler->FetchPurchasedStoreItems(TempUser, InternalCallback);
 	if (TypedCallback.IsBound()) {
@@ -260,13 +272,12 @@ FGuid UGameFuseUser::SetAttribute(const FString& Key, const FString& Value, FGFA
 		HandleAttributesResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->SetAttribute(Key, Value, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->SetAttribute(Key, Value, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		AttributesCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
 }
-
 
 FGuid UGameFuseUser::SetAttributes(const TMap<FString, FString>& NewAttributes, FGFAttributesCallback TypedCallback)
 {
@@ -275,7 +286,7 @@ FGuid UGameFuseUser::SetAttributes(const TMap<FString, FString>& NewAttributes, 
 		HandleAttributesResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->SetAttributes(NewAttributes, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->SetAttributes(NewAttributes, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		AttributesCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -296,13 +307,16 @@ FGuid UGameFuseUser::RemoveAttribute(const FString& SetKey, FGFAttributesCallbac
 		HandleAttributesResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RemoveAttribute(SetKey, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->RemoveAttribute(SetKey, CurrentUserData, InternalCallback);
+	if (TypedCallback.IsBound()) {
+		AttributesCallbacks.Add(RequestId, TypedCallback);
+	}
 	return RequestId;
 }
 
 FGuid UGameFuseUser::FetchMyAttributes(FGFAttributesCallback TypedCallback)
 {
-	return FetchUserAttributes(UserData.Id, TypedCallback);
+	return FetchUserAttributes(CurrentUserData.Id, TypedCallback);
 }
 
 FGuid UGameFuseUser::FetchUserAttributes(const int32 UserId, FGFAttributesCallback TypedCallback)
@@ -314,7 +328,7 @@ FGuid UGameFuseUser::FetchUserAttributes(const int32 UserId, FGFAttributesCallba
 
 	FGFUserData TempUser;
 	TempUser.Id = UserId;
-	TempUser.AuthenticationToken = UserData.AuthenticationToken;
+	TempUser.AuthenticationToken = CurrentUserData.AuthenticationToken;
 
 	FGuid RequestId = RequestHandler->FetchAttributes(TempUser, InternalCallback);
 	if (TypedCallback.IsBound()) {
@@ -332,7 +346,7 @@ FGuid UGameFuseUser::SyncLocalAttributes(FGFAttributesCallback TypedCallback)
 			HandleAttributesResponse(Response);
 		});
 
-		FGuid RequestId = RequestHandler->FetchAttributes(UserData, InternalCallback);
+		FGuid RequestId = RequestHandler->FetchAttributes(CurrentUserData, InternalCallback);
 		if (TypedCallback.IsBound()) {
 			AttributesCallbacks.Add(RequestId, TypedCallback);
 		}
@@ -349,7 +363,7 @@ FGuid UGameFuseUser::SyncLocalAttributes(FGFAttributesCallback TypedCallback)
 		HandleAttributesResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->SetAttributes(LocalAttributes, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->SetAttributes(LocalAttributes, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		AttributesCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -363,7 +377,7 @@ FGuid UGameFuseUser::RemoveAttributes(const TArray<FString>& AttributeKeys, FGFA
 		HandleAttributesResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RemoveAttributes(AttributeKeys, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->RemoveAttributes(AttributeKeys, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		AttributesCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -376,10 +390,10 @@ FGuid UGameFuseUser::RemoveAttributes(const TArray<FString>& AttributeKeys, FGFA
 
 int32 UGameFuseUser::GetScore() const
 {
-	return UserData.Score;
+	return CurrentUserData.Score;
 }
 
-const TArray<FGFLeaderboardEntry>& UGameFuseUser::GetMyLeaderboardEntries() const
+const TArray<FGFLeaderboardEntry>& UGameFuseUser::GetLeaderboardEntries() const
 {
 	return LeaderboardEntries;
 }
@@ -388,10 +402,10 @@ FGuid UGameFuseUser::AddScore(const int32 AddScore, FGFUserDataCallback TypedCal
 {
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleUserDataResponse(Response);
+		HandleUserDataResponse(Response, true);
 	});
 
-	FGuid RequestId = RequestHandler->AddScore(AddScore, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->AddScore(AddScore, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		UserDataCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -402,10 +416,10 @@ FGuid UGameFuseUser::SetScore(const int32 SetScore, FGFUserDataCallback TypedCal
 {
 	FGFApiCallback InternalCallback;
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
-		HandleUserDataResponse(Response);
+		HandleUserDataResponse(Response, true);
 	});
 
-	FGuid RequestId = RequestHandler->SetScore(SetScore, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->SetScore(SetScore, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		UserDataCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -419,7 +433,7 @@ FGuid UGameFuseUser::AddLeaderboardEntry(const FString& LeaderboardName, const i
 		HandleUserActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->AddLeaderboardEntry(LeaderboardName, Score, Metadata, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->AddLeaderboardEntry(LeaderboardName, Score, Metadata, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		SimpleSuccessCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -438,7 +452,7 @@ FGuid UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGFIn
 		HandleUserActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->ClearLeaderboardEntry(LeaderboardName, UserData, InternalCallback);
+	FGuid RequestId = RequestHandler->ClearLeaderboardEntry(LeaderboardName, CurrentUserData, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		SimpleSuccessCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -447,7 +461,7 @@ FGuid UGameFuseUser::ClearLeaderboardEntry(const FString& LeaderboardName, FGFIn
 
 FGuid UGameFuseUser::FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, FGFLeaderboardEntriesCallback TypedCallback)
 {
-	return FetchUserLeaderboardEntries(UserData.Id, Limit, bOnePerUser, TypedCallback);
+	return FetchUserLeaderboardEntries(CurrentUserData.Id, Limit, bOnePerUser, TypedCallback);
 }
 
 FGuid UGameFuseUser::FetchUserLeaderboardEntries(const int32 UserId, const int32 Limit, bool bOnePerUser, FGFLeaderboardEntriesCallback TypedCallback)
@@ -459,11 +473,7 @@ FGuid UGameFuseUser::FetchUserLeaderboardEntries(const int32 UserId, const int32
 
 	FGFUserData TempUser;
 	TempUser.Id = UserId;
-
-	TempUser.AuthenticationToken = UserData.AuthenticationToken;
-
-	// might be better to change the RequestHandler to take in exactly what it needs (userdId, and authToken)
-	// this temp user data is technically data from two different users, current users' auth token and the userId of the user we want to fetch
+	TempUser.AuthenticationToken = CurrentUserData.AuthenticationToken;
 
 	FGuid RequestId = RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, TempUser, InternalCallback);
 	if (TypedCallback.IsBound()) {
@@ -685,7 +695,7 @@ void UGameFuseUser::BP_RemoveAttributes(const TArray<FString>& AttributeKeys, FB
 
 #pragma region Response Handlers
 
-bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response, bool bLogIn)
+bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response, bool bUpdateCurrentUser)
 {
 	if (!Response.bSuccess) {
 		UE_LOG(LogGameFuse, Error, TEXT("User data response failed: %s"), *Response.ResponseStr);
@@ -709,29 +719,44 @@ bool UGameFuseUser::HandleUserDataResponse(FGFAPIResponse Response, bool bLogIn)
 		return false;
 	}
 
-	// Update the stored user data
-	if (bLogIn) {
-		UserData = NewUserData;
-		UserData.bSignedIn = true;
-		UE_LOG(LogGameFuse, Warning, TEXT("Successfully signed in user token: %s"), *UserData.AuthenticationToken);
+	// Update the appropriate user data based on the flag
+	if (bUpdateCurrentUser) {
+		// Update current user data (for sign in/up operations)
+		// Preserve existing authentication token if the new data doesn't have one
+		FString ExistingAuthToken = CurrentUserData.AuthenticationToken;
+		CurrentUserData = NewUserData;
+		
+		// If the new data doesn't have an auth token, keep the existing one
+		if (CurrentUserData.AuthenticationToken.IsEmpty() && !ExistingAuthToken.IsEmpty()) {
+			CurrentUserData.AuthenticationToken = ExistingAuthToken;
+		}
+		
+		CurrentUserData.bSignedIn = true;
+		UE_LOG(LogGameFuse, Warning, TEXT("Successfully signed in user token: %s"), *CurrentUserData.AuthenticationToken);
 
 		UE_LOG(LogGameFuse, Log, TEXT("Saved Login Data Into SlotName:GameFuseSaveSlot UserIndex:0"));
+		
+		// Also update last fetched user data to match current user data
+		LastFetchedUserData = CurrentUserData;
 	} else {
-		// dont update authentication tokeen
-		FString CachedToken = UserData.AuthenticationToken;
-		UserData = NewUserData;
-		UserData.AuthenticationToken = CachedToken;
-		UserData.bSignedIn = true;
+		// Update last fetched user data (for fetch operations)
+		// Never store authentication token for fetched users
+		LastFetchedUserData = NewUserData;
+		LastFetchedUserData.AuthenticationToken = TEXT(""); // Clear auth token for fetched users
+		LastFetchedUserData.bSignedIn = false; // Fetched users are not signed in
 	}
 
+	// Save current user data to persistent storage
 	UGameFuseSaveData* SaveGameInstance = Cast<UGameFuseSaveData>(UGameplayStatics::CreateSaveGameObject(UGameFuseSaveData::StaticClass()));
-	SaveGameInstance->UserData = UserData;
+	SaveGameInstance->UserData = CurrentUserData;
 
 	UGameplayStatics::SaveGameToSlot(SaveGameInstance, "GameFuseSaveSlot", 0);
 
 	// Execute the specific callback for this request if it exists
+	// For current user operations, return CurrentUserData; for fetch operations, return LastFetchedUserData
+	FGFUserData CallbackData = bUpdateCurrentUser ? CurrentUserData : LastFetchedUserData;
 	if (UserDataCallbacks.Contains(Response.RequestId)) {
-		UserDataCallbacks[Response.RequestId].Execute(true, UserData);
+		UserDataCallbacks[Response.RequestId].Execute(true, CallbackData);
 		UserDataCallbacks.Remove(Response.RequestId);
 	}
 

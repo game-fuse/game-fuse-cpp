@@ -47,7 +47,7 @@ FGuid UGameFuseGroups::CreateGroup(const FGFGroup& Group, FGFGroupCallback Typed
 		HandleGroupResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->CreateGroup(Group, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->CreateGroup(Group, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -67,7 +67,7 @@ FGuid UGameFuseGroups::FetchGroup(const int32 GroupId, FGFGroupCallback TypedCal
 		HandleGroupResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchGroup(GroupId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -87,7 +87,7 @@ FGuid UGameFuseGroups::FetchAllGroups(FGFGroupListCallback TypedCallback)
 		HandleGroupListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchAllGroups(GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchAllGroups(GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupListCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -107,7 +107,7 @@ FGuid UGameFuseGroups::RequestToJoinGroup(int32 GroupId, FGFGroupConnectionCallb
 		HandleGroupConnectionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RequestToJoinGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->RequestToJoinGroup(GroupId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupConnectionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -127,7 +127,7 @@ FGuid UGameFuseGroups::DeleteGroup(const int32 GroupId, FGFGroupActionCallback T
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->DeleteGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->DeleteGroup(GroupId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -147,7 +147,7 @@ FGuid UGameFuseGroups::JoinGroup(const int32 GroupId, FGFGroupActionCallback Typ
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->JoinGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->JoinGroup(GroupId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -167,7 +167,7 @@ FGuid UGameFuseGroups::LeaveGroup(const int32 GroupId, FGFGroupActionCallback Ty
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->LeaveGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->LeaveGroup(GroupId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -187,7 +187,7 @@ FGuid UGameFuseGroups::FetchUserGroups(FGFGroupListCallback TypedCallback)
 		HandleGroupListResponse(Response, true);
 	});
 
-	FGuid RequestId = RequestHandler->FetchUserGroups(GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchUserGroups(GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupListCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -207,7 +207,7 @@ FGuid UGameFuseGroups::SearchGroups(const FString& Query, FGFGroupListCallback T
 		HandleGroupListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->SearchGroups(Query, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->SearchGroups(Query, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupListCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -227,7 +227,7 @@ FGuid UGameFuseGroups::AddAdmin(const int32 GroupId, const int32 UserId, FGFGrou
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->AddAdmin(GroupId, UserId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->AddAdmin(GroupId, UserId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -247,7 +247,7 @@ FGuid UGameFuseGroups::RemoveAdmin(const int32 GroupId, const int32 UserId, FGFG
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RemoveAdmin(GroupId, UserId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->RemoveAdmin(GroupId, UserId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -267,7 +267,7 @@ FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FGFGroupAttribute
 		HandleGroupAttributeResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->AddAttribute(GroupId, Attribute, bOthersCanEdit, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->AddAttribute(GroupId, Attribute, bOthersCanEdit, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupAttributeCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -287,7 +287,7 @@ FGuid UGameFuseGroups::UpdateGroupAttribute(const int32 GroupId, const FGFGroupA
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->UpdateGroupAttribute(GroupId, Attribute, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->UpdateGroupAttribute(GroupId, Attribute, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -332,7 +332,7 @@ FGuid UGameFuseGroups::RespondToGroupJoinRequest(const int32 ConnectionId, const
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RespondToGroupJoinRequest(ConnectionId, UserId, Status, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->RespondToGroupJoinRequest(ConnectionId, UserId, Status, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -352,7 +352,7 @@ FGuid UGameFuseGroups::FetchGroupAttributes(const int32 GroupId, FGFGroupAttribu
 		HandleGroupAttributeResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchGroupAttributes(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchGroupAttributes(GroupId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupAttributeCallbacks.Add(RequestId, TypedCallback);
 	}

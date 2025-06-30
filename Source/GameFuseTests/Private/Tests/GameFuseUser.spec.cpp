@@ -85,7 +85,8 @@ void GameFuseUserSpec::Define()
 					TestTrue("User data is valid", UserData.Id > 0);
 					TestEqual("Username matches", UserData.Username, UserData.Username);
 					TestTrue("User is signed in", GameFuseUser->IsSignedIn());
-					TestEqual("Internal user data matches", GameFuseUser->GetUserData().Id, UserData.Id);
+					TestEqual("Internal last fetched user data matches", GameFuseUser->GetLastFetchedUserData().Id, UserData.Id);
+					TestEqual("Internal current user data matches", GameFuseUser->GetCurrentUserData().Id, UserData.Id);
 					TestEqual("Internal username matches", GameFuseUser->GetUsername(), UserData.Username);
 					TestTrue("Authentication token is valid", !GameFuseUser->GetAuthenticationToken().IsEmpty());
 				});
@@ -1045,6 +1046,92 @@ void GameFuseUserSpec::Define()
 								TestEqual("Fetched User ID matches first user", FetchedUser.Id, UserData->Id);
 								TestEqual("Fetched Username matches first user", FetchedUser.Username, UserData->Username);
 								TestEqual("Fetched Score matches first user's score", FetchedUser.Score, 1000);
+								
+								// Verify that the last fetched user data contains the first user's data
+								// while current user data still contains the second user's data
+								TestEqual("Last fetched user data should contain first user", GameFuseUser->GetLastFetchedUserData().Id, UserData->Id);
+								TestEqual("Current user data should still contain second user", GameFuseUser->GetCurrentUserData().Id, UserData2->Id);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->FetchUser(UserData->Id, FetchCallback)));
+							ADD_LATENT_AUTOMATION_COMMAND(FCleanupGame(TestAPIHandler, GameData, bCleanupSuccess, this, FGuid()));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("maintains current user data when fetching other users", [this]() {
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+				// First user adds some data
+				FGFUserDataCallback AddScoreCallback;
+				AddScoreCallback.BindLambda([this](bool bSuccess, const FGFUserData& User) {
+					AddInfo("CurrentUserDataTest 1 :: Add Score for First User");
+					TestTrue("Add score request succeeded for first user", bSuccess);
+					if (!bSuccess) {
+						AddError(TEXT("Failed to add score for first user"));
+						return;
+					}
+					TestEqual("Score was added correctly for first user", User.Score, 500);
+					TestEqual("User ID matches first user", User.Id, UserData->Id);
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																  GameFuseUser->AddScore(500, AddScoreCallback)));
+
+				// Verify current user data contains first user's data
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					TestEqual("Current user data should contain first user ID", GameFuseUser->GetCurrentUserData().Id, UserData->Id);
+					TestEqual("Current user data should contain first user score", GameFuseUser->GetCurrentUserData().Score, 500);
+					TestEqual("Last fetched user data should also contain first user ID", GameFuseUser->GetLastFetchedUserData().Id, UserData->Id);
+					TestEqual("Last fetched user data should also contain first user score", GameFuseUser->GetLastFetchedUserData().Score, 500);
+
+					// Sign in as second user
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+						FGFUserDataCallback SignInCallback;
+						SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& SignedInUser) {
+							AddInfo("CurrentUserDataTest 2 :: Sign In Second User");
+							TestTrue("Second user sign in succeeded", bSuccess);
+							if (!bSuccess) {
+								AddError(TEXT("Second user sign in failed"));
+								return;
+							}
+							TestEqual("Signed in user ID matches second user", SignedInUser.Id, UserData2->Id);
+							
+							// Verify current user data now contains second user's data
+							TestEqual("Current user data should now contain second user ID", GameFuseUser->GetCurrentUserData().Id, UserData2->Id);
+							TestEqual("Last fetched user data should also contain second user ID", GameFuseUser->GetLastFetchedUserData().Id, UserData2->Id);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																		  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+						// Fetch first user's data
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+							FGFUserDataCallback FetchCallback;
+							FetchCallback.BindLambda([this](bool bSuccess, const FGFUserData& FetchedUser) {
+								AddInfo("CurrentUserDataTest 3 :: Fetch First User Data");
+								if (!bSuccess) {
+									AddError("Fetch user data request failed");
+									return;
+								}
+								TestTrue("Fetch user data request succeeded", bSuccess);
+								TestEqual("Fetched User ID matches first user", FetchedUser.Id, UserData->Id);
+								TestEqual("Fetched Score matches first user's score", FetchedUser.Score, 500);
+								
+								// Verify that the last fetched user data now contains the first user's data
+								// while current user data still contains the second user's data
+								TestEqual("Last fetched user data should contain first user", GameFuseUser->GetLastFetchedUserData().Id, UserData->Id);
+								TestEqual("Last fetched user data should contain first user score", GameFuseUser->GetLastFetchedUserData().Score, 500);
+								TestEqual("Current user data should still contain second user", GameFuseUser->GetCurrentUserData().Id, UserData2->Id);
+								
+								// Verify that current user data is not affected by the fetch operation
+								TestNotEqual("Current user data should not be affected by fetch", GameFuseUser->GetCurrentUserData().Id, UserData->Id);
 							});
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
