@@ -204,7 +204,7 @@ FGuid UGameFuseManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUse
 	if (!SetupCheck()) {
 		return FGuid();
 	}
-	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetLastFetchedUserData();
+	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetCurrentUserData();
 
 	Callback.AddUObject(this, &UGameFuseManager::HandleLeaderboardEntriesResponse);
 	return RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, UserData.AuthenticationToken, Callback);

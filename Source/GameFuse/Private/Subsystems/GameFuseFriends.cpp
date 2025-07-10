@@ -45,7 +45,7 @@ FGuid UGameFuseFriends::SendFriendRequest(const FString& Username, FGFFriendRequ
 		HandleFriendRequestResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->SendFriendRequest(Username, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->SendFriendRequest(Username, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		FriendRequestCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -65,7 +65,7 @@ FGuid UGameFuseFriends::AcceptFriendRequest(const int32 FriendshipId, FGFFriendA
 		HandleFriendActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RespondToFriendRequest(FriendshipId, EGFInviteRequestStatus::Accepted, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->RespondToFriendRequest(FriendshipId, EGFInviteRequestStatus::Accepted, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		FriendActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -85,7 +85,7 @@ FGuid UGameFuseFriends::DeclineFriendRequest(const int32 FriendshipId, FGFFriend
 		HandleFriendActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RespondToFriendRequest(FriendshipId, EGFInviteRequestStatus::Declined, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->RespondToFriendRequest(FriendshipId, EGFInviteRequestStatus::Declined, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		FriendActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -105,7 +105,7 @@ FGuid UGameFuseFriends::CancelFriendRequest(const int32 FriendshipId, FGFFriendA
 		HandleFriendActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->CancelFriendRequest(FriendshipId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->CancelFriendRequest(FriendshipId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		FriendActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -125,7 +125,7 @@ FGuid UGameFuseFriends::UnfriendPlayer(const int32 UserId, FGFFriendActionCallba
 		HandleFriendActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->UnfriendPlayer(UserId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->UnfriendPlayer(UserId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		FriendActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -145,7 +145,7 @@ FGuid UGameFuseFriends::FetchFriendshipData(FGFFriendsCallback TypedCallback)
 		HandleFriendshipDataResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->GetFriendshipData(GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->GetFriendshipData(GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		FriendsCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -165,7 +165,7 @@ FGuid UGameFuseFriends::FetchMyFriendsList(FGFFriendsCallback TypedCallback)
 		HandleFriendsListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->GetMyFriendsList(GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->GetMyFriendsList(GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		FriendsCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -187,7 +187,7 @@ FGuid UGameFuseFriends::FetchUserFriendsList(const int32 UserId, FGFFriendsCallb
 		HandleUserFriendsListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->GetUserFriendsList(UserId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->GetUserFriendsList(UserId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound())
 	{
 		FriendsCallbacks.Add(RequestId, TypedCallback);
@@ -208,7 +208,7 @@ FGuid UGameFuseFriends::FetchOutgoingFriendRequests(FGFFriendRequestsCallback Ty
 		HandleOutgoingRequestsResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->GetOutgoingFriendRequests(GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->GetOutgoingFriendRequests(GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		FriendRequestsCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -227,7 +227,7 @@ FGuid UGameFuseFriends::FetchIncomingFriendRequests(FGFFriendRequestsCallback Ty
 	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
 		HandleIncomingRequestsResponse(Response);
 	});
-	FGuid RequestId = RequestHandler->GetIncomingFriendRequests(GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->GetIncomingFriendRequests(GameFuseUser->GetCurrentUserData(), InternalCallback);
 
 	if (TypedCallback.IsBound()) {
 		FriendRequestsCallbacks.Add(RequestId, TypedCallback);

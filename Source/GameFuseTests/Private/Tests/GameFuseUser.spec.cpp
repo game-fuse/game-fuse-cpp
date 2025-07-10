@@ -85,7 +85,7 @@ void GameFuseUserSpec::Define()
 					TestTrue("User data is valid", UserData.Id > 0);
 					TestEqual("Username matches", UserData.Username, UserData.Username);
 					TestTrue("User is signed in", GameFuseUser->IsSignedIn());
-					TestEqual("Internal last fetched user data matches", GameFuseUser->GetLastFetchedUserData().Id, UserData.Id);
+					TestEqual("Internal last fetched user data matches", GameFuseUser->GetCurrentUserData().Id, UserData.Id);
 					TestEqual("Internal current user data matches", GameFuseUser->GetCurrentUserData().Id, UserData.Id);
 					TestEqual("Internal username matches", GameFuseUser->GetUsername(), UserData.Username);
 					TestTrue("Authentication token is valid", !GameFuseUser->GetAuthenticationToken().IsEmpty());

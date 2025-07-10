@@ -51,7 +51,7 @@ FGuid UGameFuseChat::MarkMessageAsRead(int32 MessageId, FGFSuccessCallback Typed
 		HandleActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->MarkMessageAsRead(MessageId, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->MarkMessageAsRead(MessageId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		ActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -71,7 +71,7 @@ FGuid UGameFuseChat::FetchAllChats(int32 Page, FGFChatListCallback TypedCallback
 		HandleChatListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchAllChats(GameFuseUser->GetLastFetchedUserData(), Page, InternalCallback);
+	FGuid RequestId = RequestHandler->FetchAllChats(GameFuseUser->GetCurrentUserData(), Page, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		ChatListCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -216,7 +216,7 @@ FGuid UGameFuseChat::CreateChat(const TArray<FString>& Usernames, const FString&
 	FGFMessage Message;
 	Message.Text = InitialMessage;
 
-	FGuid RequestId = RequestHandler->CreateChat(Usernames, Message, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->CreateChat(Usernames, Message, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		ChatCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -240,7 +240,7 @@ FGuid UGameFuseChat::SendMessage(int32 ChatId, const FString& Text, FGFMessageCa
 	FGFMessage Message;
 	Message.Text = Text;
 
-	FGuid RequestId = RequestHandler->SendMessage(ChatId, Message, GameFuseUser->GetLastFetchedUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->SendMessage(ChatId, Message, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		MessageCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -288,7 +288,7 @@ FGuid UGameFuseChat::FetchMessages(int32 ChatId, int32 Page, FGFMessageListCallb
 		HandleMessageListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchMessages(ChatId, GameFuseUser->GetLastFetchedUserData(), Page, InternalCallback);
+	FGuid RequestId = RequestHandler->FetchMessages(ChatId, GameFuseUser->GetCurrentUserData(), Page, InternalCallback);
 	if (TypedCallback.IsBound()) {
 		MessageListCallbacks.Add(RequestId, TypedCallback);
 	}

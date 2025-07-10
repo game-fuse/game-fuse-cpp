@@ -13,7 +13,7 @@
 
 // Add this new struct to the file
 USTRUCT(BlueprintType, Category = "GameFuse|GameData")
-struct FGFGameData
+struct GAMEFUSE_API FGFGameData
 {
 	GENERATED_BODY()
 
@@ -39,7 +39,7 @@ struct FGFGameData
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|UserData")
-struct FGFUserData
+struct GAMEFUSE_API FGFUserData
 {
 	GENERATED_BODY()
 
@@ -75,7 +75,7 @@ struct FGFUserData
 
 
 USTRUCT(BlueprintType, Category = "GameFuse|StoreItem")
-struct FGFStoreItem
+struct GAMEFUSE_API FGFStoreItem
 {
 	GENERATED_BODY()
 	FGFStoreItem() = default;
@@ -110,7 +110,7 @@ struct FGFStoreItem
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|LeaderboardItem")
-struct FGFLeaderboardEntry
+struct GAMEFUSE_API FGFLeaderboardEntry
 {
 	GENERATED_BODY()
 
@@ -136,7 +136,7 @@ struct FGFLeaderboardEntry
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|Leaderboard")
-struct FGFLeaderboard
+struct GAMEFUSE_API FGFLeaderboard
 {
 	GENERATED_BODY()
 
@@ -302,8 +302,35 @@ struct GAMEFUSE_API FGFGroupAttribute
 	}
 };
 
+USTRUCT(BlueprintType)
+struct GAMEFUSE_API FGFGroupConnection
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 Id;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
+	EGFInviteRequestStatus Status;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
+	FGFUserData User;
+
+	FGFGroupConnection() :
+		Id(0), Status(EGFInviteRequestStatus::None)
+	{
+	}
+
+	bool operator==(const FGFGroupConnection& Other) const
+	{
+		return Id == Other.Id &&
+		Status == Other.Status &&
+		User == Other.User;
+	}
+};
+
 USTRUCT(BlueprintType, Category = "GameFuse|Groups")
-struct FGFGroup
+struct GAMEFUSE_API FGFGroup
 {
 	GENERATED_BODY()
 
@@ -343,41 +370,20 @@ struct FGFGroup
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
 	TArray<FGFGroupAttribute> Attributes;
 
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	TArray<FGFGroupConnection> JoinRequests;
+
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	TArray<FGFGroupConnection> Invites;
+
 	bool operator==(const FGFGroup& Other) const
 	{
 		return Id == Other.Id && Name == Other.Name;
 	}
 };
 
-USTRUCT(BlueprintType)
-struct GAMEFUSE_API FGFGroupConnection
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
-	int32 Id;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
-	EGFInviteRequestStatus Status;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
-	FGFUserData User;
-
-	FGFGroupConnection() :
-		Id(0), Status(EGFInviteRequestStatus::None)
-	{
-	}
-
-	bool operator==(const FGFGroupConnection& Other) const
-	{
-		return Id == Other.Id &&
-		Status == Other.Status &&
-		User == Other.User;
-	}
-};
-
 USTRUCT(BlueprintType, Category = "GameFuse| API")
-struct FGFAPIResponse
+struct GAMEFUSE_API FGFAPIResponse
 {
 	GENERATED_BODY()
 
@@ -406,7 +412,7 @@ struct FGFAPIResponse
 // Game Round Rankings User Data
 USTRUCT(BlueprintType, Category = "GameFuse|GameRound")
 
-struct FGFGameRoundRanking
+struct GAMEFUSE_API FGFGameRoundRanking
 {
 	GENERATED_BODY()
 
@@ -434,7 +440,7 @@ struct FGFGameRoundRanking
 // Main Game Round Structure
 USTRUCT(BlueprintType, Category = "GameFuse|GameRound")
 
-struct FGFGameRound
+struct GAMEFUSE_API FGFGameRound
 {
 	GENERATED_BODY()
 

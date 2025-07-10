@@ -42,6 +42,20 @@ FGuid UGroupsAPIHandler::RequestToJoinGroup(int32 GroupId, const FGFUserData& Us
 	return SendRequest("/group_connections", "POST", Callback, JsonObject);
 }
 
+FGuid UGroupsAPIHandler::InviteGroupMember(int32 GroupId, int32 UserIdToInvite, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	if (!VerifyUserData(UserData)) {
+		return FGuid();
+	}
+	SetAuthHeader(UserData.AuthenticationToken);
+
+	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
+	JsonObject->SetNumberField("group_id", GroupId);
+	JsonObject->SetNumberField("user_id", UserIdToInvite);
+
+	return SendRequest("/group_connections", "POST", Callback, JsonObject);
+}
+
 FGuid UGroupsAPIHandler::FetchGroup(int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	if (!VerifyUserData(UserData)) {

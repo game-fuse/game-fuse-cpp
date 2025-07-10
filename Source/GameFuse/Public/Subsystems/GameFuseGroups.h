@@ -59,6 +59,15 @@ public:
 	FGuid RequestToJoinGroup(int32 GroupId, FGFGroupConnectionCallback TypedCallback);
 	
 	/**
+	 * Invites a user to join a group
+	 * @param GroupId The ID of the group to invite the user to
+	 * @param UserIdToInvite The ID of the user to invite
+	 * @param TypedCallback Callback executed when the request completes
+	 * @return Request ID for tracking
+	 */
+	FGuid InviteGroupMember(int32 GroupId, int32 UserIdToInvite, FGFGroupConnectionCallback TypedCallback);
+	
+	/**
 	 * Deletes a group (admin only)
 	 * @param GroupId The ID of the group to delete
 	 * @param TypedCallback Callback executed when the request completes
@@ -184,6 +193,15 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, DisplayName = "Request To Join Group", Category = "GameFuse|Groups")
 	void BP_RequestToJoinGroup(int32 GroupId, const FBP_GFApiCallback& Callback);
+
+	/**
+	 * Invites a user to join a group (Blueprint version)
+	 * @param GroupId The ID of the group to invite the user to
+	 * @param UserIdToInvite The ID of the user to invite
+	 * @param Callback Blueprint callback executed when the request completes
+	 */
+	UFUNCTION(BlueprintCallable, DisplayName = "Invite Group Member", Category = "GameFuse|Groups")
+	void BP_InviteGroupMember(int32 GroupId, int32 UserIdToInvite, const FBP_GFApiCallback& Callback);
 
 	/**
 	 * Deletes a group (admin only) (Blueprint version)

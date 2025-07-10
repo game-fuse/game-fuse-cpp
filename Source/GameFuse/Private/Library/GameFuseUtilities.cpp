@@ -781,6 +781,28 @@ bool GameFuseUtilities::ConvertJsonArrayToGroupAttributes(TArray<FGFGroupAttribu
 	return true;
 }
 
+
+bool GameFuseUtilities::ConvertJsonArrayToGroupConnections(TArray<FGFGroupConnection>& InConnections, const TArray<TSharedPtr<FJsonValue>>* JsonArray)
+{
+	if (!JsonArray) {
+		return false;
+	}
+
+	InConnections.Empty();
+	for (const auto& JsonValue : *JsonArray) {
+		if (JsonValue->Type != EJson::Object) {
+			continue;
+		}
+
+		FGFGroupConnection Connection;
+		if (ConvertJsonToGroupConnection(Connection, JsonValue->AsObject())) {
+			InConnections.Add(Connection);
+		}
+	}
+
+	return true;
+}
+
 bool GameFuseUtilities::ConvertJsonToGroupAttributeResponse(TArray<FGFGroupAttribute>& OutAttributes, const FString& JsonString)
 {
 	TSharedPtr<FJsonObject> JsonObject;
@@ -853,6 +875,16 @@ bool GameFuseUtilities::ConvertJsonToGroup(FGFGroup& InGroup, const TSharedPtr<F
 	const TArray<TSharedPtr<FJsonValue>>* AttributesArray;
 	if (JsonObject->TryGetArrayField(TEXT("attributes"), AttributesArray)) {
 		ConvertJsonArrayToGroupAttributes(InGroup.Attributes, AttributesArray);
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* JoinRequestsArray;
+	if (JsonObject->TryGetArrayField(TEXT("join_requests"), JoinRequestsArray)) {
+		ConvertJsonArrayToGroupConnections(InGroup.JoinRequests, JoinRequestsArray);
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* InvitesArray;
+	if (JsonObject->TryGetArrayField(TEXT("invites"), InvitesArray)) {
+		ConvertJsonArrayToGroupConnections(InGroup.Invites, InvitesArray);
 	}
 
 	return true;
