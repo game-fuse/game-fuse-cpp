@@ -1165,7 +1165,7 @@ void FGameFuseGroupsSpec::Define()
 			}));
 		});
 
-		It("manages group invites", [this]() {
+		It("invites a user to a invite only group", [this]() {
 			// Create a test group that is invite-only
 			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
 			GroupData->Name = TEXT("Group Invites Test Group");
@@ -1176,181 +1176,137 @@ void FGameFuseGroupsSpec::Define()
 			GroupData->bSearchable = true;
 
 			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+				// User 1 (already signed in) creates the invite-only group
 				FGFGroupCallback CreateGroupCallback;
 				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
-					AddInfo("GroupInvites 1 :: Create Invite-Only Group");
+					AddInfo("GroupInvites 1 :: User 1 Creates Invite-Only Group");
 					TestTrue("Group created successfully", CreatedGroup.Id > 0);
 					TestTrue("Group is invite only", CreatedGroup.bIsInviteOnly);
+					TestFalse("Group cannot auto join", CreatedGroup.bCanAutoJoin);
 					GroupData->Id = CreatedGroup.Id;
 				});
 
 				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
 																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
 
-				// Fetch the group to verify initial state (no invites, no join requests)
+				// User 1 invites User 2 to the group
 				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
-					FGFGroupCallback FetchGroupCallback;
-					FetchGroupCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
-						AddInfo("GroupInvites 2 :: Verify Initial Group State");
-						TestTrue("Group fetched successfully", FetchedGroup.Id == GroupData->Id);
-						TestTrue("Group is invite only", FetchedGroup.bIsInviteOnly);
-						
-						// Initially, the group should have no invites or join requests
-						TestEqual("Group has no invites initially", FetchedGroup.Invites.Num(), 0);
-						TestEqual("Group has no join requests initially", FetchedGroup.JoinRequests.Num(), 0);
-						
-						// Verify the group only has the creator as a member
-						TestEqual("Group has only creator as member", FetchedGroup.Members.Num(), 1);
-						if (FetchedGroup.Members.Num() > 0) {
-							TestEqual("Creator is the only member", FetchedGroup.Members[0].Id, UserData1->Id);
+					FGFGroupConnectionCallback InviteCallback;
+					InviteCallback.BindLambda([this](const FGFGroupConnection& Connection) {
+						AddInfo("GroupInvites 2 :: User 1 Invites User 2");
+						if (Connection.Id == 0) {
+							AddError("Invite failed - connection ID is 0");
+							return;
 						}
+						TestTrue("Invite created successfully", Connection.Id != 0);
+						TestEqual("Invite has correct user id", Connection.User.Id, UserData2->Id);
+						TestEqual("Invite status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+
+						// Store the connection data for later use
+						TestConnectionData = MakeShared<FGFGroupConnection>(Connection);
 					});
 
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-																	  GameFuseGroups->FetchGroup(GroupData->Id, FetchGroupCallback)));
+																	  GameFuseGroups->InviteGroupMember(GroupData->Id, UserData2->Id, InviteCallback)));
 
-					// Create second user and invite them to the group
+					// Fetch the group to verify the invite was created
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
-						FGFUserDataCallback SignInCallback;
-						SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
-							AddInfo("GroupInvites 3 :: Sign In Second User");
-							TestTrue("Second user sign in succeeded", bSuccess);
+						FGFGroupCallback FetchGroupCallback;
+						FetchGroupCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
+							AddInfo("GroupInvites 3 :: Verify Group Has Invite");
+							TestTrue("Group fetched successfully", FetchedGroup.Id == GroupData->Id);
+							TestTrue("Group is invite only", FetchedGroup.bIsInviteOnly);
+							
+							// The group should now have an invite
+							TestTrue("Group has invites", FetchedGroup.Invites.Num() > 0);
+							
+							// Verify the invite details
+							bool bFoundInvite = false;
+							for (const FGFGroupConnection& Invite : FetchedGroup.Invites) {
+								if (Invite.User.Id == UserData2->Id) {
+									bFoundInvite = true;
+									TestEqual("Invite status is pending", Invite.Status, EGFInviteRequestStatus::Pending);
+									TestEqual("Invite user ID matches", Invite.User.Id, UserData2->Id);
+									TestEqual("Invite username matches", Invite.User.Username, UserData2->Username);
+									break;
+								}
+							}
+							TestTrue("Found the invite for user 2", bFoundInvite);
+							
+							// Verify no join requests exist for this invite-only group
+							TestEqual("Group has no join requests", FetchedGroup.JoinRequests.Num(), 0);
 						});
 
-						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																		  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->FetchGroup(GroupData->Id, FetchGroupCallback)));
 
-						// Switch back to first user (admin) to invite the second user
+						// Switch to User 2 to accept the invite
 						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
 							FGFUserDataCallback SignInCallback;
 							SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
-								AddInfo("GroupInvites 4 :: Switch Back to Admin");
-								TestTrue("Admin sign in succeeded", bSuccess);
+								AddInfo("GroupInvites 4 :: Sign In User 2");
+								TestTrue("User 2 sign in succeeded", bSuccess);
 							});
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																			  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
+																			  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
 
-							// Admin invites the second user to the group
+							// User 2 accepts the invite
 							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
-								FGFGroupConnectionCallback InviteCallback;
-								InviteCallback.BindLambda([this](const FGFGroupConnection& Connection) {
-									AddInfo("GroupInvites 5 :: Admin Invites Second User");
-									if (Connection.Id == 0) {
-										AddError("Invite failed - connection ID is 0");
-										return;
-									}
-									TestTrue("Invite created successfully", Connection.Id != 0);
-									TestEqual("Invite has correct user id", Connection.User.Id, UserData2->Id);
-									TestEqual("Invite status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+								if (!TestConnectionData.IsValid()) {
+									AddError("Connection data is not valid");
+									return true;
+								}
 
-									// Store the connection data for later use
-									TestConnectionData = MakeShared<FGFGroupConnection>(Connection);
+								if (TestConnectionData->Id == 0) {
+									AddError("Cannot accept invite - connection ID is 0");
+									return true;
+								}
+
+								FGFGroupActionCallback AcceptCallback;
+								AcceptCallback.BindLambda([this](bool bSuccess) {
+									AddInfo("GroupInvites 5 :: User 2 Accepts Invite");
+									TestTrue("Accept invite succeeded", bSuccess);
 								});
 
 								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-																				  GameFuseGroups->InviteGroupMember(GroupData->Id, UserData2->Id, InviteCallback)));
+																				  GameFuseGroups->RespondToGroupJoinRequest(TestConnectionData->Id, TestConnectionData->User.Id, EGFInviteRequestStatus::Accepted, AcceptCallback)));
 
-								// Fetch the group to verify the invite was created
+								// Verify the group membership after accepting
 								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
-									FGFGroupCallback FetchGroupCallback;
-									FetchGroupCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
-										AddInfo("GroupInvites 6 :: Verify Group Has Invite");
-										TestTrue("Group fetched successfully", FetchedGroup.Id == GroupData->Id);
-										TestTrue("Group is invite only", FetchedGroup.bIsInviteOnly);
+									FGFGroupCallback VerifyCallback;
+									VerifyCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
+										AddInfo("GroupInvites 6 :: Verify Group Membership After Accept");
+										TestTrue("Group has members", FetchedGroup.Members.Num() >= 2);
 										
-										// The group should now have an invite
-										TestTrue("Group has invites", FetchedGroup.Invites.Num() > 0);
+										// Check if both users are now members
+										bool bFoundUser1Member = false;
+										bool bFoundUser2Member = false;
+										for (const FGFUserData& Member : FetchedGroup.Members) {
+											if (Member.Id == UserData1->Id) {
+												bFoundUser1Member = true;
+												TestEqual("User 1 member username matches", Member.Username, UserData1->Username);
+											} else if (Member.Id == UserData2->Id) {
+												bFoundUser2Member = true;
+												TestEqual("User 2 member username matches", Member.Username, UserData2->Username);
+											}
+										}
+										TestTrue("User 1 is still a member", bFoundUser1Member);
+										TestTrue("User 2 is now a member", bFoundUser2Member);
 										
-										// Verify the invite details
-										bool bFoundInvite = false;
+										// Verify invites are empty or the invite is no longer pending
+										bool bHasPendingInvites = false;
 										for (const FGFGroupConnection& Invite : FetchedGroup.Invites) {
-											if (Invite.User.Id == UserData2->Id) {
-												bFoundInvite = true;
-												TestEqual("Invite status is pending", Invite.Status, EGFInviteRequestStatus::Pending);
-												TestEqual("Invite user ID matches", Invite.User.Id, UserData2->Id);
-												TestEqual("Invite username matches", Invite.User.Username, UserData2->Username);
+											if (Invite.User.Id == UserData2->Id && Invite.Status == EGFInviteRequestStatus::Pending) {
+												bHasPendingInvites = true;
 												break;
 											}
 										}
-										TestTrue("Found the invite for second user", bFoundInvite);
-										
-										// Verify no join requests exist for this invite-only group
-										TestEqual("Group has no join requests", FetchedGroup.JoinRequests.Num(), 0);
+										TestFalse("No pending invites for accepted user", bHasPendingInvites);
 									});
 
 									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-																					  GameFuseGroups->FetchGroup(GroupData->Id, FetchGroupCallback)));
-
-									// Switch to second user to accept the invite
-									ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
-										FGFUserDataCallback SignInCallback;
-										SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
-											AddInfo("GroupInvites 7 :: Switch to Second User");
-											TestTrue("Second user sign in succeeded", bSuccess);
-										});
-
-										ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
-																						  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
-
-										// Second user accepts the invite
-										ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
-											if (!TestConnectionData.IsValid()) {
-												AddError("Connection data is not valid");
-												return true;
-											}
-
-											if (TestConnectionData->Id == 0) {
-												AddError("Cannot accept invite - connection ID is 0");
-												return true;
-											}
-
-											FGFGroupActionCallback AcceptCallback;
-											AcceptCallback.BindLambda([this](bool bSuccess) {
-												AddInfo("GroupInvites 8 :: Second User Accepts Invite");
-												TestTrue("Accept invite succeeded", bSuccess);
-											});
-
-											ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-																							  GameFuseGroups->RespondToGroupJoinRequest(TestConnectionData->Id, TestConnectionData->User.Id, EGFInviteRequestStatus::Accepted, AcceptCallback)));
-
-											// Verify the group membership after accepting
-											ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
-												FGFGroupCallback VerifyCallback;
-												VerifyCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
-													AddInfo("GroupInvites 9 :: Verify Group Membership After Accept");
-													TestTrue("Group has members", FetchedGroup.Members.Num() > 0);
-													
-													// Check if second user is now a member
-													bool bFoundMember = false;
-													for (const FGFUserData& Member : FetchedGroup.Members) {
-														if (Member.Id == UserData2->Id) {
-															bFoundMember = true;
-															TestEqual("Member username matches", Member.Username, UserData2->Username);
-															break;
-														}
-													}
-													TestTrue("Second user is now a member", bFoundMember);
-													
-													// Verify invites are empty or the invite is no longer pending
-													bool bHasPendingInvites = false;
-													for (const FGFGroupConnection& Invite : FetchedGroup.Invites) {
-														if (Invite.User.Id == UserData2->Id && Invite.Status == EGFInviteRequestStatus::Pending) {
-															bHasPendingInvites = true;
-															break;
-														}
-													}
-													TestFalse("No pending invites for accepted user", bHasPendingInvites);
-												});
-
-												ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-																								  GameFuseGroups->FetchGroup(GroupData->Id, VerifyCallback)));
-												return true;
-											}));
-											return true;
-										}));
-										return true;
-									}));
+																					  GameFuseGroups->FetchGroup(GroupData->Id, VerifyCallback)));
 									return true;
 								}));
 								return true;
