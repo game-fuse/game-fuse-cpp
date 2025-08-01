@@ -130,7 +130,7 @@ void FGameFuseGroupsSpec::Define()
 				TestTrue("Group is searchable", CreatedGroup.bSearchable);
 
 				// Verify internal state matches callback data
-				const TArray<FGFGroup>& AllGroups = GameFuseGroups->GetAllGroups();
+				const TArray<FGFGroup>& AllGroups = GameFuseGroups->GetFetchedGroups();
 				TestTrue("Group is stored internally", AllGroups.Contains(CreatedGroup));
 			});
 
@@ -187,7 +187,7 @@ void FGameFuseGroupsSpec::Define()
 					FetchCallback.BindLambda([this](const TArray<FGFGroup>& Groups) {
 						AddInfo("FetchAllGroups 3 :: Verify Groups List");
 						TestTrue("Has at least two groups", Groups.Num() >= 2);
-						TestEqual("Internal storage matches callback data", Groups, GameFuseGroups->GetAllGroups());
+						TestEqual("Internal storage matches callback data", Groups, GameFuseGroups->GetFetchedGroups());
 
 						// Find our created groups in the list
 						bool bFoundGroup1 = false;
@@ -270,7 +270,7 @@ void FGameFuseGroupsSpec::Define()
 						AddErrorIfFalse(Connection.Id != 0, "Failed to join group");
 						TestTrue("Connection has valid id", Connection.Id != 0);
 						TestEqual("Connection has correct user id", Connection.User.Id, UserData2->Id);
-						TestNotEqual("Connection has status", Connection.Status, EGFInviteRequestStatus::None);
+						TestEqual("Connection has status", Connection.Status, EGFInviteRequestStatus::Accepted);
 
 						// Verify the connection was successful
 						TestTrue("Connection status indicates success",
@@ -296,7 +296,7 @@ void FGameFuseGroupsSpec::Define()
 			GroupData->GroupType = "Test";
 			GroupData->MaxGroupSize = 10;
 			GroupData->bCanAutoJoin = false;
-			GroupData->bIsInviteOnly = true;
+			GroupData->bIsInviteOnly = false;
 			GroupData->bSearchable = true;
 
 			FGFGroupCallback CreateCallback;
@@ -305,7 +305,7 @@ void FGameFuseGroupsSpec::Define()
 				TestTrue("Created group has valid id", CreatedGroup.Id != 0);
 				TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for Join Request Accept");
 				TestFalse("Created group cannot auto join", CreatedGroup.bCanAutoJoin);
-				TestTrue("Created group is invite only", CreatedGroup.bIsInviteOnly);
+				TestFalse("Created group is not invite only", CreatedGroup.bIsInviteOnly);
 
 				GroupData->Id = CreatedGroup.Id;
 			});
@@ -358,6 +358,11 @@ void FGameFuseGroupsSpec::Define()
 								return true;
 							}
 
+							if (TestConnectionData->Id == 0) {
+								AddError("Cannot accept join request - connection ID is 0");
+								return true;
+							}
+
 							UE_LOG(LogGameFuse, Log, TEXT("Using connection data - ID: %d, User ID: %d"), TestConnectionData->Id, TestConnectionData->User.Id);
 
 							FGFGroupActionCallback AcceptCallback;
@@ -388,7 +393,7 @@ void FGameFuseGroupsSpec::Define()
 			GroupData->GroupType = "Test";
 			GroupData->MaxGroupSize = 10;
 			GroupData->bCanAutoJoin = false;
-			GroupData->bIsInviteOnly = true;
+			GroupData->bIsInviteOnly = false;
 			GroupData->bSearchable = true;
 
 			FGFGroupCallback CreateCallback;
@@ -397,7 +402,7 @@ void FGameFuseGroupsSpec::Define()
 				TestTrue("Created group has valid id", CreatedGroup.Id != 0);
 				TestEqual("Created group has correct name", CreatedGroup.Name, "Test Group for Join Request Decline");
 				TestFalse("Created group cannot auto join", CreatedGroup.bCanAutoJoin);
-				TestTrue("Created group is invite only", CreatedGroup.bIsInviteOnly);
+				TestFalse("Created group is not invite only", CreatedGroup.bIsInviteOnly);
 
 				GroupData->Id = CreatedGroup.Id;
 			});
@@ -421,6 +426,10 @@ void FGameFuseGroupsSpec::Define()
 					FGFGroupConnectionCallback RequestCallback;
 					RequestCallback.BindLambda([this](const FGFGroupConnection& Connection) {
 						AddInfo("DeclineJoinRequest 3 :: Request to Join");
+						if (Connection.Id == 0) {
+							AddError("Join request failed - connection ID is 0");
+							return;
+						}
 						TestTrue("Connection has valid id", Connection.Id != 0);
 						TestEqual("Connection has correct user id", Connection.User.Id, UserData2->Id);
 						TestEqual("Connection status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
@@ -433,7 +442,7 @@ void FGameFuseGroupsSpec::Define()
 																	  GameFuseGroups->RequestToJoinGroup(GroupData->Id, RequestCallback)));
 
 					// Sign back in as first user to decline the request
-					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
 						FGFUserDataCallback SignInCallback;
 						SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
 							AddInfo("SignIn :: User Data");
@@ -444,9 +453,14 @@ void FGameFuseGroupsSpec::Define()
 																		  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
 
 						// Decline the join request using the stored connection data
-						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]() -> bool {
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
 							if (!TestConnectionData.IsValid()) {
 								AddError("Connection data is not valid");
+								return true;
+							}
+
+							if (TestConnectionData->Id == 0) {
+								AddError("Cannot decline join request - connection ID is 0");
 								return true;
 							}
 
@@ -459,7 +473,39 @@ void FGameFuseGroupsSpec::Define()
 							});
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
-																			  GameFuseGroups->RespondToGroupJoinRequest(TestConnectionData->Id, TestConnectionData->User.Id, EGFInviteRequestStatus::Declined, DeclineCallback)));
+																				  GameFuseGroups->RespondToGroupJoinRequest(TestConnectionData->Id, TestConnectionData->User.Id, EGFInviteRequestStatus::Declined, DeclineCallback)));
+
+							// Verify the group membership after declining
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+								FGFGroupCallback VerifyCallback;
+								VerifyCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
+									AddInfo("DeclineRequests 6 :: Verify Group Membership After Decline");
+									
+									// Check that second user is NOT a member
+									bool bFoundMember = false;
+									for (const FGFUserData& Member : FetchedGroup.Members) {
+										if (Member.Id == UserData2->Id) {
+											bFoundMember = true;
+											break;
+										}
+									}
+									TestFalse("Second user is not a member after decline", bFoundMember);
+									
+									// Verify join requests are empty or the request is no longer pending
+									bool bHasPendingRequests = false;
+									for (const FGFGroupConnection& Request : FetchedGroup.JoinRequests) {
+										if (Request.User.Id == UserData2->Id && Request.Status == EGFInviteRequestStatus::Pending) {
+											bHasPendingRequests = true;
+											break;
+										}
+									}
+									TestFalse("No pending requests for declined user", bHasPendingRequests);
+								});
+
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																				  GameFuseGroups->FetchGroup(GroupData->Id, VerifyCallback)));
+								return true;
+							}));
 							return true;
 						}));
 						return true;
@@ -517,7 +563,6 @@ void FGameFuseGroupsSpec::Define()
 					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
 																	  GameFuseGroups->AddAttribute(GroupData->Id, *ClanLevelAttribute, true, AddLevelCallback)));
 
-					// After adding level, add motto
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
 						FGFGroupAttribute ClanMottoAttribute;
 						ClanMottoAttribute.Key = TEXT("clan_motto");
@@ -665,6 +710,1065 @@ void FGameFuseGroupsSpec::Define()
 
 							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
 																			  GameFuseGroups->FetchGroupAttributes(GroupData->Id, FetchCallback)));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("enforces creator-only edit permissions for attributes", [this]() {
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = TEXT("Attribute Permissions Test Group");
+			GroupData->GroupType = TEXT("Test");
+			GroupData->MaxGroupSize = 10;
+			GroupData->bCanAutoJoin = true; // Make it auto-join
+			GroupData->bSearchable = true;
+
+			// Declare shared pointers for attributes once at test scope
+			TSharedPtr<FGFGroupAttribute> CreatorOnlyAttr = MakeShared<FGFGroupAttribute>();
+			TSharedPtr<FGFGroupAttribute> MemberEditableAttr = MakeShared<FGFGroupAttribute>();
+
+			// Create the group and attributes
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+				FGFGroupCallback CreateGroupCallback;
+				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+					AddInfo("AttributePermissions 1 :: Create Group");
+					TestTrue("Group created successfully", CreatedGroup.Id > 0);
+					GroupData->Id = CreatedGroup.Id;
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
+
+				// Create creator-only attribute
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+					FGFGroupAttribute CreatorOnlyAttribute;
+					CreatorOnlyAttribute.Key = TEXT("secret_code");
+					CreatorOnlyAttribute.Value = TEXT("1234");
+					CreatorOnlyAttribute.CreatorId = GroupData->Id;
+
+					FGFGroupAttributeCallback AddCreatorOnlyAttributeCallback;
+					AddCreatorOnlyAttributeCallback.BindLambda([this, CreatorOnlyAttr](const TArray<FGFGroupAttribute>& Attributes) {
+						AddInfo("AttributePermissions 2 :: Add Creator-Only Attribute");
+						TestTrue("Attribute added successfully", Attributes.Num() > 0);
+						if (Attributes.Num() > 0) {
+							*CreatorOnlyAttr = Attributes[0];
+							TestEqual("Attribute has correct key", CreatorOnlyAttr->Key, TEXT("secret_code"));
+							TestEqual("Attribute has correct value", CreatorOnlyAttr->Value, TEXT("1234"));
+							TestEqual("Attribute has correct creator ID", CreatorOnlyAttr->CreatorId, UserData1->Id);
+							TestTrue("Attribute creator can edit", CreatorOnlyAttr->bCanEdit);
+						}
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																	  GameFuseGroups->AddAttribute(GroupData->Id, CreatorOnlyAttribute, false, AddCreatorOnlyAttributeCallback)));
+					// Create member-editable attribute
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+						FGFGroupAttribute MemberEditableAttribute;
+						MemberEditableAttribute.Key = TEXT("public_data");
+						MemberEditableAttribute.Value = TEXT("original_value");
+						MemberEditableAttribute.CreatorId = GroupData->Id;
+
+						FGFGroupAttributeCallback AddMemberAttributeCallback;
+						AddMemberAttributeCallback.BindLambda([this, MemberEditableAttr](const TArray<FGFGroupAttribute>& Attributes) {
+							AddInfo("AttributePermissions 3 :: Add Member-Editable Attribute");
+							TestTrue("Attribute added successfully", Attributes.Num() > 0);
+							if (Attributes.Num() > 0) {
+								*MemberEditableAttr = Attributes[0];
+								TestEqual("Attribute has correct key", MemberEditableAttr->Key, TEXT("public_data"));
+								TestEqual("Attribute has correct value", MemberEditableAttr->Value, TEXT("original_value"));
+								TestEqual("Attribute has correct creator ID", MemberEditableAttr->CreatorId, UserData1->Id);
+								TestTrue("Attribute creator can edit", MemberEditableAttr->bCanEdit);
+							}
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->AddAttribute(GroupData->Id, MemberEditableAttribute, true, AddMemberAttributeCallback)));
+						// Sign in as second user to test attribute permissions
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+							FGFUserDataCallback SignInCallback;
+							SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+								AddInfo("AttributePermissions 4 :: Sign In Second User");
+								TestTrue("Second user sign in succeeded", bSuccess);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+							// Join the group
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+								// Store the connection data for later use
+								TSharedPtr<FGFGroupConnection> ConnectionData = MakeShared<FGFGroupConnection>();
+
+								FGFGroupConnectionCallback JoinCallback;
+								JoinCallback.BindLambda([this, ConnectionData](const FGFGroupConnection& Connection) {
+									AddInfo("AttributePermissions 5 :: Join Group as Second User");
+									TestTrue("Connection has valid id", Connection.Id != 0);
+									TestEqual("Connection has correct user id", Connection.User.Id, UserData2->Id);
+									TestEqual("Connection status is accepted", Connection.Status, EGFInviteRequestStatus::Accepted);
+
+									// Store the connection data for later use
+									*ConnectionData = Connection;
+								});
+
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																				  GameFuseGroups->RequestToJoinGroup(GroupData->Id, JoinCallback)));
+
+								// Switch back to user 1 to accept the join request
+								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr, ConnectionData]() -> bool {
+									FGFUserDataCallback SignInCallback;
+									SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+										AddInfo("AttributePermissions 6 :: Switch Back to Creator");
+										TestTrue("Creator sign in succeeded", bSuccess);
+									});
+
+									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																					  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
+
+									// Accept the join request with the stored connection data
+									ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr, ConnectionData]() -> bool {
+										if (ConnectionData->Id == 0) {
+											AddError("Connection data is not valid");
+											return true;
+										}
+
+										UE_LOG(LogGameFuse, Log, TEXT("Accepting connection - ID: %d, User ID: %d"), ConnectionData->Id, ConnectionData->User.Id);
+
+										FGFGroupActionCallback AcceptCallback;
+										AcceptCallback.BindLambda([this](bool bSuccess) {
+											AddInfo("AttributePermissions 7 :: Accept Join Request");
+											TestTrue("Accept join request succeeded", bSuccess);
+										});
+
+										ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																						  GameFuseGroups->RespondToGroupJoinRequest(ConnectionData->Id, ConnectionData->User.Id, EGFInviteRequestStatus::Accepted, AcceptCallback)));
+
+										// Now switch back to user 2 to test editing attributes
+										ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+											FGFUserDataCallback SignInCallback;
+											SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+												AddInfo("AttributePermissions 8 :: Switch Back to Second User");
+												TestTrue("Second user sign in succeeded", bSuccess);
+											});
+
+											ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																						  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+											// Fetch attributes as second user
+											ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+												FGFGroupAttributeCallback FetchCallback;
+												FetchCallback.BindLambda([this, CreatorOnlyAttr, MemberEditableAttr](const TArray<FGFGroupAttribute>& Attributes) {
+													AddInfo("AttributePermissions 9 :: Fetch Attributes as Second User");
+													TestEqual("Both attributes fetched successfully", Attributes.Num(), 2);
+
+													for (const FGFGroupAttribute& Attribute : Attributes) {
+														if (Attribute.Key == TEXT("secret_code")) {
+															*CreatorOnlyAttr = Attribute;
+															TestEqual("Secret code has correct value", Attribute.Value, TEXT("1234"));
+															TestFalse("Second user cannot edit creator-only attribute", Attribute.bCanEdit);
+														} else if (Attribute.Key == TEXT("public_data")) {
+															*MemberEditableAttr = Attribute;
+															TestEqual("Public data has correct value", Attribute.Value, TEXT("original_value"));
+															TestTrue("Second user can edit member-editable attribute", Attribute.bCanEdit);
+														}
+													}
+												});
+
+												ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																								  GameFuseGroups->FetchGroupAttributes(GroupData->Id, FetchCallback)));
+
+												// Try to update creator-only attribute (should fail)
+												ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+													CreatorOnlyAttr->Value = TEXT("5678");
+
+													FGFGroupActionCallback UpdateCreatorOnlyCallback;
+													UpdateCreatorOnlyCallback.BindLambda([this](bool bSuccess) {
+														AddInfo("AttributePermissions 10 :: Try Update Creator-Only as Second User");
+														TestFalse("Update should fail for non-creator", bSuccess);
+													});
+
+													ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																									  GameFuseGroups->UpdateGroupAttribute(GroupData->Id, *CreatorOnlyAttr, UpdateCreatorOnlyCallback)));
+
+													// Try to update member-editable attribute (should succeed)
+													ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+														MemberEditableAttr->Value = TEXT("updated_by_member");
+
+														FGFGroupActionCallback UpdateMemberEditableCallback;
+														UpdateMemberEditableCallback.BindLambda([this](bool bSuccess) {
+															AddInfo("AttributePermissions 11 :: Try Update Member-Editable as Second User");
+															TestTrue("Update should succeed for member-editable attribute", bSuccess);
+														});
+
+														ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																										  GameFuseGroups->UpdateGroupAttribute(GroupData->Id, *MemberEditableAttr, UpdateMemberEditableCallback)));
+
+														// Switch back to creator to verify changes
+														ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+															FGFUserDataCallback SignInCallback;
+															SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+																AddInfo("AttributePermissions 12 :: Sign Back In as Creator");
+																TestTrue("Creator sign in succeeded", bSuccess);
+															});
+
+															ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																											  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
+
+															// Verify attribute states
+															ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr, MemberEditableAttr]() -> bool {
+																FGFGroupAttributeCallback FetchCallback;
+																FetchCallback.BindLambda([this, CreatorOnlyAttr, MemberEditableAttr](const TArray<FGFGroupAttribute>& Attributes) {
+																	AddInfo("AttributePermissions 13 :: Verify Attributes as Creator");
+																	TestEqual("Both attributes still exist", Attributes.Num(), 2);
+
+																	for (const FGFGroupAttribute& Attribute : Attributes) {
+																		if (Attribute.Key == TEXT("secret_code")) {
+																			*CreatorOnlyAttr = Attribute;
+																			TestEqual("Creator-only attribute still has original value", Attribute.Value, TEXT("1234"));
+																			TestTrue("Creator can edit attribute", Attribute.bCanEdit);
+																		} else if (Attribute.Key == TEXT("public_data")) {
+																			*MemberEditableAttr = Attribute;
+																			TestEqual("Member-editable attribute has updated value", Attribute.Value, TEXT("updated_by_member"));
+																			TestTrue("Creator can edit attribute", Attribute.bCanEdit);
+																		}
+																	}
+																});
+
+																ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																												  GameFuseGroups->FetchGroupAttributes(GroupData->Id, FetchCallback)));
+
+																// Update creator-only attribute as creator
+																ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, CreatorOnlyAttr]() -> bool {
+																	CreatorOnlyAttr->Value = TEXT("9999");
+
+																	FGFGroupActionCallback UpdateCallback;
+																	UpdateCallback.BindLambda([this](bool bSuccess) {
+																		AddInfo("AttributePermissions 14 :: Update Creator-Only as Creator");
+																		TestTrue("Update should succeed for creator", bSuccess);
+																	});
+
+																	ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																													  GameFuseGroups->UpdateGroupAttribute(GroupData->Id, *CreatorOnlyAttr, UpdateCallback)));
+
+																	// Final verification
+																	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+																		FGFGroupAttributeCallback VerifyCallback;
+																		VerifyCallback.BindLambda([this](const TArray<FGFGroupAttribute>& FinalAttributes) {
+																			AddInfo("AttributePermissions 15 :: Final Verification");
+																			TestEqual("Both attributes still exist", FinalAttributes.Num(), 2);
+
+																			for (const FGFGroupAttribute& Attribute : FinalAttributes) {
+																				if (Attribute.Key == TEXT("secret_code")) {
+																					TestEqual("Creator-only attribute has updated value", Attribute.Value, TEXT("9999"));
+																					TestTrue("Creator can still edit attribute", Attribute.bCanEdit);
+																				} else if (Attribute.Key == TEXT("public_data")) {
+																					TestEqual("Member-editable attribute still has member-updated value", Attribute.Value, TEXT("updated_by_member"));
+																					TestTrue("Creator can still edit attribute", Attribute.bCanEdit);
+																				}
+																			}
+																		});
+
+																		ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																														  GameFuseGroups->FetchGroupAttributes(GroupData->Id, VerifyCallback)));
+																		return true;
+																	}));
+																	return true;
+																}));
+																return true;
+															}));
+															return true;
+														}));
+														return true;
+													}));
+													return true;
+												}));
+												return true;
+											}));
+											return true;
+										}));
+										return true;
+									}));
+									return true;
+								}));
+								return true;
+							}));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+			return true;
+		});
+	});
+
+	Describe("Group Join Requests and Invites", [this]() {
+		It("manages join requests for groups", [this]() {
+			// Create a test group that allows join requests
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = TEXT("Join Requests Test Group");
+			GroupData->GroupType = TEXT("Test");
+			GroupData->MaxGroupSize = 10;
+			GroupData->bCanAutoJoin = false; // Requires approval
+			GroupData->bIsInviteOnly = false; // Allow join requests
+			GroupData->bSearchable = true;
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+				FGFGroupCallback CreateGroupCallback;
+				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+					AddInfo("JoinRequests 1 :: Create Group");
+					TestTrue("Group created successfully", CreatedGroup.Id > 0);
+					TestFalse("Group cannot auto join", CreatedGroup.bCanAutoJoin);
+					TestFalse("Group is not invite only", CreatedGroup.bIsInviteOnly);
+					GroupData->Id = CreatedGroup.Id;
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
+
+				// Sign in second user to request joining
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+					FGFUserDataCallback SignInCallback;
+					SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+						AddInfo("JoinRequests 2 :: Sign In Second User");
+						TestTrue("Second user sign in succeeded", bSuccess);
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+					// Request to join the group
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+						FGFGroupConnectionCallback RequestCallback;
+						RequestCallback.BindLambda([this](const FGFGroupConnection& Connection) {
+							AddInfo("JoinRequests 3 :: Request to Join");
+							if (Connection.Id == 0) {
+								AddError("Join request failed - connection ID is 0");
+								return;
+							}
+							TestTrue("Connection has valid id", Connection.Id != 0);
+							TestEqual("Connection has correct user id", Connection.User.Id, UserData2->Id);
+							TestEqual("Connection status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+
+							// Store the connection data for later use
+							TestConnectionData = MakeShared<FGFGroupConnection>(Connection);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->RequestToJoinGroup(GroupData->Id, RequestCallback)));
+
+						// Switch back to first user to check join requests
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+							FGFUserDataCallback SignInCallback;
+							SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+								AddInfo("JoinRequests 4 :: Switch Back to Creator");
+								TestTrue("Creator sign in succeeded", bSuccess);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
+
+							// Fetch the group to check join requests from server data
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+								FGFGroupCallback FetchGroupCallback;
+								FetchGroupCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
+									AddInfo("JoinRequests 5 :: Fetch Group with Join Requests");
+									TestTrue("Group fetched successfully", FetchedGroup.Id == GroupData->Id);
+									TestTrue("Group has join requests", FetchedGroup.JoinRequests.Num() > 0);
+									
+									// Verify the join request details from server data
+									bool bFoundRequest = false;
+									for (const FGFGroupConnection& Request : FetchedGroup.JoinRequests) {
+										if (Request.User.Id == UserData2->Id) {
+											bFoundRequest = true;
+											TestEqual("Request status is pending", Request.Status, EGFInviteRequestStatus::Pending);
+											TestEqual("Request user ID matches", Request.User.Id, UserData2->Id);
+											TestEqual("Request username matches", Request.User.Username, UserData2->Username);
+											break;
+										}
+									}
+									TestTrue("Found the join request from second user", bFoundRequest);
+									
+									// Verify no invites exist for this non-invite-only group
+									TestEqual("Group has no invites", FetchedGroup.Invites.Num(), 0);
+								});
+
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																				  GameFuseGroups->FetchGroup(GroupData->Id, FetchGroupCallback)));
+
+								// Accept the join request
+								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+									if (!TestConnectionData.IsValid()) {
+										AddError("Connection data is not valid");
+										return true;
+									}
+
+									FGFGroupActionCallback AcceptCallback;
+									AcceptCallback.BindLambda([this](bool bSuccess) {
+										AddInfo("JoinRequests 6 :: Accept Join Request");
+										TestTrue("Accept join request succeeded", bSuccess);
+									});
+
+									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																					  GameFuseGroups->RespondToGroupJoinRequest(TestConnectionData->Id, TestConnectionData->User.Id, EGFInviteRequestStatus::Accepted, AcceptCallback)));
+
+									// Verify the group membership after accepting
+									ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+										FGFGroupCallback VerifyCallback;
+										VerifyCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
+											AddInfo("JoinRequests 7 :: Verify Group Membership");
+											TestTrue("Group has members", FetchedGroup.Members.Num() > 0);
+											
+											// Check if second user is now a member
+											bool bFoundMember = false;
+											for (const FGFUserData& Member : FetchedGroup.Members) {
+												if (Member.Id == UserData2->Id) {
+													bFoundMember = true;
+													TestEqual("Member username matches", Member.Username, UserData2->Username);
+													break;
+												}
+											}
+											TestTrue("Second user is now a member", bFoundMember);
+											
+											// Verify join requests are empty or the request is no longer pending
+											bool bHasPendingRequests = false;
+											for (const FGFGroupConnection& Request : FetchedGroup.JoinRequests) {
+												if (Request.User.Id == UserData2->Id && Request.Status == EGFInviteRequestStatus::Pending) {
+													bHasPendingRequests = true;
+													break;
+												}
+											}
+											TestFalse("No pending requests for accepted user", bHasPendingRequests);
+										});
+
+										ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																						  GameFuseGroups->FetchGroup(GroupData->Id, VerifyCallback)));
+										return true;
+									}));
+									return true;
+								}));
+								return true;
+							}));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("invites a user to a invite only group", [this]() {
+			// Create a test group that is invite-only
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = TEXT("Group Invites Test Group");
+			GroupData->GroupType = TEXT("Test");
+			GroupData->MaxGroupSize = 10;
+			GroupData->bCanAutoJoin = false;
+			GroupData->bIsInviteOnly = true; // Make it invite-only
+			GroupData->bSearchable = true;
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+				// User 1 (already signed in) creates the invite-only group
+				FGFGroupCallback CreateGroupCallback;
+				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+					AddInfo("GroupInvites 1 :: User 1 Creates Invite-Only Group");
+					TestTrue("Group created successfully", CreatedGroup.Id > 0);
+					TestTrue("Group is invite only", CreatedGroup.bIsInviteOnly);
+					TestFalse("Group cannot auto join", CreatedGroup.bCanAutoJoin);
+					GroupData->Id = CreatedGroup.Id;
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
+
+				// User 1 invites User 2 to the group
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+					FGFGroupConnectionCallback InviteCallback;
+					InviteCallback.BindLambda([this](const FGFGroupConnection& Connection) {
+						AddInfo("GroupInvites 2 :: User 1 Invites User 2");
+						if (Connection.Id == 0) {
+							AddError("Invite failed - connection ID is 0");
+							return;
+						}
+						TestTrue("Invite created successfully", Connection.Id != 0);
+						TestEqual("Invite has correct user id", Connection.User.Id, UserData2->Id);
+						TestEqual("Invite status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+
+						// Store the connection data for later use
+						TestConnectionData = MakeShared<FGFGroupConnection>(Connection);
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																	  GameFuseGroups->InviteGroupMember(GroupData->Id, UserData2->Id, InviteCallback)));
+
+					// Fetch the group to verify the invite was created
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+						FGFGroupCallback FetchGroupCallback;
+						FetchGroupCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
+							AddInfo("GroupInvites 3 :: Verify Group Has Invite");
+							TestTrue("Group fetched successfully", FetchedGroup.Id == GroupData->Id);
+							TestTrue("Group is invite only", FetchedGroup.bIsInviteOnly);
+							
+							// The group should now have an invite
+							TestTrue("Group has invites", FetchedGroup.Invites.Num() > 0);
+							
+							// Verify the invite details
+							bool bFoundInvite = false;
+							for (const FGFGroupConnection& Invite : FetchedGroup.Invites) {
+								if (Invite.User.Id == UserData2->Id) {
+									bFoundInvite = true;
+									TestEqual("Invite status is pending", Invite.Status, EGFInviteRequestStatus::Pending);
+									TestEqual("Invite user ID matches", Invite.User.Id, UserData2->Id);
+									TestEqual("Invite username matches", Invite.User.Username, UserData2->Username);
+									break;
+								}
+							}
+							TestTrue("Found the invite for user 2", bFoundInvite);
+							
+							// Verify no join requests exist for this invite-only group
+							TestEqual("Group has no join requests", FetchedGroup.JoinRequests.Num(), 0);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->FetchGroup(GroupData->Id, FetchGroupCallback)));
+
+						// Switch to User 2 to accept the invite
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+							FGFUserDataCallback SignInCallback;
+							SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+								AddInfo("GroupInvites 4 :: Sign In User 2");
+								TestTrue("User 2 sign in succeeded", bSuccess);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+							// User 2 accepts the invite
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+								if (!TestConnectionData.IsValid()) {
+									AddError("Connection data is not valid");
+									return true;
+								}
+
+								if (TestConnectionData->Id == 0) {
+									AddError("Cannot accept invite - connection ID is 0");
+									return true;
+								}
+
+								FGFGroupActionCallback AcceptCallback;
+								AcceptCallback.BindLambda([this](bool bSuccess) {
+									AddInfo("GroupInvites 5 :: User 2 Accepts Invite");
+									TestTrue("Accept invite succeeded", bSuccess);
+								});
+
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																				  GameFuseGroups->RespondToGroupJoinRequest(TestConnectionData->Id, TestConnectionData->User.Id, EGFInviteRequestStatus::Accepted, AcceptCallback)));
+
+								// Verify the group membership after accepting
+								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+									FGFGroupCallback VerifyCallback;
+									VerifyCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
+										AddInfo("GroupInvites 6 :: Verify Group Membership After Accept");
+										TestTrue("Group has members", FetchedGroup.Members.Num() >= 2);
+										
+										// Check if both users are now members
+										bool bFoundUser1Member = false;
+										bool bFoundUser2Member = false;
+										for (const FGFUserData& Member : FetchedGroup.Members) {
+											if (Member.Id == UserData1->Id) {
+												bFoundUser1Member = true;
+												TestEqual("User 1 member username matches", Member.Username, UserData1->Username);
+											} else if (Member.Id == UserData2->Id) {
+												bFoundUser2Member = true;
+												TestEqual("User 2 member username matches", Member.Username, UserData2->Username);
+											}
+										}
+										TestTrue("User 1 is still a member", bFoundUser1Member);
+										TestTrue("User 2 is now a member", bFoundUser2Member);
+										
+										// Verify invites are empty or the invite is no longer pending
+										bool bHasPendingInvites = false;
+										for (const FGFGroupConnection& Invite : FetchedGroup.Invites) {
+											if (Invite.User.Id == UserData2->Id && Invite.Status == EGFInviteRequestStatus::Pending) {
+												bHasPendingInvites = true;
+												break;
+											}
+										}
+										TestFalse("No pending invites for accepted user", bHasPendingInvites);
+									});
+
+									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																					  GameFuseGroups->FetchGroup(GroupData->Id, VerifyCallback)));
+									return true;
+								}));
+								return true;
+							}));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("declines join requests and invites", [this]() {
+			// Create a test group
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = TEXT("Decline Requests Test Group");
+			GroupData->GroupType = TEXT("Test");
+			GroupData->MaxGroupSize = 10;
+			GroupData->bCanAutoJoin = false;
+			GroupData->bIsInviteOnly = false;
+			GroupData->bSearchable = true;
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+				FGFGroupCallback CreateGroupCallback;
+				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+					AddInfo("DeclineRequests 1 :: Create Group");
+					TestTrue("Group created successfully", CreatedGroup.Id > 0);
+					GroupData->Id = CreatedGroup.Id;
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
+
+				// Sign in second user to request joining
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+					FGFUserDataCallback SignInCallback;
+					SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+						AddInfo("DeclineRequests 2 :: Sign In Second User");
+						TestTrue("Second user sign in succeeded", bSuccess);
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+					// Request to join the group
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+						FGFGroupConnectionCallback RequestCallback;
+						RequestCallback.BindLambda([this](const FGFGroupConnection& Connection) {
+							AddInfo("DeclineRequests 3 :: Request to Join");
+							TestTrue("Connection has valid id", Connection.Id != 0);
+							TestEqual("Connection has correct user id", Connection.User.Id, UserData2->Id);
+							TestEqual("Connection status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+
+							// Store the connection data for later use
+							TestConnectionData = MakeShared<FGFGroupConnection>(Connection);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->RequestToJoinGroup(GroupData->Id, RequestCallback)));
+
+						// Switch back to first user to decline the request
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+							FGFUserDataCallback SignInCallback;
+							SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+								AddInfo("DeclineRequests 4 :: Switch Back to Creator");
+								TestTrue("Creator sign in succeeded", bSuccess);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
+
+							// Decline the join request
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+								if (!TestConnectionData.IsValid()) {
+									AddError("Connection data is not valid");
+									return true;
+								}
+
+								FGFGroupActionCallback DeclineCallback;
+								DeclineCallback.BindLambda([this](bool bSuccess) {
+									AddInfo("DeclineRequests 5 :: Decline Join Request");
+									TestTrue("Decline join request succeeded", bSuccess);
+								});
+
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																				  GameFuseGroups->RespondToGroupJoinRequest(TestConnectionData->Id, TestConnectionData->User.Id, EGFInviteRequestStatus::Declined, DeclineCallback)));
+
+								// Verify the group membership after declining
+								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+									FGFGroupCallback VerifyCallback;
+									VerifyCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
+										AddInfo("DeclineRequests 6 :: Verify Group Membership After Decline");
+										
+										// Check that second user is NOT a member
+										bool bFoundMember = false;
+										for (const FGFUserData& Member : FetchedGroup.Members) {
+											if (Member.Id == UserData2->Id) {
+												bFoundMember = true;
+												break;
+											}
+										}
+										TestFalse("Second user is not a member after decline", bFoundMember);
+										
+										// Verify join requests are empty or the request is no longer pending
+										bool bHasPendingRequests = false;
+										for (const FGFGroupConnection& Request : FetchedGroup.JoinRequests) {
+											if (Request.User.Id == UserData2->Id && Request.Status == EGFInviteRequestStatus::Pending) {
+												bHasPendingRequests = true;
+												break;
+											}
+										}
+										TestFalse("No pending requests for declined user", bHasPendingRequests);
+									});
+
+									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																					  GameFuseGroups->FetchGroup(GroupData->Id, VerifyCallback)));
+									return true;
+								}));
+								return true;
+							}));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("handles multiple join requests and invites", [this]() {
+			// Create a test group that allows join requests (not invite-only)
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = TEXT("Multiple Requests Test Group");
+			GroupData->GroupType = TEXT("Test");
+			GroupData->MaxGroupSize = 10;
+			GroupData->bCanAutoJoin = false;
+			GroupData->bIsInviteOnly = false; // Allow join requests
+			GroupData->bSearchable = true;
+
+			// Create a third user for testing multiple requests
+			TSharedPtr<FGFUserData> UserData3 = MakeShared<FGFUserData>();
+			UserData3->Username = "testuser3_" + FString::FromInt(FMath::RandRange(1000, 9999));
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+				FGFGroupCallback CreateGroupCallback;
+				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+					AddInfo("MultipleRequests 1 :: Create Group");
+					TestTrue("Group created successfully", CreatedGroup.Id > 0);
+					GroupData->Id = CreatedGroup.Id;
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
+
+				// Create third user
+				ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, UserData3, this, FGuid()));
+
+				// Sign in second user to request joining
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+					FGFUserDataCallback SignInCallback;
+					SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+						AddInfo("MultipleRequests 2 :: Sign In Second User");
+						TestTrue("Second user sign in succeeded", bSuccess);
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+					// Request to join the group
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+						FGFGroupConnectionCallback RequestCallback;
+						RequestCallback.BindLambda([this](const FGFGroupConnection& Connection) {
+							AddInfo("MultipleRequests 3 :: Second User Request to Join");
+							if (Connection.Id == 0) {
+								AddError("Second user join request failed - connection ID is 0");
+								return;
+							}
+							TestTrue("Connection has valid id", Connection.Id != 0);
+							TestEqual("Connection has correct user id", Connection.User.Id, UserData2->Id);
+							TestEqual("Connection status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->RequestToJoinGroup(GroupData->Id, RequestCallback)));
+
+						// Sign in third user to request joining
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+							FGFUserDataCallback SignInCallback;
+							SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+								AddInfo("MultipleRequests 4 :: Sign In Third User");
+								TestTrue("Third user sign in succeeded", bSuccess);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->SignIn(UserData3->Username + "@gamefuse.com", "password", SignInCallback)));
+
+							// Request to join the group
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+								FGFGroupConnectionCallback RequestCallback;
+								RequestCallback.BindLambda([this, UserData3](const FGFGroupConnection& Connection) {
+									AddInfo("MultipleRequests 5 :: Third User Request to Join");
+									if (Connection.Id == 0) {
+										AddError("Third user join request failed - connection ID is 0");
+										return;
+									}
+									TestTrue("Connection has valid id", Connection.Id != 0);
+									TestEqual("Connection has correct user id", Connection.User.Id, UserData3->Id);
+									TestEqual("Connection status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+								});
+
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																				GameFuseGroups->RequestToJoinGroup(GroupData->Id, RequestCallback)));
+
+								// Switch back to first user to check multiple requests
+								ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+									FGFUserDataCallback SignInCallback;
+									SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+										AddInfo("MultipleRequests 6 :: Switch Back to Creator");
+										TestTrue("Creator sign in succeeded", bSuccess);
+									});
+
+									ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																					  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
+
+									// Fetch the group to check multiple join requests
+									ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+										FGFGroupCallback FetchGroupCallback;
+										FetchGroupCallback.BindLambda([this, GroupData, UserData3](const FGFGroup& FetchedGroup) {
+											AddInfo("MultipleRequests 7 :: Fetch Group with Multiple Join Requests");
+											TestTrue("Group fetched successfully", FetchedGroup.Id == GroupData->Id);
+											TestTrue("Group has multiple join requests", FetchedGroup.JoinRequests.Num() >= 2);
+											
+											// Verify both users have pending join requests
+											bool bFoundUser2Request = false;
+											bool bFoundUser3Request = false;
+											
+											for (const FGFGroupConnection& Request : FetchedGroup.JoinRequests) {
+												if (Request.User.Id == UserData2->Id) {
+													bFoundUser2Request = true;
+													TestEqual("User2 request status is pending", Request.Status, EGFInviteRequestStatus::Pending);
+												} else if (Request.User.Id == UserData3->Id) {
+													bFoundUser3Request = true;
+													TestEqual("User3 request status is pending", Request.Status, EGFInviteRequestStatus::Pending);
+												}
+											}
+											
+											TestTrue("Found join request for user 2", bFoundUser2Request);
+											TestTrue("Found join request for user 3", bFoundUser3Request);
+											
+											// Verify no invites exist for this non-invite-only group
+											TestEqual("Group has no invites", FetchedGroup.Invites.Num(), 0);
+										});
+
+										ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																						  GameFuseGroups->FetchGroup(GroupData->Id, FetchGroupCallback)));
+										return true;
+									}));
+									return true;
+								}));
+								return true;
+							}));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("handles multiple invites for invite-only groups", [this]() {
+			// Create a test group that is invite-only
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = TEXT("Multiple Invites Test Group");
+			GroupData->GroupType = TEXT("Test");
+			GroupData->MaxGroupSize = 10;
+			GroupData->bCanAutoJoin = false;
+			GroupData->bIsInviteOnly = true; // Make it invite-only
+			GroupData->bSearchable = true;
+
+			// Create a third user for testing multiple invites
+			TSharedPtr<FGFUserData> UserData3 = MakeShared<FGFUserData>();
+			UserData3->Username = "testuser3_" + FString::FromInt(FMath::RandRange(1000, 9999));
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+				FGFGroupCallback CreateGroupCallback;
+				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+					AddInfo("MultipleInvites 1 :: Create Invite-Only Group");
+					TestTrue("Group created successfully", CreatedGroup.Id > 0);
+					TestTrue("Group is invite only", CreatedGroup.bIsInviteOnly);
+					GroupData->Id = CreatedGroup.Id;
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
+
+				// Create third user
+				ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, UserData3, this, FGuid()));
+
+				// Admin invites second user
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+					FGFGroupConnectionCallback InviteCallback1;
+					InviteCallback1.BindLambda([this](const FGFGroupConnection& Connection) {
+						AddInfo("MultipleInvites 2 :: Admin Invites Second User");
+						if (Connection.Id == 0) {
+							AddError("First invite failed - connection ID is 0");
+							return;
+						}
+						TestTrue("Invite 1 created successfully", Connection.Id != 0);
+						TestEqual("Invite 1 has correct user id", Connection.User.Id, UserData2->Id);
+						TestEqual("Invite 1 status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																	  GameFuseGroups->InviteGroupMember(GroupData->Id, UserData2->Id, InviteCallback1)));
+
+					// Admin invites third user
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+						FGFGroupConnectionCallback InviteCallback2;
+						InviteCallback2.BindLambda([this, UserData3](const FGFGroupConnection& Connection) {
+							AddInfo("MultipleInvites 3 :: Admin Invites Third User");
+							if (Connection.Id == 0) {
+								AddError("Second invite failed - connection ID is 0");
+								return;
+							}
+							TestTrue("Invite 2 created successfully", Connection.Id != 0);
+							TestEqual("Invite 2 has correct user id", Connection.User.Id, UserData3->Id);
+							TestEqual("Invite 2 status is pending", Connection.Status, EGFInviteRequestStatus::Pending);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->InviteGroupMember(GroupData->Id, UserData3->Id, InviteCallback2)));
+
+						// Fetch the group to check multiple invites
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData, UserData3]() -> bool {
+							FGFGroupCallback FetchGroupCallback;
+							FetchGroupCallback.BindLambda([this, GroupData, UserData3](const FGFGroup& FetchedGroup) {
+								AddInfo("MultipleInvites 4 :: Fetch Group with Multiple Invites");
+								TestTrue("Group fetched successfully", FetchedGroup.Id == GroupData->Id);
+								TestTrue("Group has multiple invites", FetchedGroup.Invites.Num() >= 2);
+								
+								// Verify both users have pending invites
+								bool bFoundUser2Invite = false;
+								bool bFoundUser3Invite = false;
+								
+								for (const FGFGroupConnection& Invite : FetchedGroup.Invites) {
+									if (Invite.User.Id == UserData2->Id) {
+										bFoundUser2Invite = true;
+										TestEqual("User2 invite status is pending", Invite.Status, EGFInviteRequestStatus::Pending);
+									} else if (Invite.User.Id == UserData3->Id) {
+										bFoundUser3Invite = true;
+										TestEqual("User3 invite status is pending", Invite.Status, EGFInviteRequestStatus::Pending);
+									}
+								}
+								
+								TestTrue("Found invite for user 2", bFoundUser2Invite);
+								TestTrue("Found invite for user 3", bFoundUser3Invite);
+								
+								// Verify no join requests exist for this invite-only group
+								TestEqual("Group has no join requests", FetchedGroup.JoinRequests.Num(), 0);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																			  GameFuseGroups->FetchGroup(GroupData->Id, FetchGroupCallback)));
+							return true;
+						}));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("rejects join requests to invite-only groups", [this]() {
+			// Create a test group that is invite-only
+			TSharedPtr<FGFGroup> GroupData = MakeShared<FGFGroup>();
+			GroupData->Name = TEXT("Invite-Only Reject Test Group");
+			GroupData->GroupType = TEXT("Test");
+			GroupData->MaxGroupSize = 10;
+			GroupData->bCanAutoJoin = false;
+			GroupData->bIsInviteOnly = true; // Make it invite-only
+			GroupData->bSearchable = true;
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+				FGFGroupCallback CreateGroupCallback;
+				CreateGroupCallback.BindLambda([this, GroupData](const FGFGroup& CreatedGroup) {
+					AddInfo("RejectJoinRequest 1 :: Create Invite-Only Group");
+					TestTrue("Group created successfully", CreatedGroup.Id > 0);
+					TestTrue("Group is invite only", CreatedGroup.bIsInviteOnly);
+					GroupData->Id = CreatedGroup.Id;
+				});
+
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																  GameFuseGroups->CreateGroup(*GroupData, CreateGroupCallback)));
+
+				// Sign in second user to try to request joining (this should fail)
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+					FGFUserDataCallback SignInCallback;
+					SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+						AddInfo("RejectJoinRequest 2 :: Sign In Second User");
+						TestTrue("Second user sign in succeeded", bSuccess);
+					});
+
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																	  GameFuseUser->SignIn(UserData2->Username + "@gamefuse.com", "password", SignInCallback)));
+
+					// Try to request to join the invite-only group (this should fail)
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+						FGFGroupConnectionCallback RequestCallback;
+						RequestCallback.BindLambda([this](const FGFGroupConnection& Connection) {
+							AddInfo("RejectJoinRequest 3 :: Request to Join Invite-Only Group (Should Fail)");
+							// This should fail for invite-only groups, so we expect an empty connection
+							if (Connection.Id != 0) {
+								AddError("Join request to invite-only group should have failed but got valid connection ID");
+								return;
+							}
+							TestTrue("Connection should be invalid for invite-only group", Connection.Id == 0);
+							TestTrue("Connection should be empty for failed request", Connection.User.Id == 0);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																		  GameFuseGroups->RequestToJoinGroup(GroupData->Id, RequestCallback)));
+
+						// Switch back to first user to verify group state after failed request
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+							FGFUserDataCallback SignInCallback;
+							SignInCallback.BindLambda([this](bool bSuccess, const FGFUserData& UserData) {
+								AddInfo("RejectJoinRequest 4 :: Switch Back to Creator");
+								TestTrue("Creator sign in succeeded", bSuccess);
+							});
+
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseUser->GetRequestHandler(),
+																			  GameFuseUser->SignIn(UserData1->Username + "@gamefuse.com", "password", SignInCallback)));
+
+							// Fetch the group to verify it still has no invites or join requests
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GroupData]() -> bool {
+								FGFGroupCallback FetchGroupCallback;
+								FetchGroupCallback.BindLambda([this, GroupData](const FGFGroup& FetchedGroup) {
+									AddInfo("RejectJoinRequest 5 :: Verify Group State After Failed Request");
+									TestTrue("Group fetched successfully", FetchedGroup.Id == GroupData->Id);
+									TestTrue("Group is invite only", FetchedGroup.bIsInviteOnly);
+									
+									// Failed requests should not create any invites or join requests
+									TestEqual("Group has no invites after failed request", FetchedGroup.Invites.Num(), 0);
+									TestEqual("Group has no join requests after failed request", FetchedGroup.JoinRequests.Num(), 0);
+									
+									// Verify the group still only has the creator as a member
+									TestEqual("Group still has only creator as member", FetchedGroup.Members.Num(), 1);
+									if (FetchedGroup.Members.Num() > 0) {
+										TestEqual("Creator is still the only member", FetchedGroup.Members[0].Id, UserData1->Id);
+									}
+								});
+
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseGroups->GetRequestHandler(),
+																				  GameFuseGroups->FetchGroup(GroupData->Id, FetchGroupCallback)));
+								return true;
+							}));
 							return true;
 						}));
 						return true;

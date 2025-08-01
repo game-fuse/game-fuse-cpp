@@ -316,7 +316,7 @@ void GameFuseRoundsSpec::Define()
 			}));
 		});
 
-		xIt("fetches a specific game round", [this]() {
+		It("fetches a specific game round", [this]() {
 			// todo:: fix fetching a specific game round
 
 			TSharedPtr<FGFGameRound> RoundData = MakeShared<FGFGameRound>();
@@ -434,7 +434,121 @@ void GameFuseRoundsSpec::Define()
 						});
 
 						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
-																		  GameFuseRounds->FetchUserGameRounds(FetchCallback)));
+																		  GameFuseRounds->FetchMyGameRounds(FetchCallback)));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+
+		It("gets another users game rounds", [this]()
+		{
+			TSharedPtr<FGFUserData> OtherUser = MakeShared<FGFUserData>();
+			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, OtherUser, this, FGuid()));
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OtherUser]() -> bool
+			{
+				// Create 2 rounds for the other user
+				TSharedPtr<FGFGameRound> Round1 = MakeShared<FGFGameRound>();
+				Round1->Score = 100;
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																  GameFuseRounds->CreateGameRound(
+																	  *Round1, *OtherUser, FGFGameRoundCallback())));
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OtherUser]() -> bool
+				{
+					TSharedPtr<FGFGameRound> Round2 = MakeShared<FGFGameRound>();
+					Round2->Score = 200;
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																	  GameFuseRounds->CreateGameRound(
+																		  *Round2, *OtherUser, FGFGameRoundCallback())));
+
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OtherUser]() -> bool
+					{
+						// Fetch the other user's rounds
+						FGFGameRoundListCallback FetchCallback;
+						FetchCallback.BindLambda([this, OtherUser](const TArray<FGFGameRound>& Rounds)
+						{
+							AddInfo("GetUserRounds :: Verify another user's rounds");
+							TestEqual("Should have exactly 2 rounds", Rounds.Num(), 2);
+
+							if (Rounds.Num() == 2)
+							{
+								TestEqual("Round owner is correct", Rounds[0].GameUserId, OtherUser->Id);
+							}
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																		  GameFuseRounds->FetchUserGameRounds(OtherUser->Id, FetchCallback)));
+						return true;
+					}));
+					return true;
+				}));
+				return true;
+			}));
+		});
+		
+		It("gets another users game rounds with pagination", [this]()
+		{
+			TSharedPtr<FGFUserData> OtherUser = MakeShared<FGFUserData>();
+			ADD_LATENT_AUTOMATION_COMMAND(FCreateUser(TestAPIHandler, GameData, OtherUser, this, FGuid()));
+
+			ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OtherUser]() -> bool
+			{
+				// Create 2 rounds for the other user
+				TSharedPtr<FGFGameRound> Round1 = MakeShared<FGFGameRound>();
+				Round1->Score = 100;
+				ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																  GameFuseRounds->CreateGameRound(*Round1, *OtherUser, FGFGameRoundCallback())));
+
+				ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OtherUser]() -> bool
+				{
+					TSharedPtr<FGFGameRound> Round2 = MakeShared<FGFGameRound>();
+					Round2->Score = 200;
+					ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																	  GameFuseRounds->CreateGameRound(*Round2, *OtherUser, FGFGameRoundCallback())));
+
+					// Test pagination: page 1, per_page 1
+					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OtherUser]() -> bool
+					{
+						FGFGameRoundListCallback FetchCallback1;
+						FetchCallback1.BindLambda([this](const TArray<FGFGameRound>& Rounds)
+						{
+							AddInfo("GetUserRounds Pagination :: Page 1");
+							TestEqual("Should have exactly 1 round on page 1", Rounds.Num(), 1);
+						});
+
+						ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																		  GameFuseRounds->FetchUserGameRounds(OtherUser->Id, FetchCallback1, "", 1, 1)));
+						
+						// Test pagination: page 2, per_page 1
+						ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OtherUser]() -> bool
+						{
+							FGFGameRoundListCallback FetchCallback2;
+							FetchCallback2.BindLambda([this](const TArray<FGFGameRound>& Rounds)
+							{
+								AddInfo("GetUserRounds Pagination :: Page 2");
+								TestEqual("Should have exactly 1 round on page 2", Rounds.Num(), 1);
+							});
+							ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																			  GameFuseRounds->FetchUserGameRounds(OtherUser->Id, FetchCallback2, "", 2, 1)));
+
+							// Test pagination: page 3, should be empty
+							ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, OtherUser]() -> bool
+							{
+								FGFGameRoundListCallback FetchCallback3;
+								FetchCallback3.BindLambda([this](const TArray<FGFGameRound>& Rounds)
+								{
+									AddInfo("GetUserRounds Pagination :: Page 3");
+									TestTrue("Page 3 should be empty", Rounds.IsEmpty());
+								});
+								ADD_LATENT_AUTOMATION_COMMAND(FWaitForFGFResponse(GameFuseRounds->GetRequestHandler(),
+																				  GameFuseRounds->FetchUserGameRounds(OtherUser->Id, FetchCallback3, "", 3, 1)));
+								return true;
+							}));
+							return true;
+						}));
 						return true;
 					}));
 					return true;

@@ -142,6 +142,14 @@ void UGameFuseManager::BP_FetchLeaderboardEntries(const int Limit = 20, bool bOn
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
+void UGameFuseManager::BP_FetchServerTime(const FBP_GFApiCallback& Callback = FBP_GFApiCallback())
+{
+	FGFApiCallback InternalCallback;
+
+	FGuid RequestId = FetchServerTime(InternalCallback);
+	StoreBlueprintCallback(RequestId, Callback);
+}
+
 #pragma endregion
 
 #pragma region CPP Implementations
@@ -196,7 +204,7 @@ FGuid UGameFuseManager::FetchLeaderboardEntries(const int Limit, bool bOnePerUse
 	if (!SetupCheck()) {
 		return FGuid();
 	}
-	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetUserData();
+	const FGFUserData& UserData = GetGameInstance()->GetSubsystem<UGameFuseUser>()->GetCurrentUserData();
 
 	Callback.AddUObject(this, &UGameFuseManager::HandleLeaderboardEntriesResponse);
 	return RequestHandler->FetchLeaderboardEntries(Limit, bOnePerUser, LeaderboardName, GameData.Id, UserData.AuthenticationToken, Callback);
@@ -210,6 +218,13 @@ FGuid UGameFuseManager::FetchStoreItems(FGFApiCallback Callback)
 
 	Callback.AddUObject(this, &UGameFuseManager::HandleStoreItemsResponse);
 	return RequestHandler->FetchStoreItems(GameData.Id, GameData.Token, Callback);
+}
+
+FGuid UGameFuseManager::FetchServerTime(FGFApiCallback Callback)
+{
+	// Note: GetServerTime doesn't require setup check as it's a utility endpoint
+	Callback.AddUObject(this, &UGameFuseManager::HandleGetServerTimeResponse);
+	return RequestHandler->GetServerTime(Callback);
 }
 
 #pragma endregion
@@ -403,6 +418,22 @@ void UGameFuseManager::HandleForgotPasswordResponse(FGFAPIResponse Response)
 	}
 
 	UE_LOG(LogGameFuse, Log, TEXT("Forgot Password Email Sent!"));
+
+	// Execute the blueprint callback after all data is processed
+	ExecuteBlueprintCallback(Response);
+}
+
+void UGameFuseManager::HandleGetServerTimeResponse(FGFAPIResponse Response)
+{
+	if (!Response.bSuccess) {
+		UE_LOG(LogGameFuse, Warning, TEXT("GetServerTime Request Failed. ID : %s"), *Response.RequestId.ToString());
+		// Execute the blueprint callback even on failure
+		ExecuteBlueprintCallback(Response);
+		return;
+	}
+
+	// Use the utility function to parse server time
+	GameFuseUtilities::ConvertJsonToServerTime(GameData.ServerTime, Response.ResponseStr);
 
 	// Execute the blueprint callback after all data is processed
 	ExecuteBlueprintCallback(Response);

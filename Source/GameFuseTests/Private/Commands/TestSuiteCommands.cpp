@@ -331,7 +331,7 @@ bool FSetupUser::Update()
 	if (bSignInSent && GameFuseUser->IsSignedIn()) {
 		UE_LOG(LogGameFuse, Log, TEXT("+++ User signed in successfully +++"));
 		Test->TestTrue("User should be signed in", GameFuseUser->IsSignedIn());
-		const FGFUserData& CurrentUserData = GameFuseUser->GetUserData();
+		const FGFUserData& CurrentUserData = GameFuseUser->GetCurrentUserData();
 		Test->TestEqual("User IDs should match", CurrentUserData.Id, UserData->Id);
 		Test->TestEqual("Usernames should match", CurrentUserData.Username, UserData->Username);
 

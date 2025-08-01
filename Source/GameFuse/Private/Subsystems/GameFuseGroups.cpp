@@ -47,7 +47,7 @@ FGuid UGameFuseGroups::CreateGroup(const FGFGroup& Group, FGFGroupCallback Typed
 		HandleGroupResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->CreateGroup(Group, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->CreateGroup(Group, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -67,7 +67,7 @@ FGuid UGameFuseGroups::FetchGroup(const int32 GroupId, FGFGroupCallback TypedCal
 		HandleGroupResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchGroup(GroupId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -87,7 +87,7 @@ FGuid UGameFuseGroups::FetchAllGroups(FGFGroupListCallback TypedCallback)
 		HandleGroupListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchAllGroups(GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchAllGroups(GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupListCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -107,7 +107,27 @@ FGuid UGameFuseGroups::RequestToJoinGroup(int32 GroupId, FGFGroupConnectionCallb
 		HandleGroupConnectionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RequestToJoinGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->RequestToJoinGroup(GroupId, GameFuseUser->GetCurrentUserData(), InternalCallback);
+	if (TypedCallback.IsBound()) {
+		GroupConnectionCallbacks.Add(RequestId, TypedCallback);
+	}
+	return RequestId;
+}
+
+FGuid UGameFuseGroups::InviteGroupMember(int32 GroupId, int32 UserIdToInvite, FGFGroupConnectionCallback TypedCallback)
+{
+	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
+	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
+		UE_LOG(LogGameFuse, Error, TEXT("User must be signed in to invite a user to a group"));
+		return FGuid();
+	}
+
+	FGFApiCallback InternalCallback;
+	InternalCallback.AddLambda([this](const FGFAPIResponse& Response) {
+		HandleGroupConnectionResponse(Response);
+	});
+
+	FGuid RequestId = RequestHandler->InviteGroupMember(GroupId, UserIdToInvite, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupConnectionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -127,7 +147,7 @@ FGuid UGameFuseGroups::DeleteGroup(const int32 GroupId, FGFGroupActionCallback T
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->DeleteGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->DeleteGroup(GroupId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -147,7 +167,7 @@ FGuid UGameFuseGroups::JoinGroup(const int32 GroupId, FGFGroupActionCallback Typ
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->JoinGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->JoinGroup(GroupId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -167,14 +187,14 @@ FGuid UGameFuseGroups::LeaveGroup(const int32 GroupId, FGFGroupActionCallback Ty
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->LeaveGroup(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->LeaveGroup(GroupId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::FetchUserGroups(FGFGroupListCallback TypedCallback)
+FGuid UGameFuseGroups::FetchMyGroups(FGFGroupListCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
@@ -187,7 +207,7 @@ FGuid UGameFuseGroups::FetchUserGroups(FGFGroupListCallback TypedCallback)
 		HandleGroupListResponse(Response, true);
 	});
 
-	FGuid RequestId = RequestHandler->FetchUserGroups(GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchUserGroups(GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupListCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -207,7 +227,7 @@ FGuid UGameFuseGroups::SearchGroups(const FString& Query, FGFGroupListCallback T
 		HandleGroupListResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->SearchGroups(Query, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->SearchGroups(Query, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupListCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -227,7 +247,7 @@ FGuid UGameFuseGroups::AddAdmin(const int32 GroupId, const int32 UserId, FGFGrou
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->AddAdmin(GroupId, UserId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->AddAdmin(GroupId, UserId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -247,14 +267,14 @@ FGuid UGameFuseGroups::RemoveAdmin(const int32 GroupId, const int32 UserId, FGFG
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RemoveAdmin(GroupId, UserId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->RemoveAdmin(GroupId, UserId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
 	return RequestId;
 }
 
-FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, FGFGroupAttributeCallback TypedCallback)
+FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOthersCanEdit, FGFGroupAttributeCallback TypedCallback)
 {
 	UGameFuseUser* GameFuseUser = GetGameInstance()->GetSubsystem<UGameFuseUser>();
 	if (!GameFuseUser || !GameFuseUser->IsSignedIn()) {
@@ -267,7 +287,7 @@ FGuid UGameFuseGroups::AddAttribute(const int32 GroupId, const FGFGroupAttribute
 		HandleGroupAttributeResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->AddAttribute(GroupId, Attribute, bOnlyCreatorCanEdit, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->AddAttribute(GroupId, Attribute, bOthersCanEdit, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupAttributeCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -287,7 +307,7 @@ FGuid UGameFuseGroups::UpdateGroupAttribute(const int32 GroupId, const FGFGroupA
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->UpdateGroupAttribute(GroupId, Attribute, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->UpdateGroupAttribute(GroupId, Attribute, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -332,7 +352,7 @@ FGuid UGameFuseGroups::RespondToGroupJoinRequest(const int32 ConnectionId, const
 		HandleGroupActionResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->RespondToGroupJoinRequest(ConnectionId, UserId, Status, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->RespondToGroupJoinRequest(ConnectionId, UserId, Status, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupActionCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -352,7 +372,7 @@ FGuid UGameFuseGroups::FetchGroupAttributes(const int32 GroupId, FGFGroupAttribu
 		HandleGroupAttributeResponse(Response);
 	});
 
-	FGuid RequestId = RequestHandler->FetchGroupAttributes(GroupId, GameFuseUser->GetUserData(), InternalCallback);
+	FGuid RequestId = RequestHandler->FetchGroupAttributes(GroupId, GameFuseUser->GetCurrentUserData(), InternalCallback);
 	if (TypedCallback.IsBound()) {
 		GroupAttributeCallbacks.Add(RequestId, TypedCallback);
 	}
@@ -385,8 +405,8 @@ void UGameFuseGroups::HandleGroupResponse(const FGFAPIResponse& Response)
 	}
 
 	// Update cached data
-	UserGroups.AddUnique(Group);
-	AllGroups.AddUnique(Group);
+	MyGroups.AddUnique(Group);
+	FetchedGroups.AddUnique(Group);
 
 	if (GroupCallbacks.Contains(Response.RequestId)) {
 		GroupCallbacks[Response.RequestId].ExecuteIfBound(Group);
@@ -424,9 +444,9 @@ void UGameFuseGroups::HandleGroupListResponse(const FGFAPIResponse& Response, bo
 
 	// Update cached data
 	if (bIsUserGroups) {
-		UserGroups = Groups;
+		MyGroups = Groups;
 	} else {
-		AllGroups = Groups;
+		FetchedGroups = Groups;
 	}
 
 	if (GroupListCallbacks.Contains(Response.RequestId)) {
@@ -441,7 +461,7 @@ void UGameFuseGroups::HandleGroupListResponse(const FGFAPIResponse& Response, bo
 void UGameFuseGroups::HandleGroupConnectionResponse(const FGFAPIResponse& Response)
 {
 	if (!Response.bSuccess) {
-		UE_LOG(LogGameFuse, Error, TEXT("Failed to handle group connection response: %s"), *Response.ResponseStr);
+		UE_LOG(LogGameFuse, Warning, TEXT("Failed to handle group connection response: %s"), *Response.ResponseStr);
 		if (GroupConnectionCallbacks.Contains(Response.RequestId)) {
 			GroupConnectionCallbacks[Response.RequestId].ExecuteIfBound(FGFGroupConnection());
 			GroupConnectionCallbacks.Remove(Response.RequestId);
@@ -580,6 +600,13 @@ void UGameFuseGroups::BP_RequestToJoinGroup(int32 GroupId, const FBP_GFApiCallba
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
+void UGameFuseGroups::BP_InviteGroupMember(int32 GroupId, int32 UserIdToInvite, const FBP_GFApiCallback& Callback)
+{
+	FGFGroupConnectionCallback TypedCallback;
+	FGuid RequestId = InviteGroupMember(GroupId, UserIdToInvite, TypedCallback);
+	StoreBlueprintCallback(RequestId, Callback);
+}
+
 void UGameFuseGroups::BP_DeleteGroup(const int32 GroupId, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupActionCallback TypedCallback;
@@ -601,10 +628,10 @@ void UGameFuseGroups::BP_LeaveGroup(const int32 GroupId, const FBP_GFApiCallback
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_FetchUserGroups(const FBP_GFApiCallback& Callback)
+void UGameFuseGroups::BP_FetchMyGroups(const FBP_GFApiCallback& Callback)
 {
 	FGFGroupListCallback TypedCallback;
-	FGuid RequestId = FetchUserGroups(TypedCallback);
+	FGuid RequestId = FetchMyGroups(TypedCallback);
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
@@ -629,10 +656,10 @@ void UGameFuseGroups::BP_RemoveAdmin(const int32 GroupId, const int32 UserId, co
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
-void UGameFuseGroups::BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FBP_GFApiCallback& Callback)
+void UGameFuseGroups::BP_AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOthersCanEdit, const FBP_GFApiCallback& Callback)
 {
 	FGFGroupAttributeCallback TypedCallback;
-	FGuid RequestId = AddAttribute(GroupId, Attribute, bOnlyCreatorCanEdit, TypedCallback);
+	FGuid RequestId = AddAttribute(GroupId, Attribute, bOthersCanEdit, TypedCallback);
 	StoreBlueprintCallback(RequestId, Callback);
 }
 
@@ -677,7 +704,7 @@ void UGameFuseGroups::BP_DeclineGroupJoinRequest(const int32 ConnectionId, const
 bool UGameFuseGroups::GetGroupById(const int32 GroupId, FGFGroup& OutGroup) const
 {
 	// First check in UserGroups
-	for (const FGFGroup& Group : UserGroups) {
+	for (const FGFGroup& Group : MyGroups) {
 		if (Group.Id == GroupId) {
 			OutGroup = Group;
 			return true;
@@ -685,7 +712,7 @@ bool UGameFuseGroups::GetGroupById(const int32 GroupId, FGFGroup& OutGroup) cons
 	}
 
 	// If not found in UserGroups, check in AllGroups
-	for (const FGFGroup& Group : AllGroups) {
+	for (const FGFGroup& Group : FetchedGroups) {
 		if (Group.Id == GroupId) {
 			OutGroup = Group;
 			return true;

@@ -47,11 +47,11 @@ public:
 	 * Add an attribute to a group
 	 * @param GroupId - The ID of the group to add the attribute to
 	 * @param Attribute - The attribute to add, GroupId and bCanEdit are read only and ignored for this request
-	 * @param bOnlyCreatorCanEdit - Whether only the creator can edit this attribute
+	 * @param bOthersCanEdit - Whether only the creator can edit this attribute
 	 * @param UserData - The user data of the requester
 	 * @param Callback - The callback to handle the response
 	 */
-	FGuid AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOnlyCreatorCanEdit, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid AddAttribute(const int32 GroupId, const FGFGroupAttribute& Attribute, bool bOthersCanEdit, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	/**
 	 * Fetch all attributes for a group
@@ -76,6 +76,15 @@ public:
 
 	FGuid FetchAllGroups(const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid RequestToJoinGroup(int32 GroupId, const FGFUserData& UserData, const FGFApiCallback& Callback);
+
+	/**
+	 * Invites a user to join a group
+	 * @param GroupId The ID of the group to invite the user to
+	 * @param UserIdToInvite The ID of the user to invite
+	 * @param UserData The user data of the requester (must be admin of the group)
+	 * @param Callback The callback to handle the response
+	 */
+	FGuid InviteGroupMember(int32 GroupId, int32 UserIdToInvite, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	// Respond to a group join request
 	FGuid RespondToGroupJoinRequest(const int32 ConnectionId, const int32 UserId, EGFInviteRequestStatus Status, const FGFUserData& UserData, const FGFApiCallback& Callback);

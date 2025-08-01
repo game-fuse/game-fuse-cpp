@@ -18,6 +18,7 @@ public:
 
 	FGuid SignUp(const FString& Email, const FString& Password, const FString& PasswordConfirmation, const FString& Username, const int InGameId, const FString& InToken, const FGFApiCallback& Callback);
 	FGuid SignIn(const FString& Email, const FString& Password, const int InGameId, const FString& InToken, const FGFApiCallback& Callback);
+	FGuid FetchUser(int32 UserId, const FGFApiCallback& InternalCallback);
 
 	//> User Requests
 	FGuid AddCredits(const int32 Credits, const FGFUserData& UserData, const FGFApiCallback& Callback);
@@ -27,6 +28,7 @@ public:
 	FGuid SetAttribute(const FString& Key, const FString& Value, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid SetAttributes(const TMap<FString, FString>& Attributes, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid RemoveAttribute(const FString& Key, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid RemoveAttributes(const TArray<FString>& AttributeKeys, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid PurchaseStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid RemoveStoreItem(const int32 StoreItemId, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid AddLeaderboardEntry(const FString& LeaderboardName, const int32 Score, const TMap<FString, FString>& Metadata, const FGFUserData& UserData, const FGFApiCallback& Callback);
@@ -38,7 +40,7 @@ public:
 	FGuid ClearLeaderboardEntry(const FString& LeaderboardName, const FGFUserData& UserData, const FGFApiCallback& Callback);
 
 	//> Action Requests
-	FGuid FetchMyLeaderboardEntries(const int32 Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid FetchLeaderboardEntries(const int32 Limit, bool bOnePerUser, const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid FetchAttributes(const FGFUserData& UserData, const FGFApiCallback& Callback);
 	FGuid FetchPurchasedStoreItems(const FGFUserData& UserData, const FGFApiCallback& Callback);
 

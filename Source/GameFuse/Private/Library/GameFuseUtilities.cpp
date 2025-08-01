@@ -781,6 +781,28 @@ bool GameFuseUtilities::ConvertJsonArrayToGroupAttributes(TArray<FGFGroupAttribu
 	return true;
 }
 
+
+bool GameFuseUtilities::ConvertJsonArrayToGroupConnections(TArray<FGFGroupConnection>& InConnections, const TArray<TSharedPtr<FJsonValue>>* JsonArray)
+{
+	if (!JsonArray) {
+		return false;
+	}
+
+	InConnections.Empty();
+	for (const auto& JsonValue : *JsonArray) {
+		if (JsonValue->Type != EJson::Object) {
+			continue;
+		}
+
+		FGFGroupConnection Connection;
+		if (ConvertJsonToGroupConnection(Connection, JsonValue->AsObject())) {
+			InConnections.Add(Connection);
+		}
+	}
+
+	return true;
+}
+
 bool GameFuseUtilities::ConvertJsonToGroupAttributeResponse(TArray<FGFGroupAttribute>& OutAttributes, const FString& JsonString)
 {
 	TSharedPtr<FJsonObject> JsonObject;
@@ -853,6 +875,16 @@ bool GameFuseUtilities::ConvertJsonToGroup(FGFGroup& InGroup, const TSharedPtr<F
 	const TArray<TSharedPtr<FJsonValue>>* AttributesArray;
 	if (JsonObject->TryGetArrayField(TEXT("attributes"), AttributesArray)) {
 		ConvertJsonArrayToGroupAttributes(InGroup.Attributes, AttributesArray);
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* JoinRequestsArray;
+	if (JsonObject->TryGetArrayField(TEXT("join_requests"), JoinRequestsArray)) {
+		ConvertJsonArrayToGroupConnections(InGroup.JoinRequests, JoinRequestsArray);
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* InvitesArray;
+	if (JsonObject->TryGetArrayField(TEXT("invites"), InvitesArray)) {
+		ConvertJsonArrayToGroupConnections(InGroup.Invites, InvitesArray);
 	}
 
 	return true;
@@ -1120,15 +1152,16 @@ bool GameFuseUtilities::ConvertJsonObjectToStringMap(const TSharedPtr<FJsonObjec
 
 
 	// if field is null, return success and skip
-	if (JsonObject->HasTypedField(FStringView(FieldKey), EJson::Null)) {
+	if (!JsonObject->HasField(FieldKey)) {
 		UE_LOG(LogGameFuse, Log, TEXT("ConvertJsonObjectToStringMap: %s field is null, skipping"), *FieldKey);
+
 		return true;
 	}
 
 	// if FieldKey is not empty, assume the object is a field in the map
 	// aka the json object looks like {"field_key": {"key1": "value1", "key2": "value2"}}
 	const TSharedPtr<FJsonObject>* SrcJsonObject = nullptr;
-	if (JsonObject->TryGetObjectField(FStringView(FieldKey), SrcJsonObject)) {
+	if (JsonObject->TryGetObjectField(FieldKey, SrcJsonObject)) {
 		if (!SrcJsonObject->IsValid()) {
 			UE_LOG(LogGameFuse, Warning, TEXT("ConvertJsonObjectToStringMap: Invalid object value for field: %s"), *FieldKey);
 			return false;
@@ -1323,6 +1356,32 @@ bool GameFuseUtilities::ConvertJsonToFriendRequest(FGFFriendRequest& OutRequest,
 	}
 
 	return ConvertJsonToFriendRequest(OutRequest, JsonObject);
+}
+
+bool GameFuseUtilities::ConvertJsonToServerTime(FString& OutServerTime, const FString& JsonString)
+{
+	OutServerTime.Empty();
+
+	if (JsonString.IsEmpty()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Empty JSON string for server time"));
+		return false;
+	}
+
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+	TSharedPtr<FJsonObject> JsonObject;
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid()) {
+		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse JSON string for server time"));
+		return false;
+	}
+
+	if (!JsonObject->TryGetStringField(TEXT("server_time"), OutServerTime)) {
+		UE_LOG(LogGameFuse, Warning, TEXT("No server_time field found in JSON"));
+		return false;
+	}
+
+	UE_LOG(LogGameFuse, Log, TEXT("Parsed server time: %s"), *OutServerTime);
+	return true;
 }
 
 #pragma endregion

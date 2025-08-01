@@ -269,6 +269,14 @@ public:
 	static bool ConvertJsonToGroupConnection(FGFGroupConnection& InConnection, const FString& JsonString);
 
 	/**
+	 * Converts a JSON array to an Array of GroupConnections
+	 * @param InConnections Array to store converted data
+	 * @param JsonArray Json Values to Parse
+	 * @return true if successful
+	 */
+	static bool ConvertJsonArrayToGroupConnections(TArray<FGFGroupConnection>& InConnections, const TArray<TSharedPtr<FJsonValue>>* JsonArray);
+
+	/**
 	 * Converts a JSON array into an array of GroupAttributes
 	 * @param InAttributes Array to store converted data
 	 * @param JsonArray The JSON array to convert
@@ -433,6 +441,13 @@ public:
 	 */
 	static bool ConvertJsonToGameVariables(TMap<FString, FString>& OutVariables, const FString& JsonString);
 
+	/**
+	 * Converts a JSON string into ServerTime
+	 * @param OutServerTime String to store the converted server time
+	 * @param JsonString The JSON string to convert
+	 * @return true if successful
+	 */
+	static bool ConvertJsonToServerTime(FString& OutServerTime, const FString& JsonString);
 
 #pragma endregion
 };

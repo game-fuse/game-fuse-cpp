@@ -288,7 +288,7 @@ void GameFuseLeaderboard::Define()
 																	  GameFuseUser->FetchMyLeaderboardEntries(10, true, VerifyFirstCallback)));
 
 					ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Score1]() -> bool {
-						const TArray<FGFLeaderboardEntry>& Entries = GameFuseUser->GetMyLeaderboardEntries();
+						const TArray<FGFLeaderboardEntry>& Entries = GameFuseUser->GetLeaderboardEntries();
 						TestEqual("Should have one entry after first add", Entries.Num(), 1);
 						if (Entries.Num() > 0) {
 							TestEqual("First score should match", Entries[0].Score, Score1);

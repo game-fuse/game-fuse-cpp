@@ -25,50 +25,129 @@ public:
 	virtual void Deinitialize() override;
 
 	// Blueprint Callable Functions
+	/**
+	 * Creates a new chat with participants. The new chat is cached for quick access. (Blueprint version)
+	 * @param Usernames Array of usernames to include in the chat
+	 * @param InitialMessage The first message to send in the chat
+	 * @param Callback Blueprint callback executed when the request completes
+	 */
 	UFUNCTION(BlueprintCallable, DisplayName = "Create Chat", Category = "GameFuse|Chat")
-	void BP_CreateChat(const TArray<FString>& ParticipantIds, const FString& InitialMessage, const FBP_GFApiCallback& Callback);
+	void BP_CreateChat(const TArray<FString>& Usernames, const FString& InitialMessage, const FBP_GFApiCallback& Callback);
 
+	/**
+	 * Sends a message to a chat (Blueprint version)
+	 * @param ChatId The ID of the chat to send the message to
+	 * @param Message The message content to send
+	 * @param Callback Blueprint callback executed when the request completes
+	 */
 	UFUNCTION(BlueprintCallable, DisplayName = "Send Message", Category = "GameFuse|Chat")
 	void BP_SendMessage(int32 ChatId, const FString& Message, const FBP_GFApiCallback& Callback);
 
+	/**
+	 * Marks a message as read (Blueprint version)
+	 * @param MessageId The ID of the message to mark as read
+	 * @param Callback Blueprint callback executed when the request completes
+	 */
 	UFUNCTION(BlueprintCallable, DisplayName = "Mark Message As Read", Category = "GameFuse|Chat")
 	void BP_MarkMessageAsRead(int32 MessageId, const FBP_GFApiCallback& Callback);
 
+	/**
+	 * Fetches all chats for the current user (Blueprint version)
+	 * @param Page Page number for pagination
+	 * @param Callback Blueprint callback executed when the request completes
+	 */
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch All Chats", Category = "GameFuse|Chat", meta = (Page = 1))
 	void BP_FetchAllChats(int32 Page, const FBP_GFApiCallback& Callback);
 
+	/**
+	 * Fetches messages for a specific chat (Blueprint version)
+	 * @param ChatId The ID of the chat to fetch messages from
+	 * @param Page Page number for pagination
+	 * @param Callback Blueprint callback executed when the request completes
+	 */
 	UFUNCTION(BlueprintCallable, DisplayName = "Fetch Messages", Category = "GameFuse|Chat", meta = (Page = 1))
 	void BP_FetchMessages(int32 ChatId, int32 Page, const FBP_GFApiCallback& Callback);
 
 	// C++ callable functions with typed callbacks
-	FGuid CreateChat(const TArray<FString>& ParticipantIds, const FString& InitialMessage, FGFChatCallback TypedCallback);
+	/**
+	 * Creates a new chat with participants. The new chat is cached for quick access.
+	 * @param Usernames Array of usernames to include in the chat
+	 * @param InitialMessage The first message to send in the chat
+	 * @param TypedCallback Callback executed when the request completes
+	 * @return Request ID for tracking
+	 */
+	FGuid CreateChat(const TArray<FString>& Usernames, const FString& InitialMessage, FGFChatCallback TypedCallback);
+	
+	/**
+	 * Sends a message to a chat
+	 * @param ChatId The ID of the chat to send the message to
+	 * @param Message The message content to send
+	 * @param TypedCallback Callback executed when the request completes
+	 * @return Request ID for tracking
+	 */
 	FGuid SendMessage(int32 ChatId, const FString& Message, FGFMessageCallback TypedCallback);
+	
+	/**
+	 * Marks a message as read
+	 * @param MessageId The ID of the message to mark as read
+	 * @param TypedCallback Callback executed when the request completes
+	 * @return Request ID for tracking
+	 */
 	FGuid MarkMessageAsRead(int32 MessageId, FGFSuccessCallback TypedCallback);
+	
+	/**
+	 * Fetches all chats for the current user
+	 * @param Page Page number for pagination
+	 * @param TypedCallback Callback executed when the request completes
+	 * @return Request ID for tracking
+	 */
 	FGuid FetchAllChats(int32 Page, FGFChatListCallback TypedCallback);
+	
+	/**
+	 * Fetches messages for a specific chat
+	 * @param ChatId The ID of the chat to fetch messages from
+	 * @param Page Page number for pagination
+	 * @param TypedCallback Callback executed when the request completes
+	 * @return Request ID for tracking
+	 */
 	FGuid FetchMessages(int32 ChatId, int32 Page, FGFMessageListCallback TypedCallback);
 
 	// Getters for cached data
+	/**
+	 * Gets the cached list of all chats
+	 * @return The last fetched list of all chats
+	 */
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Chat")
-	const TArray<FGFChat>& GetAllChats() const
+	const TArray<FGFChat>& GetCachedChats() const
 	{
-		return AllChats;
+		return CachedChats;
 	}
 
+	/**
+	 * Gets the cached list of chat messages
+	 * @return The last fetched list of chat messages
+	 */
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Chat")
 	const TArray<FGFMessage>& GetChatMessages() const
 	{
 		return ChatMessages;
 	}
 
+	/**
+	 * Gets the request handler for direct API access
+	 * @return Pointer to the chat API handler
+	 */
 	TObjectPtr<UChatAPIHandler> GetRequestHandler() const
 	{
 		return RequestHandler;
 	}
 
-	// Clear cached chat data
+	/**
+	 * Clears all cached chat data
+	 */
 	void ClearChatData()
 	{
-		AllChats.Empty();
+		CachedChats.Empty();
 		ChatMessages.Empty();
 	}
 
@@ -78,14 +157,38 @@ private:
 	TObjectPtr<UChatAPIHandler> RequestHandler;
 
 	// Cached chat data
-	TArray<FGFChat> AllChats;
+	TArray<FGFChat> CachedChats;
 	TArray<FGFMessage> ChatMessages;
 
 	// Internal response handlers
+	/**
+	 * Handles responses for single chat operations
+	 * @param Response The API response to process
+	 */
 	void HandleChatResponse(FGFAPIResponse Response);
+	
+	/**
+	 * Handles responses for chat list operations
+	 * @param Response The API response to process
+	 */
 	void HandleChatListResponse(FGFAPIResponse Response);
+	
+	/**
+	 * Handles responses for message list operations
+	 * @param Response The API response to process
+	 */
 	void HandleMessageListResponse(FGFAPIResponse Response);
+	
+	/**
+	 * Handles responses for single message operations
+	 * @param Response The API response to process
+	 */
 	void HandleMessageResponse(FGFAPIResponse Response);
+	
+	/**
+	 * Handles responses for action operations (like mark as read)
+	 * @param Response The API response to process
+	 */
 	void HandleActionResponse(FGFAPIResponse Response);
 
 	// User callbacks storage

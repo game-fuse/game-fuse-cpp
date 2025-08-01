@@ -70,13 +70,24 @@ FGuid UFriendsAPIHandler::GetFriendshipData(const FGFUserData& UserData, const F
 	return SendRequest("/friendships", "GET", Callback);
 }
 
-FGuid UFriendsAPIHandler::GetFriendsList(const FGFUserData& UserData, const FGFApiCallback& Callback)
+FGuid UFriendsAPIHandler::GetMyFriendsList(const FGFUserData& UserData, const FGFApiCallback& Callback)
 {
 	if (!VerifyUserData(UserData)) {
 		return FGuid();
 	}
 	SetAuthHeader(UserData.AuthenticationToken);
 	return SendRequest("/friends", "GET", Callback);
+}
+
+FGuid UFriendsAPIHandler::GetUserFriendsList(const int32 UserId, const FGFUserData& UserData, const FGFApiCallback& Callback)
+{
+	if (!VerifyUserData(UserData))
+	{
+		return FGuid();
+	}
+	SetAuthHeader(UserData.AuthenticationToken);
+	const FString ApiEndpoint = FString::Printf(TEXT("/friends?user_id=%d"), UserId);
+	return SendRequest(ApiEndpoint, "GET", Callback);
 }
 
 FGuid UFriendsAPIHandler::GetOutgoingFriendRequests(const FGFUserData& UserData, const FGFApiCallback& Callback)

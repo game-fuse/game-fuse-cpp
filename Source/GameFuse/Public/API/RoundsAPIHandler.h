@@ -26,7 +26,7 @@ public:
 	                      const FGFGameRound& GameRound, const FGFApiCallback& Callback);
 
 	// Fetch user's game rounds
-	FGuid FetchUserGameRounds(const FGFUserData& UserData, const FGFApiCallback& Callback);
+	FGuid FetchUserGameRounds(int32 UserId, const FGFUserData& UserData, const FString& GameType, int32 Page, int32 PerPage, const FGFApiCallback& Callback);
 
 	// Delete a game round
 	FGuid DeleteGameRound(const int32 RoundId, const FGFUserData& UserData, const FGFApiCallback& Callback);

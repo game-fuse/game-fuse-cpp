@@ -13,21 +13,29 @@
 
 // Add this new struct to the file
 USTRUCT(BlueprintType, Category = "GameFuse|GameData")
-struct FGFGameData
+struct GAMEFUSE_API FGFGameData
 {
 	GENERATED_BODY()
 
+	/** Unique database ID of the game from GameFuse dashboard */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	int32 Id = 0;
 
+	/** API token of the game found on your GameFuse.co dashboard */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Token = "";
 
+	/** Name of the game as configured in GameFuse dashboard */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Name = "";
 
+	/** Game description as configured in GameFuse dashboard */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
 	FString Description = "";
+
+	/** Server timestamp when the game data was retrieved */
+	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|GameData")
+	FString ServerTime = "";
 
 	bool operator==(const FGFGameData& Other) const
 	{
@@ -36,31 +44,39 @@ struct FGFGameData
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|UserData")
-struct FGFUserData
+struct GAMEFUSE_API FGFUserData
 {
 	GENERATED_BODY()
 
+	/** Unique database ID of the user from GameFuse */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 Id = 0;
 
+	/** Username of the user account */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	FString Username = "";
 
+	/** Whether the user is currently signed in to GameFuse */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	bool bSignedIn = false;
 
+	/** Total number of times the user has logged into the game */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 NumberOfLogins = 0;
 
+	/** Authentication token used for user session management and API requests */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	FString AuthenticationToken = "";
 
+	/** User's current score that can be modified with add_score API calls */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 Score = 0;
 
+	/** User's current credits balance for in-game store purchases */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	int32 Credits = 0;
 
+	/** Date and time of the user's last login in YYYY-MM-DD format */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|UserData")
 	FString LastLogin = "0000-00-00";
 
@@ -72,27 +88,32 @@ struct FGFUserData
 
 
 USTRUCT(BlueprintType, Category = "GameFuse|StoreItem")
-struct FGFStoreItem
+struct GAMEFUSE_API FGFStoreItem
 {
 	GENERATED_BODY()
 	FGFStoreItem() = default;
 
+	/** Unique database ID of the store item */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	int32 Id = 0;
 
+	/** Display name of the store item */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Name = "";
 
+	/** Category classification for organizing store items */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Category = "";
 
+	/** Detailed description of the store item and its effects */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString Description = "";
 
+	/** Cost of the item in credits required for purchase */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	int32 Cost = 0;
 
-
+	/** URL to the icon image for displaying the store item */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|StoreItem")
 	FString IconUrl = "";
 
@@ -107,33 +128,39 @@ struct FGFStoreItem
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|LeaderboardItem")
-struct FGFLeaderboardEntry
+struct GAMEFUSE_API FGFLeaderboardEntry
 {
 	GENERATED_BODY()
 
 	FGFLeaderboardEntry() = default;
 
+	/** Name of the leaderboard this entry belongs to */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString LeaderboardName = "";
 
+	/** Username of the player for this leaderboard entry */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString Username = "";
 
+	/** Score achieved by the player for this leaderboard entry */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	int32 Score = 0;
 
+	/** GameFuse user ID of the player who achieved this score */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	int32 GameUserId = 0;
 
+	/** Additional custom data associated with this leaderboard entry */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	TMap<FString, FString> Metadata;
 
+	/** Date and time when this leaderboard entry was created */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString DateTime = "";
 };
 
 USTRUCT(BlueprintType, Category = "GameFuse|Leaderboard")
-struct FGFLeaderboard
+struct GAMEFUSE_API FGFLeaderboard
 {
 	GENERATED_BODY()
 
@@ -145,10 +172,11 @@ struct FGFLeaderboard
 		this->Entries = TArray<FGFLeaderboardEntry>();
 	}
 
-
+	/** Name identifier of the leaderboard */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	FString Name = "";
 
+	/** Array of leaderboard entries sorted by rank */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Leaderboard")
 	TArray<FGFLeaderboardEntry> Entries;
 };
@@ -158,6 +186,7 @@ struct GAMEFUSE_API FGFAttributeList
 {
 	GENERATED_BODY()
 
+	/** Key-value pairs of custom user attributes for storing game-specific data */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Attributes")
 	TMap<FString, FString> Attributes;
 
@@ -189,7 +218,7 @@ struct GAMEFUSE_API FGFMessage
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
 	int32 Id = 0;
 
-	/** The message text */
+	/** The message text content */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Chat")
 	FString Text;
 
@@ -244,7 +273,7 @@ struct GAMEFUSE_API FGFChat
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
 	TArray<FGFMessage> Messages;
 
-	/** List of users in the chat */
+	/** List of users participating in the chat */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Chat")
 	TArray<FGFUserData> Participants;
 
@@ -270,11 +299,11 @@ struct GAMEFUSE_API FGFGroupAttribute
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Groups")
 	int32 Id = 0;
 
-	/** The key of the attribute */
+	/** The key name of the attribute for identification */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
 	FString Key;
 
-	/** The value of the attribute */
+	/** The value stored for this attribute */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
 	FString Value;
 
@@ -299,64 +328,20 @@ struct GAMEFUSE_API FGFGroupAttribute
 	}
 };
 
-USTRUCT(BlueprintType, Category = "GameFuse|Groups")
-struct FGFGroup
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	int32 Id = 0;
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	FString Name = "";
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	FString GroupType = "";
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	int32 MaxGroupSize = 0;
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	bool bCanAutoJoin = false;
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	bool bIsInviteOnly = false;
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	bool bSearchable = true;
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	bool bAdminsOnlyCanCreateAttributes = false;
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	int32 MemberCount = 0;
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	TArray<FGFUserData> Members;
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	TArray<FGFUserData> Admins;
-
-	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
-	TArray<FGFGroupAttribute> Attributes;
-
-	bool operator==(const FGFGroup& Other) const
-	{
-		return Id == Other.Id && Name == Other.Name;
-	}
-};
-
 USTRUCT(BlueprintType)
 struct GAMEFUSE_API FGFGroupConnection
 {
 	GENERATED_BODY()
 
+	/** Unique identifier for this group connection */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
 	int32 Id;
 
+	/** Current status of the invite or join request */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
 	EGFInviteRequestStatus Status;
 
+	/** User data for the user in this group connection */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameFuse|Groups")
 	FGFUserData User;
 
@@ -373,21 +358,92 @@ struct GAMEFUSE_API FGFGroupConnection
 	}
 };
 
-USTRUCT(BlueprintType, Category = "GameFuse| API")
-struct FGFAPIResponse
+USTRUCT(BlueprintType, Category = "GameFuse|Groups")
+struct GAMEFUSE_API FGFGroup
 {
 	GENERATED_BODY()
 
+	/** Unique identifier of the group */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 Id = 0;
+
+	/** Display name of the group */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	FString Name = "";
+
+	/** Type classification of the group (e.g., "clan", "guild", "team") */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	FString GroupType = "";
+
+	/** Maximum number of members allowed in this group */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 MaxGroupSize = 0;
+
+	/** Whether users can automatically join this group without approval */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	bool bCanAutoJoin = false;
+
+	/** Whether the group only accepts members through invitations */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	bool bIsInviteOnly = false;
+
+	/** Whether this group appears in search results */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	bool bSearchable = true;
+
+	/** Whether only admins can create group attributes */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	bool bAdminsOnlyCanCreateAttributes = false;
+
+	/** Current number of members in the group */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	int32 MemberCount = 0;
+
+	/** Array of all group members */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	TArray<FGFUserData> Members;
+
+	/** Array of group administrators with elevated permissions */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	TArray<FGFUserData> Admins;
+
+	/** Custom attributes associated with this group */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	TArray<FGFGroupAttribute> Attributes;
+
+	/** Pending requests to join this group */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	TArray<FGFGroupConnection> JoinRequests;
+
+	/** Pending invitations sent by this group */
+	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|Groups")
+	TArray<FGFGroupConnection> Invites;
+
+	bool operator==(const FGFGroup& Other) const
+	{
+		return Id == Other.Id && Name == Other.Name;
+	}
+};
+
+USTRUCT(BlueprintType, Category = "GameFuse| API")
+struct GAMEFUSE_API FGFAPIResponse
+{
+	GENERATED_BODY()
+
+	/** Whether the API request was successful */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
 	bool bSuccess = false;
 
+	/** Raw response string from the GameFuse API */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
 	FString ResponseStr = "";
 
+	/** Unique identifier for tracking this specific API request */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
 	FGuid RequestId;
 	FGFAPIResponse() = default;
 
+	/** HTTP response code from the API request (200, 401, 500, etc.) */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|API")
 	int ResponseCode = 0;
 
@@ -403,22 +459,27 @@ struct FGFAPIResponse
 // Game Round Rankings User Data
 USTRUCT(BlueprintType, Category = "GameFuse|GameRound")
 
-struct FGFGameRoundRanking
+struct GAMEFUSE_API FGFGameRoundRanking
 {
 	GENERATED_BODY()
 
+	/** Final placement/rank of the user in the game round (1st, 2nd, 3rd, etc.) */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	int32 Place = 0;
 
+	/** Score achieved by the user in this game round */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	int32 Score = 0;
 
+	/** When the user started participating in this game round */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	FDateTime StartTime;
 
+	/** When the user finished participating in this game round */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	FDateTime EndTime;
 
+	/** User data for the player in this ranking */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	FGFUserData User;
 
@@ -431,40 +492,54 @@ struct FGFGameRoundRanking
 // Main Game Round Structure
 USTRUCT(BlueprintType, Category = "GameFuse|GameRound")
 
-struct FGFGameRound
+struct GAMEFUSE_API FGFGameRound
 {
 	GENERATED_BODY()
 
+	/**
+	 * The ID of the game round. Will be set by the server when creating a new round.
+	 * For updates, this should match the existing round's ID.
+	 */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	int32 Id = 0;
 
+	/** The GameFuse user ID of the player who participated in this round */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	int32 GameUserId = 0;
 
+	/** When this game round started */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	FDateTime StartTime;
 
+	/** When this game round ended */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	FDateTime EndTime;
 
+	/** Final score achieved in this game round */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	int32 Score = 0;
 
+	/** Final placement/rank in this game round (-1 if not set) */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	int32 Place = -1;
 
+	/** Type or category of game (e.g., "deathmatch", "racing", "puzzle") */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	FString GameType = "";
 
+	/** ID linking to a multiplayer game round if this is part of a multiplayer session */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	int32 MultiplayerGameRoundId = -1;
 
+	/** Custom key-value data associated with this game round */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	TMap<FString, FString> Metadata;
 
+	/** Whether this is a multiplayer game round involving multiple players */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	bool bMultiplayer = false;
 
+	/** Rankings of all players if this is a multiplayer round */
 	UPROPERTY(BlueprintReadWrite, Category = "GameFuse|GameRound")
 	TArray<FGFGameRoundRanking> Rankings;
 
@@ -497,15 +572,19 @@ struct GAMEFUSE_API FGFFriendRequest
 {
 	GENERATED_BODY()
 
+	/** Unique identifier for this friendship/friend request */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
 	int32 FriendshipId = 0;
 
+	/** User data for the other user in this friend relationship */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
 	FGFUserData OtherUser;
 
+	/** Current status of the friend request (pending, accepted, etc.) */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
 	EGFInviteRequestStatus Status = EGFInviteRequestStatus::None;
 
+	/** When this friend request was created */
 	UPROPERTY(BlueprintReadOnly, Category = "GameFuse|Friends")
 	FDateTime RequestCreatedAt;
 
