@@ -130,8 +130,8 @@ void UGameFuseChat::HandleChatListResponse(FGFAPIResponse Response)
 	}
 
 	// Parse the chats from the response
-	AllChats.Empty();
-	if (!GameFuseUtilities::ConvertJsonToChats(AllChats, Response.ResponseStr)) {
+	CachedChats.Empty();
+	if (!GameFuseUtilities::ConvertJsonToChats(CachedChats, Response.ResponseStr)) {
 		UE_LOG(LogGameFuse, Error, TEXT("Failed to parse chats from response"));
 		if (ChatListCallbacks.Contains(Response.RequestId)) {
 			ChatListCallbacks[Response.RequestId].ExecuteIfBound(TArray<FGFChat>());
@@ -143,7 +143,7 @@ void UGameFuseChat::HandleChatListResponse(FGFAPIResponse Response)
 	}
 
 	if (ChatListCallbacks.Contains(Response.RequestId)) {
-		ChatListCallbacks[Response.RequestId].ExecuteIfBound(AllChats);
+		ChatListCallbacks[Response.RequestId].ExecuteIfBound(CachedChats);
 		ChatListCallbacks.Remove(Response.RequestId);
 	}
 
@@ -247,10 +247,10 @@ FGuid UGameFuseChat::SendMessage(int32 ChatId, const FString& Text, FGFMessageCa
 	return RequestId;
 }
 
-void UGameFuseChat::BP_CreateChat(const TArray<FString>& ParticipantIds, const FString& InitialMessage, const FBP_GFApiCallback& Callback)
+void UGameFuseChat::BP_CreateChat(const TArray<FString>& Usernames, const FString& InitialMessage, const FBP_GFApiCallback& Callback)
 {
 	FGFChatCallback TypedCallback;
-	FGuid RequestId = CreateChat(ParticipantIds, InitialMessage, TypedCallback);
+	FGuid RequestId = CreateChat(Usernames, InitialMessage, TypedCallback);
 	StoreBlueprintCallback(RequestId, Callback);
 }
 

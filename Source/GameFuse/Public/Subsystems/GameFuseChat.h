@@ -26,13 +26,13 @@ public:
 
 	// Blueprint Callable Functions
 	/**
-	 * Creates a new chat with participants (Blueprint version)
-	 * @param ParticipantIds Array of user IDs to include in the chat
+	 * Creates a new chat with participants. The new chat is cached for quick access. (Blueprint version)
+	 * @param Usernames Array of usernames to include in the chat
 	 * @param InitialMessage The first message to send in the chat
 	 * @param Callback Blueprint callback executed when the request completes
 	 */
 	UFUNCTION(BlueprintCallable, DisplayName = "Create Chat", Category = "GameFuse|Chat")
-	void BP_CreateChat(const TArray<FString>& ParticipantIds, const FString& InitialMessage, const FBP_GFApiCallback& Callback);
+	void BP_CreateChat(const TArray<FString>& Usernames, const FString& InitialMessage, const FBP_GFApiCallback& Callback);
 
 	/**
 	 * Sends a message to a chat (Blueprint version)
@@ -70,13 +70,13 @@ public:
 
 	// C++ callable functions with typed callbacks
 	/**
-	 * Creates a new chat with participants
-	 * @param ParticipantIds Array of user IDs to include in the chat
+	 * Creates a new chat with participants. The new chat is cached for quick access.
+	 * @param Usernames Array of usernames to include in the chat
 	 * @param InitialMessage The first message to send in the chat
 	 * @param TypedCallback Callback executed when the request completes
 	 * @return Request ID for tracking
 	 */
-	FGuid CreateChat(const TArray<FString>& ParticipantIds, const FString& InitialMessage, FGFChatCallback TypedCallback);
+	FGuid CreateChat(const TArray<FString>& Usernames, const FString& InitialMessage, FGFChatCallback TypedCallback);
 	
 	/**
 	 * Sends a message to a chat
@@ -118,9 +118,9 @@ public:
 	 * @return The last fetched list of all chats
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Chat")
-	const TArray<FGFChat>& GetAllChats() const
+	const TArray<FGFChat>& GetCachedChats() const
 	{
-		return AllChats;
+		return CachedChats;
 	}
 
 	/**
@@ -147,7 +147,7 @@ public:
 	 */
 	void ClearChatData()
 	{
-		AllChats.Empty();
+		CachedChats.Empty();
 		ChatMessages.Empty();
 	}
 
@@ -157,7 +157,7 @@ private:
 	TObjectPtr<UChatAPIHandler> RequestHandler;
 
 	// Cached chat data
-	TArray<FGFChat> AllChats;
+	TArray<FGFChat> CachedChats;
 	TArray<FGFMessage> ChatMessages;
 
 	// Internal response handlers

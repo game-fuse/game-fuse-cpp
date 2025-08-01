@@ -310,7 +310,7 @@ public:
 
 	// Getters for cached data
 	/**
-	 * Gets the cached list of user groups
+	 * Gets the cached list of user groups, use FetchMyGroups to fill this
 	 * @return The last fetched user groups
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
@@ -320,7 +320,7 @@ public:
 	}
 
 	/**
-	 * Gets the cached list of fetched groups, usually filled by Search Group
+	 * Gets the cached list of fetched groups, usually filled by Search Groups or Fetch All Groups
 	 * @return The last fetched list of groups
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameFuse|Groups")
@@ -354,6 +354,10 @@ private:
 
 	// Cached group data
 	TArray<FGFGroup> MyGroups;
+
+	/**
+	 * Cached groups fetched from the API, usually filled by SearchGroups or FetchAllGroups
+	 */
 	TArray<FGFGroup> FetchedGroups;
 
 	// Internal response handlers
